@@ -14,6 +14,7 @@ CH32V003/ch32fun の実機確認は、Pico、WCH-LinkE、測定コマンドを�
 - `externals/ch32v003-book-code` は参照元に限定し、維持するコードは `samples_ch32v003_ch32fun/` に置き、ビルド・書き込みは固定 submodule `externals/ch32fun` のみを使う。
 - ch32fun の `extralibs` に依存するサンプル（現行 book-code の ADC helper、I2C OLED/slave helper、SPI helper、NeoPixel 等）は今回の ch32fun 検証対象から除外する。Pico側の汎用能力は将来それらを検証できる形にしてよいが、完了条件には含めない。
 - 実験・測定結果を日本時間の `okf/log/` に残し、ビルド、書き込み、実機観測を別の結果として記録する。
+- 基本配線はSPI NSSのみAFIOでPC0へ移し、I2C、UART、SPI、PWMと2入力ADCを試験ごとの信号ジャンパ変更なしで使う。PA1のADC RCを低速ボタン刺激にも利用し、全GPIOの網羅は求めない。元のリマップ位置の検証は別途手動配線とする。
 - 人間がPicoとCH32V003を安全に接続できる周辺機能別手順を `hardware/wiring.md` に記載し、同じ接続をKiCad回路図（`.kicad_sch`）とレビュー用の可視化出力でも提供する。
 
 ## Capabilities
