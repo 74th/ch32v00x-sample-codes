@@ -14,6 +14,8 @@ def parser_binary(tmp_path_factory):
                     str(ROOT / 'hardware/pico-tester/protocol.c'),
                     str(ROOT / 'hardware/pico-tester/ssd1306_fixture.c'),
                     str(ROOT / 'hardware/pico-tester/ssd1306_model.c'),
+                    str(ROOT / 'hardware/pico-tester/ws2812_fixture.c'),
+                    str(ROOT / 'hardware/pico-tester/ws2812_classify.c'),
                     str(ROOT / 'tests/unit/pico_protocol_harness.c'), '-o', str(output)], check=True)
     return output
 
@@ -83,3 +85,60 @@ def test_ssd1306_selftest_command_is_wired_and_rejects_arguments(parser_binary):
 
 def test_ssd1306_capture_accepts_init_option(parser_binary):
     assert _run(parser_binary, '1 SSD1306_CAPTURE 1 100 INIT')[0].startswith('1 OK frames=1 ')
+
+
+def _fields(line):
+    return dict(f.split('=', 1) for f in line.split()[2:] if '=' in f)
+
+
+def test_caps_lists_ws2812_commands(parser_binary):
+    cmds = _run(parser_binary, '1 CAPS')[0].split('cmds=')[1].split()[0].split(',')
+    assert 'WS2812_CAPTURE' in cmds and 'WS2812_SELFTEST' in cmds
+
+
+@pytest.mark.parametrize('line', [
+    '1 WS2812_CAPTURE', '1 WS2812_CAPTURE 7', '1 WS2812_CAPTURE 7 18', '1 WS2812_CAPTURE 6 18 100',
+    '1 WS2812_CAPTURE 8 18 100', '1 WS2812_CAPTURE 21 18 100', '1 WS2812_CAPTURE 7 0 100', '1 WS2812_CAPTURE 7 2 100',
+    '1 WS2812_CAPTURE 7 97 100', '1 WS2812_CAPTURE 7 18 9', '1 WS2812_CAPTURE 7 18 5001', '1 WS2812_CAPTURE 7 18 100 x',
+    '1 WS2812_CAPTURE x 18 100',
+])
+def test_ws2812_capture_rejects_bad_arguments(parser_binary, line):
+    assert _run(parser_binary, line) == ['1 ERR INVALID ws2812_capture_arguments']
+
+
+def test_ws2812_capture_success_reports_bytes_and_widths(parser_binary):
+    line = _run(parser_binary, '1 WS2812_CAPTURE 7 18 100')[0]
+    f = _fields(line)
+    assert line.startswith('1 OK ') and f['pin'] == '7' and f['bits'] == '144' and f['bad_pulses'] == '0'
+    assert f['rx'] == 'a55aa55aa55aa55aa55aa55aa55aa55aa55a' and f['safe'] == '1'
+    assert f['t0h_ns'] == '336' and f['t1h_ns'] == '992' and f['threshold_ns'] == '655' and f['ns_per_count'] == '16'
+
+
+def test_ws2812_capture_timeout_with_nothing(parser_binary):
+    assert _run(parser_binary, '1 WS2812_CAPTURE 7 18 77') == ['1 ERR TIMEOUT ws2812 bits=0 safe=1']
+
+
+def test_ws2812_capture_short_frame_is_reported_with_both_lengths(parser_binary):
+    line = _run(parser_binary, '1 WS2812_CAPTURE 7 18 78')[0]
+    assert line.startswith('1 ERR WS2812 frame_bits=136 expected=144 bad_pulses=0 tail_bits=0 tail=00 last_high_ns=992 idle_high=0 ')
+
+
+def test_ws2812_capture_long_frame_is_reported(parser_binary):
+    assert _run(parser_binary, '1 WS2812_CAPTURE 7 18 79') == ['1 ERR WS2812 frame_too_long expected=144 safe=1']
+
+
+def test_ws2812_capture_out_of_range_pulse_is_an_error_with_the_data(parser_binary):
+    line = _run(parser_binary, '1 WS2812_CAPTURE 20 18 80')[0]
+    assert line.startswith('1 ERR WS2812 ') and _fields(line)['bad_pulses'] == '1' and 'rx=' in line
+
+
+@pytest.mark.parametrize('arg', ['', 'ok', 'OK BAD', 'FAST', 'OK x'])
+def test_ws2812_selftest_rejects_bad_arguments(parser_binary, arg):
+    assert _run(parser_binary, f'1 WS2812_SELFTEST {arg}'.rstrip()) == ['1 ERR INVALID ws2812_selftest_arguments']
+
+
+def test_ws2812_selftest_modes(parser_binary):
+    ok, bad, timeout = _run(parser_binary, '1 WS2812_SELFTEST OK', '2 WS2812_SELFTEST BADWIDTH', '3 WS2812_SELFTEST TIMEOUT')
+    assert ok.startswith('1 OK mode=OK ') and _fields(ok)['rx'] == _fields(ok)['tx'] == 'a55aa55aa55a'
+    assert bad.startswith('2 OK mode=BADWIDTH ') and _fields(bad)['bad_pulses'] == '1'
+    assert timeout.startswith('3 OK mode=TIMEOUT ') and _fields(timeout)['words'] == '0' and _fields(timeout)['tx'] == '-'

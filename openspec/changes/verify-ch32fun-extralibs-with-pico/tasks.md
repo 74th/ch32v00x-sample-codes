@@ -26,15 +26,15 @@
 
 ## 5. WS2812 デコード（治具）
 
-- [ ] 5.1 Pico firmware に WS2812 用の PIO（リセット待ち、High/Low 幅の計測、DMA）と、CPU による分類を実装し、`WS2812_CAPTURE <pin> <bytes> <timeout_ms>` を追加する（pin 7/20 のみ）。分類ロジックはホストのハーネスで単体テストできる形に分け、典型値、しきい値の境界、範囲外、ビット数の不足を確認するテストを通す。
-- [ ] 5.2 `WS2812_SELFTEST <OK|BADWIDTH|TIMEOUT>` を追加する（SPI0 3 MHz 16 bit、GP19→GP20）。`hardware/pico-tester/ws2812_selftest.py` を作り、今の SPI loopback 配線で3ケースがそれぞれ期待どおりの結果になることを実機で確認する。配線の状態は実行前にユーザーへ確認し、`okf/log/` に記録する。
-- [ ] 5.3 `protocol.md` と `hardware/pico-tester/README.md` に WS2812 のコマンド、しきい値、GP7 の `SPI_SLAVE` との排他、同じクロック源を使う自己検証の限界を書く。`CAPS` に表示され、未知の pin が `ERR INVALID` になることを確認する。
+- [x] 5.1 Pico firmware に WS2812 用の PIO（リセット待ち、High/Low 幅の計測、DMA）と、CPU による分類を実装し、`WS2812_CAPTURE <pin> <bytes> <timeout_ms>` を追加する（pin 7/20 のみ）。分類ロジックはホストのハーネスで単体テストできる形に分け、典型値、しきい値の境界、範囲外、ビット数の不足を確認するテストを通す。
+- [x] 5.2 `WS2812_SELFTEST <OK|BADWIDTH|TIMEOUT>` を追加する（SPI0 3 MHz 16 bit、GP19→GP20）。`hardware/pico-tester/ws2812_selftest.py` を作り、今の SPI loopback 配線で3ケースがそれぞれ期待どおりの結果になることを実機で確認する。配線の状態は実行前にユーザーへ確認し、`okf/log/` に記録する。
+- [x] 5.3 `protocol.md` と `hardware/pico-tester/README.md` に WS2812 のコマンド、しきい値、GP7 の `SPI_SLAVE` との排他、同じクロック源を使う自己検証の限界を書く。`CAPS` に表示され、未知の pin が `ERR INVALID` になることを確認する。
 
 ## 6. WS2812 helper（DUT）
 
-- [ ] 6.1 `samples_ch32v003_ch32fun/ws2812_spi/` を作る。固定 submodule の `ws2812b_dma_spi_led_driver.h`、`WSGRB`、6 LED の決まった色列を 100 ms ごとに送る。出典と book-code からの変更点（HSV アニメーションを固定色へ）を記録し、`make` で build できることを確認する。
-- [ ] 6.2 `tests/hil/test_extralibs.py` に WS2812 の HIL を追加する。期待するワイヤ上のバイト列をホスト側で導き、`WS2812_CAPTURE 7 18 <timeout>` の `rx` と照合し、`bad_pulses=0` を確認する。中央値の High 幅を結果に記録する。
-- [ ] 6.3 CH32V003 で HIL を実行し、build、flash、readback、デコード一致を別々に判定して `okf/log/` に記録し、マトリクスを更新する。
+- [x] 6.1 `samples_ch32v003_ch32fun/ws2812_spi/` を作る。固定 submodule の `ws2812b_dma_spi_led_driver.h`、`WSGRB`、6 LED の決まった色列を 100 ms ごとに送る。出典と book-code からの変更点（HSV アニメーションを固定色へ）を記録し、`make` で build できることを確認する。
+- [x] 6.2 `tests/hil/test_extralibs.py` に WS2812 の HIL を追加する。期待するワイヤ上のバイト列をホスト側で導き、`WS2812_CAPTURE 7 18 <timeout>` の `rx` と照合し、`bad_pulses=0` を確認する。中央値の High 幅を結果に記録する。
+- [x] 6.3 CH32V003 で HIL を実行し、build、flash、readback、デコード一致を別々に判定して `okf/log/` に記録し、マトリクスを更新する。
 
 ## 7. CH32V002 への移植
 

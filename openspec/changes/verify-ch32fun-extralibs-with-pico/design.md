@@ -76,6 +76,7 @@ DUT サンプルの描画処理を `scene.h`（`ssd1306_setbuf`、`drawstr`、`d
 ### D7. WS2812 デコード：PIO でパルス幅を測り CPU で分類
 
 - PIO プログラムは、入力の Low がリセットしきい値（約 50 µs 以上）続くのを待ってから計測を始める。各パルスの High 幅と Low 幅をカウンタ値として DMA で RAM へ送る。CPU は High 幅で 0（約 333 ns）と 1（約 1000 ns）を分類する。しきい値の中間付近（例：約 500–800 ns）や、1 ビット周期が大きく外れたものは範囲外として数える。
+- 実機で分かった点：DUT の helper は、フレームの後も信号線を High のまま待機させる。最後のパルスが 100 µs を超える High なら待機レベルとして `idle_high=1` を返し、ビット数に数えない。終端マーカーを見つけた時点で取り込みを止める。
 - コマンド：`WS2812_CAPTURE <pin> <bytes> <timeout_ms>`。pin は 7（DUT 用）か 20（自己検証用）、bytes は 3–96。成功時は `rx=<hex>`、`bits`、`bad_pulses`、`t0h_ns`/`t1h_ns` の代表値（中央値）、`threshold_ns` を返す。範囲外のパルスがあれば `ERR WS2812`、期限切れは `ERR TIMEOUT` と受信済みのビット数を返す。
 - 自己検証 `WS2812_SELFTEST <OK|BADWIDTH|TIMEOUT>`：既存の SPI loopback 配線（GP19→GP20）を使う。Pico の SPI0 を 3 MHz・16 bit で動かし、helper と同じ 4 ビット符号化の既知パターンを送る。BADWIDTH は `1100` 符号（High 約 667 ns）を混ぜ、TIMEOUT は何も送らない。生成と測定で同じ Pico のクロックを共有するため周波数の校正にはならないことを protocol.md に書く。
 - DUT サンプルは決まった色の列（6 LED。0x00、0xFF、0xA5、0x5A、0x01、0x80 を含む GRB）を 100 ms ごとに送る。期待するバイト順（WSGRB でのワイヤ上の順序）は、ホストで helper の `bitquartets` の並びから導く。

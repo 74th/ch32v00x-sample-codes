@@ -1,0 +1,30 @@
+.program ws2812_decode
+; Measures every WS2812 pulse on the input pin (also the JMP pin). For each bit two words are pushed:
+;   1) High width in loop counts (2 PIO cycles per count),
+;   2) Low width as the remaining count of the gap limit, or 0xFFFFFFFF when the line stayed Low for the whole limit
+;      (reset gap: the frame is over).
+; The gap limit (loop counts) is the first word the CPU puts in the TX FIFO. push noblock drops words if the RX FIFO is full.
+    pull block
+.wrap_target
+idle:
+    wait 1 pin 0
+    mov x, ~null
+high:
+    jmp pin, high_dec
+    jmp high_done
+high_dec:
+    jmp x-- high
+high_done:
+    mov isr, ~x
+    push noblock
+    mov y, osr
+low:
+    jmp pin, next_bit
+    jmp y-- low
+    mov isr, ~null
+    push noblock
+    jmp idle
+next_bit:
+    mov isr, y
+    push noblock
+.wrap

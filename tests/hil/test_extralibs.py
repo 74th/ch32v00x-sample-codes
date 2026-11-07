@@ -12,7 +12,7 @@ import pytest
 import serial
 from serial.tools import list_ports
 
-from ch32hil.expected import ssd1306_expected_frame
+from ch32hil.expected import ssd1306_expected_frame, ws2812_sample_values, ws2812_wire_bytes
 from ch32hil.phases import Run
 from ch32hil.pico import PicoClient, PicoError, discover
 from test_blink_and_read import _prepare, _with_client, _cleanup
@@ -154,6 +154,48 @@ def test_ssd1306_helper(request, variant, make_args, hil_device, hil_dut):
         with tempfile.TemporaryDirectory() as tmp:
             run.phase('dut_readback', dut.readback, Path(tmp))
         run.phase('measure', _ssd1306, holder.get('port'), dut)
+    finally:
+        run.phase('cleanup', _cleanup, holder.get('port'), 6)
+    assert run.ok, run.to_json()
+
+
+def _ws2812(port, dut):
+    expected = ws2812_wire_bytes(ws2812_sample_values())
+
+    def action(client):
+        client.negotiate(['WS2812_CAPTURE'])
+        res = client.request('WS2812_CAPTURE', 7, len(expected), 1500)   # a frame ends at the next frame's reset gap (<= 100 ms)
+        fields = dict(f.split('=', 1) for f in res.fields if '=' in f)
+        if not res.ok:
+            raise AssertionError(f'WS2812 capture failed: {res.fields}')
+        problems = []
+        if fields.get('rx') != expected.hex():
+            problems.append(f'rx={fields.get("rx")} expected={expected.hex()}')
+        if fields.get('bad_pulses') != '0' or fields.get('bits') != str(len(expected) * 8):
+            problems.append(f'bad_pulses={fields.get("bad_pulses")} bits={fields.get("bits")}')
+        if problems:
+            raise AssertionError('; '.join(problems) + f' | {fields}')
+        print(f'WS2812 widths: t0h_ns={fields["t0h_ns"]} t1h_ns={fields["t1h_ns"]} idle_high={fields["idle_high"]} '
+              f'(nominal 333/1000 at 3 MHz, measurement bias about -32 ns)')
+        return fields
+    return _with_client(port, 6, action)
+
+
+def test_ws2812_helper(request, hil_device, hil_dut):
+    sample = 'ws2812_spi'
+    run = Run(meta={'sample': sample, 'target': hil_device.target_mcu, 'readback_policy': 'required'})
+    dut = hil_dut(sample)
+    holder = {}
+    print(f'HIL extralibs: flash DUT {sample}')
+    try:
+        run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, request.config.getoption('--hil-port'), 30)))
+        run.phase('fixture_setup', _prepare, holder.get('port'), 6)
+        run.phase('dut_build', dut.build)
+        run.phase('dut_flash', dut.flash)
+        with tempfile.TemporaryDirectory() as tmp:
+            run.phase('dut_readback', dut.readback, Path(tmp))
+        run.phase('dut_reset', dut.reset)
+        run.phase('measure', _ws2812, holder.get('port'), dut)
     finally:
         run.phase('cleanup', _cleanup, holder.get('port'), 6)
     assert run.ok, run.to_json()

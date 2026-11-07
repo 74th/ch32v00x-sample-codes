@@ -68,6 +68,18 @@ GP10 SDA・GP11 SCL、外付け pull-up、100 kHz を使用する。`I2C_MASTER 
 
 `SSD1306_SELFTEST` は Pico 単体の自己検証で、I2C loopback 配線（GP16–GP18 SDA、GP17–GP19 SCL、4.7 kΩ pull-up）で I2C0 master から I2C1 slave（0x3C）へヘルパーと同じ形の転送（コマンド 1 バイトごとの転送、32 バイト単位のデータ転送、未対応コマンド 1 個、2 フレーム）を送り、フレームバッファの CRC を独立に作った期待値と照合する。あわせて存在しない 0x3D への書き込みが失敗すること、何も送らない状態で `frames=0` になることを確認する。実行は `uv run python hardware/pico-tester/ssd1306_selftest.py`。2026-11-07 に I2C loopback 配線（ユーザー申告）で 2 回成功した（100 kHz）。この自己検証は DUT 側の GP10/GP11 のピン接続や 1 MHz での受信は確認しない。
 
+## WS2812 信号のデコード
+
+`WS2812_CAPTURE <pin 7|20> <bytes 3-96> <timeout_ms 10-5000>` は、指定ピン（7 は固定配線の DUT PC6、20 は Pico 単体の自己検証用）を PIO1 でデコードする。各パルスの High 幅を 2 PIO サイクル（125 MHz で 16 ns）単位で測り、High 幅 190〜480 ns を 0、830〜1150 ns を 1、それ以外を範囲外パルスとして数える（範囲外の値は 655 ns を閾値に決める）。Low が約 50 µs 続くとフレームの終わりとし、MSB 先頭でバイト列にする。DMA で取り込むため、1 ビット約 1.33 µs でも取りこぼさない。終端マーカーを見つけた時点で取り込みを止める。データの後ろの最後のパルスが 100 µs を超える High なら、データではなく待機レベルが High のままだったものとして `idle_high=1` を返し、ビット数には数えない（DUT の `ws2812_spi` で観測。フレームの終わりは次のフレーム先頭のリセットなので、最大でフレーム周期（100 ms）待つ）。
+
+開始時に 200 µs 以上 Low なら間のフレーム間と見なしてそのまま開始する。そうでなければ最初のリセット間隔を待って同期する。ピンの内部 pull は無効。
+
+成功例: `OK pin=7 bytes=18 bits=144 bad_pulses=0 idle_high=1 t0h_ns=304 t1h_ns=976 threshold_ns=655 ns_per_count=16 rx=<hex> safe=1`。`t0h_ns`/`t1h_ns` は範囲内の 0/1 の High 幅の中央値。`bad_pulses` が 1 以上なら `ERR WS2812`（受信データは付く）。フレーム長が指定と違えば `ERR WS2812 frame_bits=<実際> expected=<期待> bad_pulses=.. tail_bits=.. tail=.. last_high_ns=..`（短い場合）または `frame_too_long`（長い場合）、期限までに揃わなければ `ERR TIMEOUT ws2812 bits=<受信済み>`。
+
+実測の注意: 自己検証（3 MHz 相当、実効 2.976 MHz）では High 幅が理論値（336/1008 ns）より常に約 32 ns 小さく出た。PIO ループの入口の遅れによる固定の偏りと推定している。値は WS2812 規格適合の判定には使えない。GP7 は `SPI_SLAVE` の PIO と同じピンだが、コマンドは直列実行され、どちらも終了時にピンを入力・pull 無効へ戻す。
+
+`WS2812_SELFTEST <OK|BADWIDTH|TIMEOUT>` は Pico 単体の自己検証で、GP19 を 1 kΩ 経由で GP20 に接続し（SPI loopback 配線。I2C loopback の pull-up は外す）、SPI0 を 3 MHz・16 ビットで動かして helper と同じ符号化（1 → `1110`、0 → `1000`）の 6 バイト `00ffa55a0180` を送り、GP20 でデコードする。`OK` は送信と受信の一致と範囲外 0、`BADWIDTH` は 1 ビットを 667 ns の High にして範囲外が 1 個検出されること、`TIMEOUT` は何も送らず 50 ms で何も受信しないことを確認する。生成とデコードは同じ Pico のクロックを共有するため、周波数の校正にはならない。実行は `uv run python hardware/pico-tester/ws2812_selftest.py`。
+
 ## GPIO の継続観測
 
 `GPIO_SEQUENCE` は `GPIO_SAMPLE` と同じ引数・出力を持ち、最大300点、最大約30秒の有界観測を行う。観測中に改行なしの `!` を1文字送ると、次のサンプル時に `ERR CANCELED host_request` を返し安全状態へ戻る。観測中の他の入力は `ERR INVALID busy_input` として中断される。キャンセル後に `RESET_SAFE` を送れる。ピンの restart signature の解釈はホスト側で行う。

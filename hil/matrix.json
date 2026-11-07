@@ -72,8 +72,8 @@
       "book_sample": "neopixel-ch32fun",
       "class": "helper-verification",
       "peripheral": "spi",
-      "state": "not-automated",
-      "note": "fixture capability ws2812-decode not implemented yet",
+      "state": "hil-verified",
+      "note": "WS2812 SPI+DMA helper (book-code neopixel-ch32fun), WSGRB, 6 LEDs: Pico-decoded 18 bytes equal the wire bytes derived from the helper source, zero out-of-range pulses; the DUT line idles High after the frame (idle_high=1, observed). Real LED emission and WS2812 timing compliance not verified",
       "sample": "ws2812_spi",
       "helpers": [
         "extralibs/ws2812b_dma_spi_led_driver.h"
@@ -81,7 +81,13 @@
       "requires": [
         "ws2812-decode"
       ],
-      "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified"
+      "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_ws2812_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-2027-ws2812-helper-hil.md"
+      ]
     },
     {
       "book_sample": "spi_master-ch32fun",

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "protocol.h"
 #include "ssd1306_fixture.h"
+#include "ws2812_fixture.h"
 void fixture_safe(void) {}
 void gpio_fixture_command(unsigned long id, const char *cmd, char *args) {(void)id;(void)cmd;(void)args;}
 #define STUB(name) void name(unsigned long id, char *args) {(void)id;(void)args;}
@@ -35,6 +36,38 @@ bool ssd1306_hw_capture(ssd1306_model_t *m, unsigned frames, unsigned timeout_ms
 /* Stub: pretend the loopback self-test saw a correct run (real behaviour needs hardware). */
 void ssd1306_hw_selftest(ssd1306_selftest_result_t *r) {
     r->frames = 2; r->unknown = 1; r->crc32 = r->expected_crc32 = 0x12345678; r->wrong_address_rc = -1;
+}
+/* WS2812 stub: builds a decoder word stream for a frame of `nbytes` bytes (0xA5, 0x5A, ... alternating) at 16 ns/count.
+ * timeout_ms selects a scenario: 77 silence (TIMEOUT), 78 short frame by one byte, 79 long frame (no marker where expected),
+ * 80 one out-of-range pulse, anything else a clean frame. */
+static unsigned ws_frame(uint32_t *w, unsigned nbytes, bool marker, int bad_bit, uint8_t *tx) {
+    unsigned n = 0;
+    for (unsigned i = 0; i < nbytes; i++) {
+        uint8_t byte = (i & 1) ? 0x5A : 0xA5;
+        if (tx && i < 6) tx[i] = byte;
+        for (int b = 7; b >= 0; b--) {
+            unsigned bit = (byte >> b) & 1, k = i * 8 + (7 - b);
+            uint32_t h = (int)k == bad_bit ? 42 : bit ? 62 : 21;
+            w[n++] = h; w[n++] = (marker && i == nbytes - 1 && b == 0) ? 0xFFFFFFFFu : 30;
+        }
+    }
+    return n;
+}
+ws2812_hw_status_t ws2812_hw_capture(unsigned pin, unsigned want_words, unsigned timeout_ms, uint32_t *words, unsigned *n_words, unsigned *ns_per_count) {
+    (void)pin; *ns_per_count = 16; unsigned nbytes = want_words / 16;
+    switch (timeout_ms) {
+    case 77: *n_words = 0; return WS2812_HW_TIMEOUT;
+    case 78: *n_words = ws_frame(words, nbytes - 1, true, -1, 0); return WS2812_HW_TIMEOUT;
+    case 79: *n_words = ws_frame(words, nbytes, false, -1, 0); return WS2812_HW_OK;
+    case 80: *n_words = ws_frame(words, nbytes, true, 3, 0); return WS2812_HW_OK;
+    default: *n_words = ws_frame(words, nbytes, true, -1, 0); return WS2812_HW_OK;
+    }
+}
+ws2812_hw_status_t ws2812_hw_selftest(ws2812_test_mode_t mode, uint32_t *words, unsigned *n_words, unsigned *ns_per_count, unsigned *baud, uint8_t tx[6]) {
+    *ns_per_count = 16; *baud = 2976190;
+    if (mode == WS2812_TEST_TIMEOUT) { *n_words = 0; return WS2812_HW_TIMEOUT; }
+    *n_words = ws_frame(words, 6, true, mode == WS2812_TEST_BADWIDTH ? 0 : -1, tx);
+    return WS2812_HW_OK;
 }
 int main(void) {
     char line[256];

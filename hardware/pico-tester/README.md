@@ -1,6 +1,6 @@
 # Pico 治具
 
-現在のファームウェアは GPIO、UART、I2C、SPI、ADC 刺激、PWM 測定を持つ protocol v2 です。実機を駆動するので、配線は [wiring.md](../wiring.md) を確認してから使います。自己検証は `uv run python hardware/pico-tester/{uart,i2c,spi}_loopback.py`、`pwm_selftest.py`、`sequence_selftest.py`、DUT 試験は [hil/README.md](../../hil/README.md) を参照してください。コマンドと制限は [protocol.md](protocol.md) を参照してください。以下の v1 説明と `measure.py` は過去ファームウェア向けです。v2 に `s` を送っても動作しません。
+現在のファームウェアは GPIO、UART、I2C、SPI、ADC 刺激、PWM 測定、SSD1306 OLED の模擬、WS2812 信号のデコードを持つ protocol v2 です。実機を駆動するので、配線は [wiring.md](../wiring.md) を確認してから使います。自己検証は `uv run python hardware/pico-tester/{uart,i2c,spi}_loopback.py`、`ssd1306_selftest.py`（I2C loopback 配線）、`ws2812_selftest.py`（GP19→GP20）、`pwm_selftest.py`、`sequence_selftest.py`、DUT 試験は [hil/README.md](../../hil/README.md) を参照してください。コマンドと制限は [protocol.md](protocol.md) を参照してください。以下の v1 説明と `measure.py` は過去ファームウェア向けです。v2 に `s` を送っても動作しません。
 
 過去の GPIO v1: Raspberry Pi Pico (RP2040) の GP0 を入力にし、USB シリアルで `s` を受け取ると約 10 ms 間隔で 300 点を採取します。応答は `PICO_GPIO_V1 10000 <300桁の0/1>` と改行です。間隔は要求値であり、ソフトウェア処理時間が加わるため精密な時間測定ではありません。入力はプルなしです。
 
