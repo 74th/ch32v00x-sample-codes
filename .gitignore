@@ -1,6 +1,13 @@
 xprivate
 externals/*
 !externals/ch32fun
+samples_*/**/*.elf
+samples_*/**/*.bin
+samples_*/**/*.hex
+samples_*/**/*.lst
+samples_*/**/*.map
+samples_*/**/generated_*.ld
+# 旧サンプル配置に残ったビルド出力
 samples/**/*.elf
 samples/**/*.bin
 samples/**/*.hex

@@ -4,7 +4,7 @@
 
 ## ソースとツール
 
-このリポジトリの `samples/ch32v003/blink_and_read/` と `scripts/ch32fun.sh` を使う。[ビルド環境](../README.md#ch32v003-のビルド環境)の依存パッケージを導入する。Pico 用には [Pico 観測手順](pico-tester/README.md) の SDK と pyserial が必要。検証時の RISC-V GCC は 14.2.0、Make は 4.4.1、WCH-LinkE の firmware は 2.9。
+このリポジトリの `samples_ch32v003_ch32fun/blink_and_read/` と `scripts/ch32fun.sh` を使う。[ビルド環境](../README.md#ch32v003-のビルド環境)の依存パッケージを導入する。Pico 用には [Pico 観測手順](pico-tester/README.md) の SDK と pyserial が必要。検証時の RISC-V GCC は 14.2.0、Make は 4.4.1、WCH-LinkE の firmware は 2.9。
 
 ch32fun はプロジェクトの submodule `externals/ch32fun` を用いる。記録時の gitlink は `b28d285460ce052a179dba8f4a22c6f73ff8e328`。book-code はビルドに不要。
 
@@ -20,7 +20,7 @@ git -C externals/ch32fun rev-parse HEAD
 
 ```sh
 ./scripts/ch32fun.sh build
-sha256sum samples/ch32v003/blink_and_read/main.bin
+sha256sum samples_ch32v003_ch32fun/blink_and_read/main.bin
 ```
 
 `BUILD OK` と終了コード 0 を確認する。ch32fun `b28d285` での成果物は 1056 bytes、SHA-256 `5688ff09715f63c04a6855129f7b3d6c85359a56ae3ba6cbd31130e9894561dc`。ビルド成功は実機動作を意味しない。
@@ -33,11 +33,11 @@ Pico のファームウェアを [手順](pico-tester/README.md) で用意し、
 ./scripts/ch32fun.sh flash
 readback_file=$(mktemp)
 externals/ch32fun/minichlink/minichlink -r "$readback_file" flash 1056 -b
-cmp samples/ch32v003/blink_and_read/main.bin "$readback_file"
+cmp samples_ch32v003_ch32fun/blink_and_read/main.bin "$readback_file"
 sha256sum "$readback_file"
 ```
 
-書き込みの終了コードと `FLASH OK`、読み戻しの終了コード、`cmp` の終了コード 0 を別々に確認する。1056 は上記の成果物のバイト数であり、異なる成果物を使う場合は `stat -c %s samples/ch32v003/blink_and_read/main.bin` の値に合わせる。一時ファイルの場所は `$readback_file` で確認し、不要になったら個別に削除できる。固定 minichlink は DUT 未検出でも終了コード 0 を返す場合があるため、スクリプトはデバイス検出も確認する。読み戻しでもデバイス検出を確認する。
+書き込みの終了コードと `FLASH OK`、読み戻しの終了コード、`cmp` の終了コード 0 を別々に確認する。1056 は上記の成果物のバイト数であり、異なる成果物を使う場合は `stat -c %s samples_ch32v003_ch32fun/blink_and_read/main.bin` の値に合わせる。一時ファイルの場所は `$readback_file` で確認し、不要になったら個別に削除できる。固定 minichlink は DUT 未検出でも終了コード 0 を返す場合があるため、スクリプトはデバイス検出も確認する。読み戻しでもデバイス検出を確認する。
 
 ## 起動と測定
 

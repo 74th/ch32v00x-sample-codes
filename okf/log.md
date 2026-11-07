@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-11-07
+* **Migration**: [サンプル配置の変更と仕様 archive](log/2026-11-07-1340-sample-layout-archive.md)を記録した。
 * **Migration**: [独立 ch32fun submodule と両デバイスの実機検証](log/2026-11-07-1330-standalone-ch32fun.md)を記録した。
 * **Integration**: [段階別検証と公開対象](log/2026-11-07-1159-integration-publication-check.md)を確認した。
 * **Measurement**: [CH32V002 の識別・書き込み・GPIO 観測](log/2026-11-07-1156-ch32v002-flash-measure.md)を記録した。

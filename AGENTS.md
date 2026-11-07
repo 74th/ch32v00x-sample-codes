@@ -1,6 +1,6 @@
 # 作業上の注意
 
-- `externals/` は参照元。維持するサンプルは `samples/<device>/<sample>/` に置く。
+- `externals/` は参照元。維持するサンプルは `samples_<device>_<framework>/<sample>/` に置く。
 - build と flash と実行観測は別段階として扱う。実機観測なしに動作確認済みとしない。
 - ビルド・書き込みは Git submodule `externals/ch32fun` に固定し、PATH 上の minichlink や参照用 book-code 内の ch32fun は使わない。ほかの `externals/` は調査用であり、コードの依存先にしない。
 - 旧版 minichlink は未接続でも成功を返し、LinkE 2.22 の CH32V002 を CH32V006 と誤表示した。現在版でも `scripts/ch32fun.sh flash` の検出確認を通し、必要に応じて読み戻しを照合する。CH32V002 の識別領域は `0x1ffff704`。

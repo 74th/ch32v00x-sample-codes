@@ -18,3 +18,4 @@
 - [CH32V002 の識別・書き込み・GPIO 観測](2026-11-07-1156-ch32v002-flash-measure.md)
 - [統合記録と公開対象の確認](2026-11-07-1159-integration-publication-check.md)
 - [独立 ch32fun submodule と両デバイスの実機検証](2026-11-07-1330-standalone-ch32fun.md)
+- [サンプル配置の変更と仕様 archive](2026-11-07-1340-sample-layout-archive.md)

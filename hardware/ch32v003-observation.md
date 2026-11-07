@@ -2,7 +2,7 @@
 
 2026-11-07、WCH-LinkE firmware 2.9 が CH32V003 を検出。ユーザーは対象型番を CH32V003F4P6 と確認。ユーザーの申告では DUT の電源は WCH-LinkE の 3.3 V、PC0 の High 電圧は 3.1 V、PC0 と Pico GP0 の間には 1 kΩ の直列抵抗があります。`-t` による出力停止後の VDD–VSS 間は 0.606 V（ユーザー実測）。残留電圧の経路と電源断前の信号線切り離し方法は未確認です。配線レビュー完了とは扱いません。
 
-- ソース: book-code `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae` の `blink_and_read-ch32fun` を基にした `samples/ch32v003/blink_and_read`。ch32fun `2679ac059f3ada402731e5a10818cc0814e9ec4c`。
+- ソース: book-code `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae` の `blink_and_read-ch32fun` を基にした `samples_ch32v003_ch32fun/blink_and_read`。当時の ch32fun は `2679ac059f3ada402731e5a10818cc0814e9ec4c`。
 - ビルド: `./scripts/ch32fun.sh build`。RISC-V GCC 14.2.0、GNU Make 4.4.1、Ubuntu 26.04 x86-64。`main.bin` 1056 bytes、SHA-256 `2edca10fa40bac56fa2131db88eeb1b47199408413ee2b2a85d42a1c12d83783`。
 - 書き込み: `./scripts/ch32fun.sh flash` が `Image written` と成功を報告。その後 `minichlink -T` で `blink_and_read started` と `PC0 high` / `PC0 low` の繰り返しを取得。別途 11:13 に読み戻し照合を実施した。
 - GPIO 観測: 人間が PC0 に接続した抵抗付き LED の点滅を確認。Pico の GP0 を用いた `python3 hardware/pico-tester/measure.py` は PASS、完全区間は 49〜50 サンプル。測定間隔は約 10 ms。PC0 High は 3.1 V（ユーザー実測）、Pico GP0 との間は 1 kΩ（ユーザー申告）。

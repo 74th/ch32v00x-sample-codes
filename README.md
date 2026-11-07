@@ -80,7 +80,7 @@ git submodule update --init externals/ch32fun
 ./scripts/ch32fun.sh flash
 ```
 
-`build` は DUT 不要で `samples/ch32v003/blink_and_read/main.bin` を生成します。`flash` は既存ファームウェアを上書きします。固定 ch32fun の minichlink を使用し、書き込み成功と GPIO 実測は別です。サンプルは book-code の CC0 版を基に PC0 出力と PA1 入力を保持しています。CH32V003F4P6 の LED 点滅と Pico での測定は確認済みですが、配線条件の確認は残っています。詳細は [暫定観測記録](hardware/ch32v003-observation.md) を参照してください。将来の移植先は `samples/<device>/<sample>/` に配置します。
+`build` は DUT 不要で `samples_ch32v003_ch32fun/blink_and_read/main.bin` を生成します。`flash` は既存ファームウェアを上書きします。固定 ch32fun の minichlink を使用し、書き込み成功と GPIO 実測は別です。サンプルは book-code の CC0 版を基に PC0 出力と PA1 入力を保持しています。CH32V003F4P6 の LED 点滅と Pico での測定は確認済みですが、配線条件の確認は残っています。詳細は [暫定観測記録](hardware/ch32v003-observation.md) を参照してください。将来の移植先は `samples_<device>_<framework>/<sample>/` に配置します。
 
 以前使用した book-code 内の古い minichlink は DUT 未検出でも終了コード 0 と `Image written` を返したため、`flash` スクリプトは現在の minichlink でも検出結果を確認します。成功表示は読み戻し照合の代わりにはなりません。
 
@@ -212,7 +212,7 @@ QFN32のCH32V006、続いてCH32V005 / CH32V007へ展開します。各デバイ
 
 ```text
 okf/                    # 移植・検証で得たOpenKnowledgeFormatの知識
-samples/                # CH32V00x向けに整備したサンプルコード
+samples_<device>_<framework>/  # デバイス・フレームワーク別のサンプル
 hardware/
   pico-tester/          # 信号生成・測定を行うPicoファームウェア
   wiring.md             # 確定した配線と安全要件

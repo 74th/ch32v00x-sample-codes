@@ -7,7 +7,7 @@ case "$target" in
   ch32v003|ch32v002) ;;
   *) echo "error: unknown target $target (use ch32v003 or ch32v002)" >&2; exit 2;;
 esac
-sample="$root/samples/$target/blink_and_read"
+sample="$root/samples_${target}_ch32fun/blink_and_read"
 revision=b28d285460ce052a179dba8f4a22c6f73ff8e328
 case "${1:-}" in
   check)
