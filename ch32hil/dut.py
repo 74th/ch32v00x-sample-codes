@@ -108,6 +108,9 @@ class Dut:
     # Extra `make` variables (e.g. ("HELPER_CLOCK=1",)). Because make does not notice changed variables,
     # a non-empty value cleans the sample first so a previous variant cannot be flashed by mistake.
     make_args: tuple = ()
+    # Sample framework; `wch` samples build with the WCH GCC chosen by their own Makefile, so the
+    # generic PREFIX (riscv64-unknown-elf, used by ch32fun/arduino builds) must not be passed.
+    framework: str = "ch32fun"
 
     def __post_init__(self):
         devices.get(self.target)  # unknown device -> DeviceError before any programmer access
@@ -118,9 +121,10 @@ class Dut:
         return self.sample_dir / "main.bin"
 
     def build(self) -> Path:
+        prefix = [] if self.framework == "wch" else ["PREFIX=riscv64-unknown-elf"]
         if self.make_args:
-            self.run(["make", "-C", str(self.sample_dir), "clean", "PREFIX=riscv64-unknown-elf"], 300)
-        r = self.run(["make", "-C", str(self.sample_dir), "build", "PREFIX=riscv64-unknown-elf", *self.make_args], 300)
+            self.run(["make", "-C", str(self.sample_dir), "clean", *prefix], 300)
+        r = self.run(["make", "-C", str(self.sample_dir), "build", *prefix, *self.make_args], 300)
         if r.returncode != 0 or not self.binary.is_file():
             raise DutError("build", f"make failed (exit {r.returncode})")
         return self.binary

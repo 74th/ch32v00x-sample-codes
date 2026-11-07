@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT = "ch32v003"
 # Sample frameworks: samples live in samples_<device>_<framework>/. ch32fun is the default.
-FRAMEWORKS = ("ch32fun", "arduino")
+FRAMEWORKS = ("ch32fun", "arduino", "wch")
 DEFAULT_FRAMEWORK = "ch32fun"
 
 # TSSOP20 physical pin numbers. CH32V003F4P6: CH32V003 datasheet pin table.
@@ -71,6 +71,8 @@ BY_PART = {d.part: d for d in DEVICES.values()}
 FRAMEWORK_MATRICES = {
     ("ch32v003", "arduino"): "hil/matrix_arduino.json",
     ("ch32v002", "arduino"): "hil/matrix_ch32v002_arduino.json",
+    ("ch32v003", "wch"): "hil/matrix_wch.json",
+    ("ch32v002", "wch"): "hil/matrix_ch32v002_wch.json",
 }
 
 
@@ -88,4 +90,6 @@ def get(name: str, framework: str = DEFAULT_FRAMEWORK) -> Device:
         raise DeviceError(f"unknown HIL device {name!r}; use one of {sorted(DEVICES)}") from None
     if check_framework(framework) == DEFAULT_FRAMEWORK:
         return device
+    if (name, framework) not in FRAMEWORK_MATRICES:
+        raise DeviceError(f"framework {framework!r} is not available for HIL device {name!r}")
     return dataclasses.replace(device, framework=framework, matrix=FRAMEWORK_MATRICES[(name, framework)])

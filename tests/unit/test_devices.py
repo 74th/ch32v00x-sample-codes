@@ -162,8 +162,11 @@ def test_hil_skip_reason_is_reported_without_hardware(tmp_path):
     assert "1 skipped" in p.stdout
 
 
-@pytest.mark.parametrize("framework", devices.FRAMEWORKS)
-@pytest.mark.parametrize("name", sorted(devices.DEVICES))
+_AVAILABLE = [(n, f) for n in sorted(devices.DEVICES) for f in devices.FRAMEWORKS
+              if f == devices.DEFAULT_FRAMEWORK or (n, f) in devices.FRAMEWORK_MATRICES]
+
+
+@pytest.mark.parametrize("name,framework", _AVAILABLE)
 def test_device_matrix_states_are_backed(name, framework):
     dev = devices.get(name, framework)
     entries = matrix.load(ROOT / dev.matrix)
@@ -256,3 +259,42 @@ def test_arduino_missing_sample_is_reasoned_skip(tmp_path):
                        cwd=ROOT, capture_output=True, text=True)
     assert p.returncode == 0, p.stdout + p.stderr
     assert "samples_ch32v003_arduino/no_such_sample does not exist" in p.stdout
+
+
+def test_wch_framework_selection_and_existing_frameworks_kept():
+    dev = devices.get("ch32v003", "wch")
+    assert dev.framework == "wch" and dev.matrix == "hil/matrix_wch.json"
+    assert dev.sample_dir("uart") == ROOT / "samples_ch32v003_wch/uart"
+    base = devices.get("ch32v003")
+    assert (dev.part, dev.chip, dev.chip_id_type) == (base.part, base.chip, base.chip_id_type)
+    assert devices.get("ch32v003", "arduino").framework == "arduino"
+    assert devices.get("ch32v003") is devices.DEVICES["ch32v003"]
+    # CH32V002 has its own WCH matrix and sample root (never the 003 files)
+    d2 = devices.get("ch32v002", "wch")
+    assert d2.matrix == "hil/matrix_ch32v002_wch.json" and d2.sample_dir("uart") == ROOT / "samples_ch32v002_wch/uart"
+    assert d2.chip_id_type == 0x002 and d2.part == "CH32V002F4P6"
+
+
+def test_wch_build_does_not_pass_generic_prefix(tmp_path):
+    from ch32hil.dut import CmdResult, Dut
+    calls = []
+    (tmp_path / "main.bin").write_bytes(b"x")
+
+    def run(argv, timeout):
+        calls.append(argv)
+        return CmdResult(0, "")
+    Dut(tmp_path, run=run, framework="wch").build()
+    Dut(tmp_path, run=run).build()
+    assert not any(a.startswith("PREFIX=") for a in calls[0])
+    assert "PREFIX=riscv64-unknown-elf" in calls[1]
+
+
+def test_wch_marked_hil_tests_follow_framework_option(tmp_path):
+    test = tmp_path / "test_fake_wch.py"
+    test.write_text("import pytest\n\n@pytest.mark.hil\n@pytest.mark.wch\ndef test_wch_side():\n    pass\n")
+    for args, outcome in (("--hil-framework", "wch"), ("--hil-framework", "ch32fun")):
+        p = subprocess.run([sys.executable, "-m", "pytest", "-p", "conftest", "-p", "no:cacheprovider",
+                            "--rootdir", str(ROOT), "-c", str(ROOT / "pyproject.toml"), "-rs", "-q",
+                            "--hil", args, outcome, str(test)], cwd=ROOT, capture_output=True, text=True)
+        expected = "1 passed" if outcome == "wch" else "1 skipped"
+        assert expected in p.stdout, p.stdout

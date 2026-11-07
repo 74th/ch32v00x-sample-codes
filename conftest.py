@@ -26,8 +26,11 @@ def pytest_configure(config):
 
 
 def _test_framework(item):
-    """Framework a HIL test belongs to: `arduino`-marked tests are Arduino, the rest ch32fun."""
-    return "arduino" if "arduino" in item.keywords else devices.DEFAULT_FRAMEWORK
+    """Framework a HIL test belongs to: `arduino`/`wch`-marked tests are those, the rest ch32fun."""
+    for framework in ("arduino", "wch"):
+        if framework in item.keywords:
+            return framework
+    return devices.DEFAULT_FRAMEWORK
 
 
 def pytest_collection_modifyitems(config, items):
@@ -75,5 +78,5 @@ def hil_dut(request, hil_device, hil_config):
         request.node.user_properties.extend([("device", hil_device.name), ("framework", hil_device.framework)])
         print(f"HIL DEVICE: {hil_device.part} ({hil_device.name}); framework={hil_device.framework}; "
               f"sample={sample}; will BUILD, FLASH (overwrites DUT firmware) and READBACK")
-        return Dut(hil_device.sample_dir(sample), target=hil_device.name)
+        return Dut(hil_device.sample_dir(sample), target=hil_device.name, framework=hil_device.framework)
     return make

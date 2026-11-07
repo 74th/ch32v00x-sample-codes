@@ -1,3 +1,4 @@
+import re
 import copy, json
 from pathlib import Path
 import pytest
@@ -169,3 +170,62 @@ def test_every_arduino_hil_test_is_referenced_by_matrix():
                for p in (ROOT / "tests/hil/arduino").glob("test_*.py")
                for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
     assert defined - referenced == set()
+
+
+WCH_BOOK_DIRS = ["adc", "adc_dma", "blink_and_read", "i2c_master", "i2c_slave", "pwm", "sleep_mode_blink",
+                 "spi_master", "standby_mode_blink", "timer_blink", "timer_dma", "uart", "watchdogtimer"]
+
+
+def test_wch_matrix_tracks_all_thirteen_book_examples_one_to_one():
+    entries = matrix.load(ROOT / "hil/matrix_wch.json")
+    assert sorted(e["book_sample"] for e in entries) == sorted(f"{d}-wch_sdk" for d in WCH_BOOK_DIRS)
+    assert len({e["sample"] for e in entries}) == 13
+    book = ROOT / "externals/ch32v003-book-code"
+    if book.is_dir():
+        assert matrix.problems(entries, book_dir=book, framework="wch") == []
+
+
+def test_wch_matrix_detects_missing_book_example(tmp_path):
+    for d in WCH_BOOK_DIRS + ["extra"]:
+        (tmp_path / f"{d}-wch_sdk").mkdir()
+    entries = matrix.load(ROOT / "hil/matrix_wch.json")
+    p = matrix.problems(entries, book_dir=tmp_path, framework="wch")
+    assert p == ["book-code sample not accounted for: extra-wch_sdk"]
+
+
+def _readme_rows(path):
+    rows = {}
+    for line in Path(path).read_text().splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        m = line.startswith("| `") and re.match(r"`(\S+-wch_sdk)`", cells[0])
+        if m:
+            rows[m.group(1)] = cells
+    return rows
+
+
+@pytest.mark.parametrize("readme,matrix_file,state_col", [
+    ("samples_ch32v003_wch/README.md", "hil/matrix_wch.json", 2),
+    ("samples_ch32v002_wch/README.md", "hil/matrix_ch32v002_wch.json", 2),
+])
+def test_wch_readme_table_matches_matrix(readme, matrix_file, state_col):
+    """All 13 rows: README state (and, for 003, the evidence logs) equal the matrix; nothing is claimed beyond it."""
+    entries = {e["book_sample"]: e for e in matrix.load(ROOT / matrix_file)}
+    rows = _readme_rows(ROOT / readme)
+    assert set(rows) == set(entries) and len(rows) == 13
+    for book, e in entries.items():
+        assert rows[book][1] == f"`{e['sample']}`"
+        assert rows[book][state_col] == e["state"], (book, rows[book][state_col], e["state"])
+        if readme.startswith("samples_ch32v003"):
+            for log in e.get("evidence", []):
+                assert Path(log).name in rows[book][3], (book, log)
+            if e["state"] != "hil-verified":
+                assert not e.get("evidence"), book
+
+
+def test_hil_verified_wch_rows_have_a_checkable_basis():
+    for matrix_file in ("hil/matrix_wch.json", "hil/matrix_ch32v002_wch.json"):
+        entries = matrix.load(ROOT / matrix_file)
+        assert matrix.problems(entries, root=ROOT, samples_dir=None, framework="wch") == []
+        for e in entries:
+            if e["state"] == "hil-verified":
+                assert e.get("hil_tests") and e.get("evidence") and e.get("criteria"), e["sample"]

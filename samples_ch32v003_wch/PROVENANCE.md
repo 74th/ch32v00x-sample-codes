@@ -9,7 +9,7 @@
 > Attention: This software (modified or not) and binary are used for
 > microcontroller manufactured by Nanjing Qinheng Microelectronics.
 
-`system_ch32v00x.c`だけ、外部水晶を使わない48 MHz HSI設定に変更し、その旨をファイル内に記載した。他のコピーは無改変。`ch32v00x_conf.h`、Makefile、サンプルmain.cは本作業で作成。
+`system_ch32v00x.c`だけ、外部水晶を使わない48 MHz HSI設定に変更し、その旨をファイル内に記載した。他のコピーは無改変。`ch32v00x_conf.h`（コピーした公式ドライバのヘッダ集約）、Makefile、`wch.mk`、サンプルmain.cは本作業で作成。
 
 参考にしたCLIビルド例（コードのコピーなし）:
 - https://github.com/wuxx/CH32V003-makefile-example/blob/master/Makefile
@@ -36,3 +36,32 @@
 | `sdk/Debug/debug.h` | `EVT/EXAM/SRC/Debug/debug.h` | `ca1df930465755a0c7672f930dbf0f7df6d91850be5b197c7ae1701701e1362f` |
 | `sdk/Peripheral/inc/ch32v00x_usart.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_usart.h` | `180d8d95d1c5eb9dac962683096d619a6515ae4e12e6147d1f9e33107a55a8a9` |
 | `sdk/Peripheral/src/ch32v00x_usart.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_usart.c` | `316d5582ccb41ac0f4696a6f1cb3de80564c695f0b05f34e8640d9c8b5173ee5` |
+
+追加コピー（周辺サンプル用、全て無改変・同一revision、上と同じWCH製マイコン向け使用条件）。書籍wch_sdk例が使うADC、DMA、I2C、SPI、TIM、IWDG、PWR、EXTI、NVICのためのmiscのみ。
+
+| 配置先 | コピー元 | SHA-256 |
+|---|---|---|
+| `sdk/Peripheral/inc/ch32v00x_adc.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_adc.h` | `5c40f05d909e718a95933cb5c02fb85e241471d67cb588af779f987d6197720b` |
+| `sdk/Peripheral/src/ch32v00x_adc.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_adc.c` | `100092a8f683aca9097a5bf15e933f2b5750284853647a78bdc4e5c637e587e3` |
+| `sdk/Peripheral/inc/ch32v00x_dma.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_dma.h` | `70e3e96c6f45b26fb599c4749c1fa93492ae676a499b53bc526bb2961c878509` |
+| `sdk/Peripheral/src/ch32v00x_dma.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_dma.c` | `7ed553d998d7f6278411536e967d7b3afa40ed0bc6e42371df42b7160203f3bb` |
+| `sdk/Peripheral/inc/ch32v00x_i2c.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_i2c.h` | `db8b81a779be5d60dae90c70656a58969040883f56de7a951d8a5d8265a76c75` |
+| `sdk/Peripheral/src/ch32v00x_i2c.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_i2c.c` | `2dbab71655cdba0999bcdb400e4b1eab95f67372e0fe581efefe2f46a10596ce` |
+| `sdk/Peripheral/inc/ch32v00x_spi.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_spi.h` | `057ea1a147302bfbe507e18382b65f023503ed1a7775ba5ce430340901097a1b` |
+| `sdk/Peripheral/src/ch32v00x_spi.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_spi.c` | `e4f204b1b7a2a47701eaef69475aa80f1ff036d24d0f2b3523ad88174a59d18f` |
+| `sdk/Peripheral/inc/ch32v00x_tim.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_tim.h` | `104f3baadc05ec8ee1ab321b19e627421315fe0758b616bee90e57b29832e1a9` |
+| `sdk/Peripheral/src/ch32v00x_tim.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_tim.c` | `1b6a7f74e67d5c7a51dd4c3d8ed9b8cf750a7dd2da37efe46ddda5548662bd35` |
+| `sdk/Peripheral/inc/ch32v00x_iwdg.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_iwdg.h` | `9e5f04a17cad8b7d48849b91c81e8ccd217bda372e7731ed26bd64b3d5ed1126` |
+| `sdk/Peripheral/src/ch32v00x_iwdg.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_iwdg.c` | `611e902eb4d1edb0e5c84ccb195d06a00b21a216bc9eb34739ceada77687e7a5` |
+| `sdk/Peripheral/inc/ch32v00x_pwr.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_pwr.h` | `777414840b69849a0f688387e078fd061adb8393c2ea2366b2d3b17cb69d1d2c` |
+| `sdk/Peripheral/src/ch32v00x_pwr.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_pwr.c` | `63973a45fd4c598f5509a6e20c5af01681d480d1ab2188e99b1d9518cfa7a0c0` |
+| `sdk/Peripheral/inc/ch32v00x_exti.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_exti.h` | `4bfb0c43bf236cb78142e5f0f6164f50effa7d9858b6c69a3b7fd5d1d2dcf69c` |
+| `sdk/Peripheral/src/ch32v00x_exti.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_exti.c` | `4437f6b60677015da0eadde62b3090f79acba37d5398f9db34590e948532a8ae` |
+| `sdk/Peripheral/inc/ch32v00x_misc.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00x_misc.h` | `5457b507473de3fe01f3b87f6df84a08b87da299883cac9ba240d452d273167d` |
+| `sdk/Peripheral/src/ch32v00x_misc.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00x_misc.c` | `5b6c6aa0f762571fef90cf33e9ad27b5a12bb276c054d7879ae0446df5ba1ff9` |
+
+追加コピー（`__WFI`/`__WFE`が参照する`WFE`の実体。無改変・同一revision、同じWCH製マイコン向け使用条件）。
+
+| 配置先 | コピー元 | SHA-256 |
+|---|---|---|
+| `sdk/Core/core_riscv.c` | `EVT/EXAM/SRC/Core/core_riscv.c` | `847fe62d585aab6e6c2ee860429d2567bba3218733d0ebe41f06cee1d3c248f1` |

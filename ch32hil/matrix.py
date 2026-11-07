@@ -20,6 +20,8 @@ BOOK_PATTERNS = {
     "ch32fun": ("*-ch32fun",),
     # Arduino Core CH32 sketches; *-arduino_ch32v003 / *-arduino_wch32v003 are another core and not listed.
     "arduino": ("*-arduino_core_ch32", "*_arduino_core_ch32"),
+    # Official WCH SDK samples; all 13 book wch_sdk examples are tracked one to one.
+    "wch": ("*-wch_sdk",),
 }
 
 

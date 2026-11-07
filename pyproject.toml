@@ -28,4 +28,5 @@ markers = [
     "watchdog: HIL test of watchdog/sleep reset signatures",
     "extralibs: HIL test of a pinned-ch32fun helper (extralibs/examples) sample",
     "arduino: HIL test of an Arduino Core CH32 sample (runs only with --hil-framework arduino)",
+    "wch: HIL test of an official WCH SDK sample (runs only with --hil-framework wch)",
 ]
