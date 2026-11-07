@@ -243,6 +243,29 @@ xprivate/               # PDF、変換データ、非公開の調査メモ
 
 進捗に応じて、このREADME、各サンプルの文書、`okf/` の知識、HIL試験結果を一緒に更新します。
 
+## ch32fun の helper を使うサンプルの検証状況
+
+book-code の `i2c_oled`、`neopixel`、`i2c_slave`（ch32fun 版）が使う、`externals/ch32fun` 内の次の 3 種類のヘッダ（以下 helper）を、変更せずに使うサンプルを `samples_ch32v003_ch32fun/` と `samples_ch32v002_ch32fun/` に置いています。Pico が OLED や LED のふりをして、DUT が送った内容を観測します。
+
+| サンプル | 使う helper | Pico の役割 |
+|---|---|---|
+| `i2c_slave_helper` | `examples/i2c_slave/i2c_slave.h` | I2C master |
+| `ssd1306_i2c` | `extralibs/ssd1306_i2c.h`、`extralibs/ssd1306.h` | SSD1306 の模擬（I2C 0x3C） |
+| `ws2812_spi` | `extralibs/ws2812b_dma_spi_led_driver.h` | WS2812 信号のデコード |
+
+CH32V003 と CH32V002 の両方で、Pico が観測した内容が期待どおりであることを実機で確認しています（詳細: `hil/matrix.json`、`okf/log/2026-11-07-1956-*`、`2012-*`、`2027-*`、`2036-*`）。
+
+**確認できていないこと**（「確認済み」は Pico が観測した送信内容が期待と一致した範囲に限ります）:
+
+- 実際の OLED の表示、実際の LED の発光と色。
+- `ssd1306_i2c` で helper 既定の I2C 1 MHz（Pico が何も受信できず、原因は未切り分け。`xfail` として記録）。100 kHz に下げた場合のみ確認済みです。
+- WS2812 のタイミング規格への適合。Pico の測定は理論値より約 32 ns 小さく出ます（原因は未切り分け）。Pico の生成と測定が同じクロックを共有するため、自己検証は周波数の校正になりません。
+- `ws2812_spi` の信号線が、フレームの後も High のまま待機する理由（観測のみ。LED のラッチへの影響も未確認）。
+- 本のサンプルの色順コメントと helper のソースの食い違い（ソースを読んだ観察のみ）。
+- 電圧・波形の実測、1 kΩ 経由の波形の質、DUT 差し替え時の電圧。
+- 複数回のリセットを跨ぐ再現性（各確認は build・flash・reset を行った数回の実行のみ）。
+- Pico 単体の自己検証で試していない異常系（SSD1306 模擬の不完全な転送や `overflow` の実機での発生など。ホストの単体試験でのみ確認）。
+
 ## 関連資料
 
 - 移植元: [74th/ch32v003-book-code](https://github.com/74th/ch32v003-book-code)
