@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-11-07
+* **Reproduction**: [Pico の再書き込みと USB 再認識](log/2026-11-07-1121-pico-reflash-discovery.md)を確認し、検出待ちを追加した。
 * **Reproduction**: [初回コミットの別 checkout](log/2026-11-07-1120-clean-checkout-reproduction.md)で build・flash・measure を実施した。
 * **Review**: [CH32V003 再現手順](log/2026-11-07-1119-ch32v003-repro-review.md)とコミット未作成の制約を記録した。
 * **Review**: [Pico 配線手順](log/2026-11-07-1116-wiring-review.md)のレビューと未確認事項を記録した。

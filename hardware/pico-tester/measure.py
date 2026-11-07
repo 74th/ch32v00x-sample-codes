@@ -23,11 +23,17 @@ def analyse(line):
     return all(40 <= count <= 60 for _, count in complete), runs
 
 
-def discover():
-    ports = [p.device for p in list_ports.comports() if p.vid == 0x2e8a and p.pid == 0x000a]
-    if len(ports) != 1:
-        raise RuntimeError(f'expected one Pico, found {len(ports)}; specify --port')
-    return ports[0]
+def discover(timeout):
+    deadline = time.monotonic() + timeout
+    while True:
+        ports = [p.device for p in list_ports.comports() if p.vid == 0x2e8a and p.pid == 0x000a]
+        if len(ports) == 1:
+            return ports[0]
+        if len(ports) > 1:
+            raise RuntimeError(f'expected one Pico, found {len(ports)}; specify --port')
+        if time.monotonic() >= deadline:
+            raise TimeoutError('Pico USB serial device not found')
+        time.sleep(min(0.2, max(0, deadline - time.monotonic())))
 
 
 def main():
@@ -38,7 +44,7 @@ def main():
     if args.timeout <= 0:
         parser.error('--timeout must be positive')
     try:
-        port = args.port or discover()
+        port = args.port or discover(args.timeout)
         with serial.Serial(port, 115200, timeout=0.2, write_timeout=1) as device:
             device.reset_input_buffer()
             device.write(b's')
@@ -56,6 +62,9 @@ def main():
         print(f'port: {port}\nresponse: {line}\nruns: {runs}')
         print('PASS: alternating 400–600 ms pulses' if matched else 'MISMATCH: expected alternating 400–600 ms pulses')
         return 0 if matched else 1
+    except TimeoutError as exc:
+        print(f'TIMEOUT: {exc}', file=sys.stderr)
+        return 2
     except (serial.SerialException, OSError, RuntimeError, ValueError, UnicodeError) as exc:
         print(f'ERROR: {exc}', file=sys.stderr)
         return 3

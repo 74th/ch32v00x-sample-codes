@@ -12,3 +12,4 @@
 - [配線手順レビュー](2026-11-07-1116-wiring-review.md)
 - [CH32V003 再現手順のレビュー](2026-11-07-1119-ch32v003-repro-review.md)
 - [CH32V003 基準の別 checkout での再現](2026-11-07-1120-clean-checkout-reproduction.md)
+- [Pico の再書き込みと USB 再認識](2026-11-07-1121-pico-reflash-discovery.md)

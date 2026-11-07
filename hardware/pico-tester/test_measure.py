@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 import io
 import sys
+from types import SimpleNamespace
 import measure
 
 
@@ -10,6 +11,16 @@ def response(samples):
 
 
 class Tests(unittest.TestCase):
+    def test_discovery_waits_for_device(self):
+        pico = SimpleNamespace(device='/dev/example', vid=0x2e8a, pid=0x000a)
+        with patch.object(measure.list_ports, 'comports', side_effect=[[], [pico]]), patch.object(measure.time, 'sleep'):
+            self.assertEqual(measure.discover(1), '/dev/example')
+
+    def test_discovery_timeout(self):
+        with patch.object(measure.list_ports, 'comports', return_value=[]):
+            with self.assertRaises(TimeoutError):
+                measure.discover(0)
+
     def test_matching_pattern(self):
         self.assertTrue(measure.analyse(response('0' * 50 + '1' * 50 + '0' * 50 + '1' * 50 + '0' * 50 + '1' * 50))[0])
 
