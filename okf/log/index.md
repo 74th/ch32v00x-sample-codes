@@ -48,3 +48,4 @@
 - [CH32V002 サンプル 8 件の移植と build（Issue #11 前半）](2026-11-07-1920-ch32v002-samples-port-build.md)
 - [CH32V002F4P6 の全 HIL（Issue #11 後半）](2026-11-07-1926-ch32v002-hil.md)
 - [CH32V002 統合確認 9.1/9.2（Issue #9）](2026-11-07-1935-ch32v002-integration-9-1-9-2.md)
+- [CH32V003 への差し戻しと回帰確認 9.3（Issue #9）](2026-11-07-1937-ch32v003-regression-9-3.md)
