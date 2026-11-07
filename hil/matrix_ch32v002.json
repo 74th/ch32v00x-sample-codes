@@ -160,7 +160,7 @@
    "sample": "i2c_slave_helper",
    "class": "helper-verification",
    "peripheral": "i2c",
-   "state": "build-only",
+   "state": "hil-verified",
    "helpers": [
     "examples/i2c_slave/i2c_slave.h"
    ],
@@ -168,16 +168,19 @@
     "i2c-master"
    ],
    "criteria": "Pico I2C_MASTER: ACK at 0x42 / NACK at 0x43, register write and read-back, write/read callback counts and reg/length via observation registers, PC0 high on expected write callback",
-   "note": "ported and built for CH32V002 (differences: okf/peripherals/ch32v002-port-differences.md); not yet run on CH32V002 hardware",
+   "note": "CH32V002 port, same Pico-observed judgement as CH32V003 (differences: okf/peripherals/ch32v002-port-differences.md). Real OLED/LED output not verified",
    "hil_tests": [
     "tests/hil/test_extralibs.py::test_extralibs_helper"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
    ]
   },
   {
    "sample": "ssd1306_i2c",
    "class": "helper-verification",
    "peripheral": "i2c",
-   "state": "build-only",
+   "state": "hil-verified",
    "helpers": [
     "extralibs/ssd1306_i2c.h",
     "extralibs/ssd1306.h"
@@ -186,16 +189,19 @@
     "ssd1306-emulation"
    ],
    "criteria": "Pico-reconstructed 128x64 frame buffer CRC equals host-generated expected CRC (100 kHz primary; 1 MHz helper default recorded separately). Real OLED display not verified",
-   "note": "ported and built for CH32V002 (differences: okf/peripherals/ch32v002-port-differences.md); not yet run on CH32V002 hardware",
+   "note": "CH32V002 port, same Pico-observed judgement as CH32V003 (differences: okf/peripherals/ch32v002-port-differences.md). Real OLED/LED output not verified; helper default 1 MHz recorded as xfail (0 transfers observed)",
    "hil_tests": [
     "tests/hil/test_extralibs.py::test_ssd1306_helper"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
    ]
   },
   {
    "sample": "ws2812_spi",
    "class": "helper-verification",
    "peripheral": "spi",
-   "state": "build-only",
+   "state": "hil-verified",
    "helpers": [
     "extralibs/ws2812b_dma_spi_led_driver.h"
    ],
@@ -203,9 +209,12 @@
     "ws2812-decode"
    ],
    "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified",
-   "note": "ported and built for CH32V002 (differences: okf/peripherals/ch32v002-port-differences.md); not yet run on CH32V002 hardware",
+   "note": "CH32V002 port, same Pico-observed judgement as CH32V003 (differences: okf/peripherals/ch32v002-port-differences.md). Real OLED/LED output not verified",
    "hil_tests": [
     "tests/hil/test_extralibs.py::test_ws2812_helper"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
    ]
   }
  ]

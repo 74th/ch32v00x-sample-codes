@@ -55,3 +55,4 @@
 - [SSD1306 helper サンプルの HIL（extralibs 検証 4.1〜4.4）](2026-11-07-2012-ssd1306-helper-hil.md)
 - [WS2812 デコード治具の実装（extralibs 検証 5.1）](2026-11-07-2022-ws2812-decoder-fixture.md)
 - [WS2812 helper サンプルの HIL（extralibs 検証 6.1〜6.3）](2026-11-07-2027-ws2812-helper-hil.md)
+- [helper 検証 3 サンプルの CH32V002 HIL（extralibs 検証 7.2）](2026-11-07-2036-extralibs-ch32v002-hil.md)
