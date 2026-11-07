@@ -13,3 +13,7 @@
 - [CH32V003 再現手順のレビュー](2026-11-07-1119-ch32v003-repro-review.md)
 - [CH32V003 基準の別 checkout での再現](2026-11-07-1120-clean-checkout-reproduction.md)
 - [Pico の再書き込みと USB 再認識](2026-11-07-1121-pico-reflash-discovery.md)
+- [CH32V002 差分調査と初回ビルド](2026-11-07-1130-ch32v002-port-build.md)
+- [CH32V002 の SWIO 検出調査](2026-11-07-1140-ch32v002-detection-diagnosis.md)
+- [CH32V002 の識別・書き込み・GPIO 観測](2026-11-07-1156-ch32v002-flash-measure.md)
+- [統合記録と公開対象の確認](2026-11-07-1159-integration-publication-check.md)

@@ -130,6 +130,8 @@ CH32V003 と Pico の観測用配線の準備案と接続前の確認項目は [
 
 CH32V003F4P6 の build → flash → measure をまとめた手順は [hardware/ch32v003-reproduction.md](hardware/ch32v003-reproduction.md) にあります。
 
+CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。
+
 ## `okf/` に残す知識
 
 `okf/` は補足メモ置き場ではなく、このプロジェクトの主要な成果物の一つです。サンプルコードの移植中に得た知識をOpenKnowledgeFormatで表現し、人間が参照できるだけでなく、別の移植作業やツールからも再利用できる状態を目指します。
