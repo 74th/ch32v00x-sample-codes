@@ -128,7 +128,7 @@ CH32V003 と Pico の観測用配線の準備案と接続前の確認項目は [
 
 CH32V003F4P6 の build → flash → measure をまとめた手順は [hardware/ch32v003-reproduction.md](hardware/ch32v003-reproduction.md) にあります。
 
-CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。固定配線の Pico 治具で、CH32V003 と同じ 11 件の HIL（機能確認のみ）を `--hil-device ch32v002` で実行でき、2026-11-07 の実機で成功しています（状態は [hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)）。
+CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。固定配線の Pico 治具で、CH32V003 と同じ HIL（機能確認のみ。既存 11 件と、下記の helper 検証 3 件＋参考の xfail 1 件）を `--hil-device ch32v002` で実行でき、2026-11-07 の実機で成功しています（状態は [hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)）。
 
 ## `okf/` に残す知識
 
@@ -198,28 +198,33 @@ xprivate/
 
 Phase 1の完了条件は、ローカルコマンド1つでビルド、書き込み、測定、判定まで実行でき、失敗原因が区別され、失敗後も治具が安全状態へ戻ることです。
 
+**状況（2026-11-07）:** CH32V003F4P6 と CH32V002F4P6 では、この条件を満たす HIL を実機で確認済みです。CH32V006F8P6 は未着手です。
+
 ### Phase 2: 周辺機能の移植と試験
 
 UART → I2C Master/Slave → SPI（DUT Master）→ ADC → ADC+DMA → Timer/PWMの順を基本として追加します。その後、GPIO入力・割り込み、Watchdog、Sleep/Standby、NeoPixelなどへ広げます。
+
+**状況（2026-11-07）:** CH32V003 / CH32V002 の両方で、GPIO、UART、I2C master/slave、SPI（DUT master）、ADC、Timer/PWM、Watchdog、Sleep、および ch32fun の helper を使う I2C slave・SSD1306 OLED・WS2812 NeoPixel（下記）の HIL が成功しています（いずれも機能確認で、電圧・波形・タイミング精度の実測ではありません）。未実施: ADC+DMA、GPIO 入力・割り込み（固定配線の都合で PC4 を駆動できず、PA1 のボタン入力のみ）、Standby、SPI helper（`ch32v003_SPI.h`）、CH32V005 / CH32V006 / CH32V007。
 
 ### Phase 3: デバイスとパッケージの拡張
 
 QFN32のCH32V006、続いてCH32V005 / CH32V007へ展開します。各デバイス固有の周辺機能、ピンリマップ、制約は、それぞれの実機で検証します。
 
-## 想定するリポジトリ構成
-
-構成は実装に合わせて更新します。現時点では、責務を次のように分ける想定です。
+## リポジトリ構成
 
 ```text
-okf/                    # 移植・検証で得たOpenKnowledgeFormatの知識
+okf/                    # 移植・検証で得たOpenKnowledgeFormatの知識（log/ に実験ごとの記録）
+openspec/               # 変更提案・仕様（OpenSpec）。specs/ が現行仕様、changes/archive/ が完了した変更
 samples_<device>_<framework>/  # デバイス・フレームワーク別のサンプル
 hardware/
-  pico-tester/          # 信号生成・測定を行うPicoファームウェア
-  wiring.md             # 確定した配線と安全要件
-  pinmap.yaml           # DUTと治具のピン対応
-scripts/                # ビルド、書き込み、治具操作
-tests/hil/              # pytestによる実機試験
-config/                 # デバイス・試験環境ごとの設定
+  pico-tester/          # 信号生成・測定を行うPicoファームウェアと自己検証スクリプト
+  wiring.md             # 配線と安全手順（wiring-proposal.md は固定配線案）
+hil/                    # 試験設定（configs/）と検証マトリクス（matrix*.json）
+ch32hil/                # 書き込み・Pico操作・判定のPythonライブラリ
+scripts/                # ビルド・書き込み（固定の externals/ch32fun を使う）
+tests/unit/             # 実機なしの単体テスト
+tests/hil/              # pytestによる実機試験（--hil を指定したときだけ実行）
+externals/              # 参照元（ch32fun は Git submodule で固定）
 
 # Git管理対象外
 xprivate/               # PDF、変換データ、非公開の調査メモ
@@ -239,7 +244,11 @@ xprivate/               # PDF、変換データ、非公開の調査メモ
 
 ## 現在地
 
-現在はPhase 0の開始前後にあり、試験構成、配線、ツール選定の多くは未確定・未検証です。まずプロジェクトの判断基準と成果物を明文化し、その後に実物確認と最小GPIO試験へ進みます。
+2026-11-07 時点で、CH32V003F4P6 と CH32V002F4P6 を対象に、ビルド、書き込み（読み戻し照合付き）、Pico による観測、判定までを `uv run pytest --hil` で実行できます（実機を書き換えるため、明示したときだけ動きます）。ホストだけで動く単体テストは `uv run pytest` です。
+
+- 実機で確認済み: 上記 2 デバイスでの周辺機能の HIL（詳細は [hil/matrix.json](hil/matrix.json)、[hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、実験ごとの記録は `okf/log/`）。
+- 未着手・未確認: CH32V006 / CH32V005 / CH32V007、QFN32、ADC+DMA、Standby。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
+- 配線・電源の扱いは [hardware/wiring.md](hardware/wiring.md) の安全手順に従ってください。実機を使う試験は、Pico と DUT の電源・信号線を確認してから行います。
 
 進捗に応じて、このREADME、各サンプルの文書、`okf/` の知識、HIL試験結果を一緒に更新します。
 
