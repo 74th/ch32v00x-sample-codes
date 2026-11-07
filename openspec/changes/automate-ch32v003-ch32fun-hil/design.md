@@ -4,7 +4,7 @@
 
 See `proposal.md` - Why. 現在は `scripts/ch32fun.sh` が固定ch32funによるbuild/flashを、`hardware/pico-tester/measure.py` が単一GPIOの観測を担う。readback、Pico build/flash、DUT reset、測定は手順書上の別コマンドであり、Python側のテストは `unittest` による測定ロジック6件だけである。
 
-PicoファームウェアはUSB CDCで文字 `s` を受け、GP0を300点取得するだけで、出力駆動、ピン所有権、能力照会、後始末を持たない。Picoには真のDACがないためADC刺激には外付け回路と校正が必要である。初回Pico書き込み、物理配線、電圧確認、スイッチ操作を完全にはソフトウェア化できない。
+PicoファームウェアはUSB CDCで文字 `s` を受け、GP0を300点取得するだけで、出力駆動、ピン所有権、能力照会、後始末を持たない。Picoには真のDACがないためADC刺激には外付け回路が必要である。今回は電圧の精度評価・独立測定による校正を対象外とし、機能的な変化のみ確認する。初回Pico書き込み、物理配線、電圧確認、スイッチ操作を完全にはソフトウェア化できない。
 
 book-codeの現行ch32fun例は、`blink_and_read` 以外の多くが `ch32v003_GPIO_branchless.h`、`ch32v003_SPI.h`、`ssd1306*`、`ws2812*`、`i2c_slave.h` 等へ依存する。今回はそれらをそのまま移植せず、必要ならch32fun標準ヘッダからレジスタを操作する小さな試験用サンプルを新設する。
 
@@ -62,12 +62,12 @@ USB CDC上で、request id、protocol version、command、引数を持つ行単�
 4. I2C master/slave
 5. SPI master/slave
 6. PWM/パルス測定
-7. ADC刺激用PWM出力と外付けRC・校正
+7. ADC刺激用PWM出力と外付けRC・機能確認
 8. watchdog/sleep/reset-signature観測のための長時間・再起動シーケンス
 
 RP2040のhardware peripheralで十分な役割はそれを使い、slave対応や正確なエッジ取得で不足する場合のみPIOを使う。全機能を先にPIO化する案は柔軟だが、実装・検証面積が大きいため採用しない。
 
-各能力には、可能ならPicoの異なるピン間のループバック、PC側の不正要求テスト、応答タイムアウトを用意する。I2Cは外付けpull-up、ADCはRCと電圧実測が必要なので、配線なしの自己テストと実回路の校正済み試験を区別する。
+各能力には、可能ならPicoの異なるピン間のループバック、PC側の不正要求テスト、応答タイムアウトを用意する。I2Cは外付けpull-up、ADCは外付けRCを要する。ADCはPico PWMのデジタル出力をloopbackで確認し、RC後の電圧を校正せず、DUT ADC値の粗い変化だけを機能試験として扱う。
 
 ### 6. DUT検証はPico能力が通った順に載せる
 
@@ -85,17 +85,17 @@ minichlinkの終了コードだけは信頼せず、期待型番、`Image writte
 
 pytestはJSON等の機械可読run artifactを出す。実機の配線・電源条件、ユーザー申告、実測と推定の区別を加えた `okf/log/YYYY-MM-DD-HHMM-*.md` は各実験作業時に作成する。時刻は実行時に取得できた値だけを使い、推測しない。
 
-### 9. 配線はMarkdown、KiCad、可視化出力を同じネット名で管理する
+### 9. 配線はMarkdownと設定で同じネット名を管理する
 
-`hardware/wiring.md` を人間の作業手順と安全チェックの正本とし、`hardware/` 配下にKiCad回路図 `.kicad_sch` を置く。回路図にはDUT/Picoの物理ピン、信号方向、1 kΩ等の保護抵抗、I2C pull-up、ADC用RC、共通GND、接続してはいけない電源ネットを表す。SVGまたはPDFを生成して、KiCadがない環境でもレビュー可能にする。
+`hardware/wiring.md` と `hardware/wiring-proposal.md` を人間の作業手順、概略図、ピン表と安全チェックの資料とする。DUT/Picoの物理ピン、信号方向、保護抵抗、I2C pull-up、ADC用RC、共通GND、接続してはいけない電源ネットを記載する。ユーザーがMarkdownの概略図を理解可能と確認したため、KiCad回路図とSVG/PDF出力はこのchangeでは要求しない。
 
-テスト設定、Markdown、回路図で同じ論理ネット名を使用する。単一の自動生成元へ直ちに統合する案はKiCadファイルの生成・保守が先に複雑になるため採用せず、初期段階ではレビュー用チェックリストと可能な範囲の機械照合で同期する。
+テスト設定とMarkdownで同じ論理ネット名、物理ピンと部品値を使用し、可能な範囲で自動照合し、残る確認項目は人間向けに記録する。電源条件・電気特性のレビューと実測は、図面形式の省略によって免除されない。
 
 ### 10. 周辺機能を固定配線で試す基本ピン配置
 
 CH32V003F4P6 の SPI1 は AFIO `SPI1_RM=1` とし NSS を PC0 に移す。I2C1 は PC1 SDA / PC2 SCL、SPI は PC0 NSS / PC5 SCK / PC6 MOSI / PC7 MISO、UART は PD5 TX / PD6 RX、TIM1 は PD2 CH1 / PC4 CH4 とする。PA1/A1 と PA2/A0 は ADC 刺激用 RC に常設接続し、PA1 は十分低速なボタン刺激にも使う。全 GPIO ピンや高速 GPIO 入力の網羅は目的にしない。
 
-Pico 側の候補は PC0→GP5、PC1→GP10、PC2→GP11、PC5→GP6、PC6→GP7、PC7→GP4、PD5→GP9、PD6→GP8、PD2→GP14、PC4→GP15、PA1→GP12、PA2→GP13。PC0 は GPIO 出力観測と SPI NSS で使うが試験は排他的とし、Pico の同一ピンの機能を切り替える。I2C の pull-up と ADC の RC は常設する案とし、SPI 時の PC0 の既存 LED 負荷、RC の低速 GPIO 入力への影響、電圧、立上りと各回路の安全性を実測・レビューする。電源断時の逆流を避ける切断手段は設け、通常の試験切替と区別する。確定部品値とピン物理番号は配線資料・回路図・設定に揃える。
+Pico 側の候補は PC0→GP5、PC1→GP10、PC2→GP11、PC5→GP6、PC6→GP7、PC7→GP4、PD5→GP9、PD6→GP8、PD2→GP14、PC4→GP15、PA1→GP12、PA2→GP13。PC0 は GPIO 出力観測と SPI NSS で使うが試験は排他的とし、Pico の同一ピンの機能を切り替える。I2C の pull-up と ADC の RC は常設する案とし、SPI 時の PC0 の既存 LED 負荷、RC の低速 GPIO 入力への影響、電圧、立上りと各回路の安全性を実測・レビューする。電源断時の逆流を避ける切断手段は設け、通常の試験切替と区別する。確定部品値とピン物理番号は配線資料と設定に揃える。
 
 book-code の標準以外のリマップ位置や全ピン検証は基本構成に含めない。元サンプルのピン設定を試す場合は後段の手動試験で配線変更し、基本配置用の標準 ch32fun 同等サンプルと区別する。移行期間の現行 v1 は PC0–GP0 であり、新配線 PC0–GP5 をそのまま使えない。配線と firmware/client の切替を同時に管理し、既存検証の結果を新構成の検証済みとしない。
 
@@ -105,7 +105,7 @@ book-code の標準以外のリマップ位置や全ピン検証は基本構成�
 - [WCH-LinkE操作がDUT 3.3 Vを有効化する] → flashと治具駆動を別段階にし、実測済み電源条件を構成に必須化する。
 - [USB再列挙で別Picoを選ぶ] → serial/by-id等の明示識別を優先し、複数候補では停止する。
 - [Pico測定精度を過大評価する] → 実設定・サンプル窓・許容差を結果へ含め、精密なanalog/clock検証は別測定器が必要と明記する。
-- [PWM+RCのADC刺激が電源・負荷で変動する] → 外付け回路、settling time、実測校正、広すぎないが現実的な許容差を試験構成ごとに記録する。
+- [PWM+RCのADC刺激が電源・負荷で変動する] → 外付け回路とsettling timeを記録し、校正済み電圧や精度を主張しない。
 - [一つのPicoに全役割を載せファームウェアが複雑化する] → capability単位のモジュール化と段階導入を行い、resource上限を`CAPS`で公開する。
 - [HIL全件が遅く不安定になる] → 単体テストを既定とし、HILを周辺機能マーカーで個別選択可能にする。
 - [book-code手動確認と新しい標準ch32funサンプルの意味がずれる] → source matrixで「移植」「同等機能の再実装」「対象外」を区別する。

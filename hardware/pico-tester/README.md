@@ -1,6 +1,8 @@
-# Pico GPIO 観測試作
+# Pico 治具
 
-Raspberry Pi Pico (RP2040) の GP0 を入力にし、USB シリアルで `s` を受け取ると約 10 ms 間隔で 300 点を採取します。応答は `PICO_GPIO_V1 10000 <300桁の0/1>` と改行です。間隔は要求値であり、ソフトウェア処理時間が加わるため精密な時間測定ではありません。入力はプルなしです。
+現在のファームウェアは GPIO、UART、I2C、SPI、ADC 刺激、PWM 測定を持つ protocol v2 です。実機を駆動するので、配線は [wiring.md](../wiring.md) を確認してから使います。自己検証は `uv run python hardware/pico-tester/{uart,i2c,spi}_loopback.py`、`pwm_selftest.py`、`sequence_selftest.py`、DUT 試験は [hil/README.md](../../hil/README.md) を参照してください。コマンドと制限は [protocol.md](protocol.md) を参照してください。以下の v1 説明と `measure.py` は過去ファームウェア向けです。v2 に `s` を送っても動作しません。
+
+過去の GPIO v1: Raspberry Pi Pico (RP2040) の GP0 を入力にし、USB シリアルで `s` を受け取ると約 10 ms 間隔で 300 点を採取します。応答は `PICO_GPIO_V1 10000 <300桁の0/1>` と改行です。間隔は要求値であり、ソフトウェア処理時間が加わるため精密な時間測定ではありません。入力はプルなしです。
 
 確認環境: Pico SDK 2.2.0 commit `a1438dff1d38bd9c65dbd693f0e5db4b9ae91779`、TinyUSB `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`、arm-none-eabi-gcc 14.2.1、picotool 2.1.1、Ubuntu 26.04。SDK とその submodule の取得、CMake、Ninja、ARM GCC、picotool が必要です。
 
@@ -14,6 +16,8 @@ git -C pico-sdk-2.2.0 rev-parse HEAD
 git -C pico-sdk-2.2.0/lib/tinyusb rev-parse HEAD
 ```
 
+## 現行ファームウェアのビルド・書き込み
+
 ```sh
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S hardware/pico-tester -B hardware/pico-tester/build -G Ninja -DPICO_BOARD=pico
@@ -24,6 +28,8 @@ picotool load -f -v -x hardware/pico-tester/build/pico_gpio_tester.uf2
 初回は BOOTSEL 状態で書き込みます。以後は本ファームウェアが動いて USB が応答していれば、上記 `-f` で BOOTSEL に移行して書き換えられます。フリーズ等で USB が応答しない場合は手動 BOOTSEL またはデバッガーによる復旧が必要です。複数台接続時は picotool のデバイス選択を指定してください。
 
 PC 側に Python 3 と pyserial を用意して、次のように測定します。Pico は USB VID/PID で自動検出します。同じ種類の Pico が複数ある場合は `--port /dev/serial/by-id/...` を指定します。
+
+以下は v1 のみで使う手順です。
 
 ```sh
 python3 hardware/pico-tester/measure.py

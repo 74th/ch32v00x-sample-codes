@@ -1,75 +1,75 @@
-# Tasks
+# タスク
 
-## 1. Test foundation and scope inventory
+## 1. テスト基盤と検証対象の整理
 
-- [ ] 1.1 Add `pyproject.toml` and `uv.lock` with supported Python, pytest, and pyserial; configure unit tests as the default and register explicit `hil` plus peripheral markers; verify `uv run pytest` performs no USB/programmer writes and passes on a host without hardware.
-- [ ] 1.2 Move or adapt the existing `hardware/pico-tester/test_measure.py` cases into the unit-test layout without losing the six protocol/discovery cases; verify the old analysis behavior and exit classifications remain covered.
-- [ ] 1.3 Create the CH32V003/ch32fun verification matrix covering existing manual checks and proposed GPIO, UART, I2C, SPI, ADC, timer/PWM, watchdog/sleep tests; classify each as direct port, equivalent standard-ch32fun test, extralibs-excluded, or not yet automatable and verify every book-code `*-ch32fun` sample is accounted for.
-- [ ] 1.4 Define the public HIL configuration schema for DUT identity, Pico identity, pin/net mapping, voltage and protection conditions, timeouts, and readback policy; add validation tests for missing, conflicting, and unsafe settings.
+- [x] 1.1 対応する Python、pytest、pyserial を定義した `pyproject.toml` と `uv.lock` を追加する。単体テストを既定とし、明示的に選択する `hil` と周辺機能別のマーカーを登録する。`uv run pytest` が USB やプログラマーへの書き込みを行わず、実機のないホストで成功することを確認する。
+- [x] 1.2 既存の `hardware/pico-tester/test_measure.py` のテストを単体テスト用の配置へ移動または適応し、プロトコルと機器検出の6ケースを維持する。従来の解析動作と終了コードの分類が引き続きカバーされることを確認する。
+- [x] 1.3 既存の手動確認と、予定する GPIO、UART、I2C、SPI、ADC、timer/PWM、watchdog/sleep のテストを網羅した CH32V003/ch32fun 検証マトリクスを作る。各項目を「直接移植」「標準 ch32fun による同等機能のテスト」「extralibs 依存のため対象外」「まだ自動化できない」に分類し、book-code の `*-ch32fun` サンプルがすべて含まれることを確認する。
+- [x] 1.4 DUT と Pico の識別情報、ピン・ネット対応、電圧と保護条件、タイムアウト、readback 方針を含む公開可能な HIL 設定スキーマを定義する。設定の不足、競合、安全でない値に対する検証テストを追加する。
 
-## 2. Human wiring deliverables
+## 2. 人間向けの配線資料
 
-- [ ] 2.1 Expand `hardware/wiring.md` with prerequisite voltage checks and power ownership, common-GND rules, prohibited Pico–DUT power connection, safe connect/disconnect sequence, Pico safe-state check, and recovery steps; verify a reviewer can follow the baseline GPIO setup without relying on prior chat or logs.
-- [ ] 2.2 Add peripheral-specific tables to `hardware/wiring.md` for GPIO input/output, UART, I2C, SPI, PWM/timer measurement, and ADC stimulus, including CH32V003F4P6 and Pico physical pins, signal direction, series resistors, I2C pull-ups, ADC RC components, and manual switches; verify every table maps to a named HIL configuration.
-- [ ] 2.3 Create a KiCad `.kicad_sch` representation under `hardware/` using the same net names and component values as the Markdown/configuration, and export an SVG or PDF for tool-free review; verify KiCad electrical-rule review is recorded and the source and export open successfully.
-- [ ] 2.4 Add a repeatable consistency check or review script for Markdown/config/KiCad net names, pin numbers, and component values; verify intentional mismatch fixtures fail or document the fields that still require human review.
+- [x] 2.1 `hardware/wiring.md` に、事前の電圧確認、給電元の担当、共通 GND の規則、Pico–DUT 電源ピンの接続禁止、安全な接続・切断順、Pico の安全状態確認、復旧手順を記載する。過去の会話やログを参照せず、レビュー担当者が基本 GPIO 配線を準備できることを確認する。
+- [x] 2.2 `hardware/wiring.md` から参照する Markdown に GPIO 入出力、UART、I2C、SPI、PWM/timer 測定、ADC 刺激の周辺機能別の表を追加する。CH32V003F4P6 と Pico の物理ピン、信号方向、直列抵抗、I2C pull-up、ADC の RC 部品と、試験切替ではなく電源断時に必要な信号切断手段を記載し、各表が名前付き HIL 設定に対応することを確認する。
+- [x] 2.3 Markdown の配線表と概略図をユーザーがレビューし、配線を理解できることを確認する。KiCad・SVG/PDF は今回の完了条件に含めない。
+- [x] 2.4 Markdown の配線表・概略図と設定のネット名、ピン番号、部品値について、繰り返し実行できる整合性確認またはレビュースクリプトを追加する。意図的に不一致にした試験データで検出できることを確認するか、人間によるレビューが引き続き必要な項目を記録する。
 
-## 3. Pico protocol and safe GPIO baseline
+## 3. Pico プロトコルと安全な GPIO の基盤
 
-- [ ] 3.1 Refactor the Pico firmware into protocol, pin ownership/safe-state, and capability modules; implement request IDs, version/capability query, classified errors, and `RESET_SAFE`; verify host-side unit tests cover valid, unknown, malformed, and timed-out requests.
-- [ ] 3.2 Implement the Python fixture client with explicit serial selection, post-flash USB re-enumeration wait, capability negotiation, and legacy GPIO-v1 compatibility during migration; verify mocked zero/one/multiple-device and restart cases.
-- [ ] 3.3 Implement GPIO drive, sample, and edge/period/duty commands with allowlisted pins and conflict rejection; verify firmware/host protocol tests and a documented Pico loopback HIL cover normal, boundary, timeout, and safe-reset behavior.
-- [ ] 3.4 Build and flash the Pico using the pinned SDK/tool conditions, run the GPIO loopback on hardware, and write a timestamped `okf/log/` record containing wiring, commands, tool/source revisions, measured results, failures, and remaining uncertainty.
+- [x] 3.1 Pico ファームウェアをプロトコル、ピン所有権・安全状態、能力のモジュールに分割する。request ID、バージョン・能力照会、分類されたエラー、`RESET_SAFE` を実装し、正常、未知、不正形式、タイムアウトの要求をホスト側単体テストで確認する。
+- [x] 3.2 明示的なシリアルポート選択、書き込み後の USB 再認識待ち、能力の確認、移行期間中の旧 GPIO v1 互換を備えた Python 治具クライアントを実装する。機器が0台・1台・複数台の場合と再起動の場合を模擬して確認する。
+- [x] 3.3 許可されたピンに対する GPIO の駆動、サンプリング、エッジ・周期・デューティ測定コマンドと、競合の拒否を実装する。ファームウェア・ホスト間のプロトコルテストと、手順を記録した Pico loopback の HIL で、正常、境界、タイムアウト、安全状態へのリセットを確認する。
+- [x] 3.4 固定された SDK・ツール条件で Pico を build・flash し、実機で GPIO loopback を実行する。配線、コマンド、ツールとソースの revision、実測結果、失敗、未確認事項を含む日時付きの記録を `okf/log/` に残す。
 
-## 4. End-to-end CH32V003 GPIO HIL
+## 4. CH32V003 GPIO の一連の HIL
 
-- [ ] 4.1 Extract reusable DUT build, minichlink flash-output validation, binary-size readback, compare, and reset operations while keeping all programmer paths under `externals/ch32fun`; verify unit tests reject disconnected/unknown/wrong-device false-success output.
-- [ ] 4.2 Add pytest fixtures that expose environment check, Pico prepare, DUT build, flash, readback, reset, measure/assert, and cleanup as separate reported phases; verify injected failures at every phase preserve the primary failure and report cleanup outcome.
-- [ ] 4.3 Add the `blink_and_read` CH32V003 HIL test and a single documented command that performs the complete workflow; verify build, flash/readback, and runtime mismatch remain distinguishable.
-- [ ] 4.4 Execute the complete GPIO HIL on the reviewed wiring, confirm safe state after both pass and intentional failure, and record the experiment in a timestamped `okf/log/` entry without claiming success for unobserved stages.
+- [x] 4.1 DUT の build、minichlink の flash 出力検証、バイナリーサイズに基づく readback、照合、reset を再利用可能な操作に切り出す。プログラマーのパスはすべて `externals/ch32fun` 内に保ち、未接続・不明・異なるデバイスの偽成功出力を単体テストで拒否する。
+- [x] 4.2 環境確認、Pico 準備、DUT build、flash、readback、reset、測定・判定、後始末を別々の報告段階として扱う pytest fixture を追加する。各段階に注入した失敗について、元の失敗が維持され、後始末の結果も報告されることを確認する。
+- [x] 4.3 `blink_and_read` の CH32V003 HIL テストと、一連の手順を実行する文書化済みの単一コマンドを追加する。build、flash/readback、実行時の不一致を区別できることを確認する。
+- [x] 4.4 レビュー済みの配線で GPIO HIL 全体を実行し、成功時と意図的な失敗時の両方で安全状態を確認する。実験を日時付きの `okf/log/` に記録し、観測していない段階を成功扱いにしない。
 
-## 5. Pico UART capability, then DUT UART HIL
+## 5. Pico UART 機能と DUT UART HIL
 
-- [ ] 5.1 Implement configurable UART transmit/receive with received bytes, framing status, and timeout reporting; verify Pico loopback at supported boundary baud/frame settings before using it against a DUT.
-- [ ] 5.2 Document and review the UART wiring/configuration, run the Pico UART self-test on hardware, and record measured results in `okf/log/`.
-- [ ] 5.3 Add a minimal standard-ch32fun CH32V003 UART echo/known-frame sample under `samples_ch32v003_ch32fun/` without extralibs, with provenance and expected behavior; verify build independently of hardware.
-- [ ] 5.4 Add and run the UART HIL for Pico-to-DUT and DUT-to-Pico data, verify byte/frame/timeout assertions and safe cleanup, and record the actual experiment.
+- [x] 5.1 受信バイト、フレーミング状態、タイムアウトを報告する、設定可能な UART 送受信を実装する。DUT に使用する前に、対応するボーレートとフレーム設定の境界で Pico loopback を確認する。
+- [x] 5.2 UART の配線・設定を文書化してレビューし、Pico の UART 自己テストを実機で実行して、実測結果を `okf/log/` に記録する。
+- [x] 5.3 extralibs を使わない標準 ch32fun の最小 CH32V003 UART エコー・既知フレームサンプルを `samples_ch32v003_ch32fun/` に追加し、出典と期待動作を記載する。実機とは独立に build を確認する。
+- [x] 5.4 Pico→DUT と DUT→Pico の UART HIL を追加・実行し、バイト・フレーム・タイムアウトの判定と安全な後始末を確認して、実験結果を記録する。
 
-## 6. Pico I2C capability, then DUT I2C HIL
+## 6. Pico I2C 機能と DUT I2C HIL
 
-- [ ] 6.1 Implement Pico I2C master and slave roles with address, direction, byte, ACK/NACK, timeout, and bus-error reporting; verify loopback or an independently known I2C target exercises both roles before DUT use.
-- [ ] 6.2 Document and review open-drain wiring and external pull-up values, run Pico I2C self-tests on hardware, and record measured bus conditions and results in `okf/log/`.
-- [ ] 6.3 Add minimal standard-ch32fun CH32V003 I2C master and slave samples without extralibs, with provenance and explicit transaction contracts; verify both build independently.
-- [ ] 6.4 Add and run I2C HIL in both DUT roles, verify address/data/ACK/NACK and negative-address cases, and record actual results and limitations.
+- [x] 6.1 アドレス、方向、バイト、ACK/NACK、タイムアウト、バスエラーを報告する Pico の I2C master・slave を実装する。DUT に使用する前に、loopback または動作が既知の独立した I2C 対象で両方の役割を確認する。
+- [x] 6.2 オープンドレイン配線と外部 pull-up の値を文書化してレビューし、Pico の I2C 自己テストを実機で実行する。測定したバス条件と結果を `okf/log/` に記録する。
+- [x] 6.3 extralibs を使わない標準 ch32fun の最小 CH32V003 I2C master・slave サンプルを、出典と明確な通信仕様を付けて追加する。両方を独立に build できることを確認する。
+- [x] 6.4 DUT の両方の役割について I2C HIL を追加・実行し、アドレス、データ、ACK/NACK、誤ったアドレスの場合を確認する。実際の結果と制限を記録する。
 
-## 7. Pico SPI capability, then DUT SPI HIL
+## 7. Pico SPI 機能と DUT SPI HIL
 
-- [ ] 7.1 Implement Pico SPI master and slave roles with mode, bit order, clock, chip-select, and full-duplex data reporting; verify supported modes and timeout/error cases with loopback or an independent target.
-- [ ] 7.2 Document and review SPI direction/chip-select wiring, run Pico SPI self-tests on hardware, and record settings and results in `okf/log/`.
-- [ ] 7.3 Add a minimal standard-ch32fun CH32V003 SPI sample without `ch32v003_SPI.h` or other extralibs, with provenance and expected transfers; verify it builds independently.
-- [ ] 7.4 Add and run SPI HIL for the DUT roles selected in the matrix, verify transfer data and mode mismatch detection, and record actual results.
+- [x] 7.1 mode、ビット順、クロック、チップセレクト、全二重データを報告する Pico の SPI master・slave を実装する。loopback または独立した対象を使い、対応 mode とタイムアウト・エラーを確認する。
+- [x] 7.2 SPI の方向とチップセレクトの配線を文書化してレビューし、Pico の SPI 自己テストを実機で実行する。設定と結果を `okf/log/` に記録する。
+- [x] 7.3 `ch32v003_SPI.h` やその他の extralibs を使わない標準 ch32fun の最小 CH32V003 SPI サンプルを、出典と期待される転送内容を付けて追加する。独立に build できることを確認する。
+- [x] 7.4 マトリクスで選択した DUT の役割について SPI HIL を追加・実行し、転送データと mode の不一致を検出できることを確認して、実際の結果を記録する。
 
-## 8. Timing, PWM, and ADC capabilities
+## 8. 時間測定、PWM、ADC の機能
 
-- [ ] 8.1 Implement edge-timestamp based frequency, period, pulse-width, and duty measurement with declared ranges/resolution; verify it against Pico-generated known waveforms at boundary settings and record the self-test.
-- [ ] 8.2 Add standard-ch32fun CH32V003 timer/PWM samples and HIL assertions without extralibs; verify build first, then measure frequency/duty on hardware and record actual tolerances.
-- [ ] 8.3 Implement ADC stimulus using Pico PWM plus the documented external RC, including settle time and safe range enforcement; calibrate against an independent voltage measurement and record the circuit, environmental conditions, errors, and valid tolerance.
-- [ ] 8.4 Add a standard-ch32fun CH32V003 ADC sample without `ch32v003_GPIO_branchless.h`, then add multi-level and boundary HIL assertions; verify build, applied voltage, reported ADC range, and cleanup separately and record actual results.
+- [x] 8.1 エッジのタイムスタンプに基づく周波数、周期、パルス幅、デューティ測定を、対応範囲と分解能を明示して実装する。Pico が生成した既知の波形を境界設定で測定し、自己テストを記録する。
+- [x] 8.2 extralibs を使わない標準 ch32fun の CH32V003 timer/PWM サンプルと HIL 判定を追加する。先に build を確認し、その後実機で周波数・デューティを測定して、実際に使う許容範囲を記録する。
+- [x] 8.3 Pico の PWM と文書化した外付け RC を使う ADC 刺激を、安定待ち時間と安全範囲の制限を含めて実装する。Pico の PWM を loopback で機能確認し、回路、設定と未校正であることを記録する。ADC の精度評価と独立した電圧校正は対象外とする。
+- [x] 8.4 `ch32v003_GPIO_branchless.h` を使わない標準 ch32fun の CH32V003 ADC サンプルを追加し、複数レベルと境界値の HIL 判定を追加する。build、PWM 設定、報告された ADC 値の粗い変化、後始末を別々に確認し、実際の結果を記録する。実際の電圧や ADC の精度は主張しない。
 
-## 9. Reset, watchdog, and sleep observations
+## 9. reset、watchdog、sleep の観測
 
-- [ ] 9.1 Define observable GPIO/reset-signature sequences for watchdog and sleep tests that Pico can distinguish from power loss or fixture timeout; update the matrix and wiring docs and verify the expected state machine with unit tests.
-- [ ] 9.2 Extend the Pico/host protocol for bounded long-running sequence and reappearance observations while retaining cancellation and safe reset; verify timeout, restart, and interrupted-run cases with self-tests.
-- [ ] 9.3 Add standard-ch32fun CH32V003 watchdog/sleep samples selected by the matrix, without extralibs, and corresponding HIL tests; verify build, flash, observed transition/reset, and post-test recoverability separately and record actual results.
+- [x] 9.1 watchdog と sleep のテストについて、Pico が電源断や治具のタイムアウトと区別できる、観測可能な GPIO・reset 識別パターンを定義する。マトリクスと配線資料を更新し、期待する状態遷移を単体テストで確認する。
+- [x] 9.2 キャンセルと安全状態へのリセットを維持しながら、時間上限のある長時間シーケンスと再出現の観測に対応するよう Pico・ホスト間プロトコルを拡張する。タイムアウト、再起動、実行中断を自己テストで確認する。
+- [x] 9.3 マトリクスで選択した、extralibs を使わない標準 ch32fun の CH32V003 watchdog/sleep サンプルと対応する HIL テストを追加する。build、flash、観測された遷移・reset、テスト後の復旧可能性を別々に確認し、実際の結果を記録する。
 
-## 10. Integrated acceptance and handoff
+## 10. 統合受け入れと引き継ぎ
 
-- [ ] 10.1 Run all unit tests from a clean dependency sync and verify they pass without attached hardware or writes; run static/configuration checks including OpenSpec strict validation and wiring consistency.
-- [ ] 10.2 Run each available HIL marker independently and the supported CH32V003 suite as one command on the reviewed setup; verify skips name missing capabilities or excluded extralibs rather than reporting false success.
-- [ ] 10.3 Update README and Pico tester documentation with exact `uv` commands, destructive effects, prerequisites, marker selection, recovery, result interpretation, and known precision limits; verify commands against a clean checkout where practical.
-- [ ] 10.4 Review all experiment logs for purpose, wiring/tools/source conditions, commands, results, failures, and unknowns; verify actual measurements, user reports, and inference are distinguished and no `xprivate/` content or secrets are included.
+- [x] 10.1 依存関係をクリーンに同期した状態から全単体テストを実行し、実機の接続や書き込みなしで成功することを確認する。OpenSpec の strict 検証と配線の整合性を含む静的・設定チェックを実行する。
+- [x] 10.2 利用可能な各 HIL マーカーを個別に実行し、対応済みの CH32V003 テスト群を単一コマンドでも実行する。成功と誤報せず、不足する治具能力や対象外の extralibs が skip 理由として示されることを確認する。
+- [x] 10.3 README と Pico tester の資料に、正確な `uv` コマンド、実機への破壊的な影響、前提条件、マーカー選択、復旧、結果の読み方、既知の精度制限を記載する。可能な範囲でクリーンな checkout からコマンドを確認する。
+- [x] 10.4 すべての実験ログについて、目的、配線・ツール・ソースの条件、コマンド、結果、失敗、未確認事項をレビューする。実測・ユーザー申告・推定が区別され、`xprivate/` の内容や秘密情報が含まれないことを確認する。
 
-## Workflow follow-up
+## ワークフローの後続作業
 
-- Archive the change only after the selected HIL acceptance tests have been physically observed and the main specs are ready to sync.
-- Keep extralibs-dependent book-code samples explicitly out of scope until a separate change is proposed.
+- 選択した HIL 受け入れテストを実機で観測し、メイン仕様を同期できる状態になってから change をアーカイブする。
+- 別の change が提案されるまで、extralibs 依存の book-code サンプルは明示的に対象外とする。

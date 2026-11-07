@@ -3,7 +3,7 @@ from unittest.mock import patch
 import io
 import sys
 from types import SimpleNamespace
-import measure
+import measure  # hardware/pico-tester/measure.py (pythonpath in pyproject)
 
 
 def response(samples):
@@ -47,3 +47,24 @@ class Tests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def test_exit_codes_for_received_frames(capsys):
+    class Device:
+        def __init__(self, line): self.line = line
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def reset_input_buffer(self): pass
+        def write(self, data): assert data == b's'
+        def read(self, count): return self.line
+
+    cases = [
+        (response('0' * 50 + '1' * 50 + '0' * 50 + '1' * 50 + '0' * 50 + '1' * 50), 0),
+        (response('0' * 300), 1),
+        ('NOT_A_FRAME', 3),
+    ]
+    for line, expected in cases:
+        with patch.object(sys, 'argv', ['measure.py', '--port', 'fake']), \
+             patch.object(measure.serial, 'Serial', return_value=Device((line + '\n').encode())):
+            assert measure.main() == expected
+    capsys.readouterr()

@@ -1,0 +1,29 @@
+[project]
+name = "ch32v00x-sample-codes"
+version = "0.1.0"
+description = "Host-side HIL test tooling for CH32V00x ch32fun samples"
+requires-python = ">=3.12"
+dependencies = ["pyserial==3.5"]
+
+[dependency-groups]
+dev = ["pytest==8.4.2"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "hardware/pico-tester"]
+# Unit tests are the default. HIL tests are skipped unless
+# `--hil` is passed; see tests/conftest.py.
+addopts = "-ra"
+markers = [
+    "hil: touches real hardware (writes Pico/DUT); never run by default",
+    "gpio: HIL test using GPIO fixture capability",
+    "uart: HIL test using UART fixture capability",
+    "i2c: HIL test using I2C fixture capability",
+    "spi: HIL test using SPI fixture capability",
+    "pwm: HIL test using timer/PWM measurement capability",
+    "adc: HIL test using ADC stimulus capability",
+    "watchdog: HIL test of watchdog/sleep reset signatures",
+]

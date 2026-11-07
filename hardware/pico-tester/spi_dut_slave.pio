@@ -1,0 +1,25 @@
+.program spi_dut_slave
+; SPI mode 0, MSB first: CS GP5, SCK GP6, MOSI GP7, MISO GP4.
+; Exactly two bytes per CS assertion, reply words preloaded in bits 31:24.
+.wrap_target
+    wait 0 gpio 5
+    pull block
+    set x, 7
+first_bit:
+    out pins, 1
+    wait 1 gpio 6
+    in pins, 1
+    wait 0 gpio 6
+    jmp x-- first_bit
+    push block
+    pull block
+    set x, 7
+second_bit:
+    out pins, 1
+    wait 1 gpio 6
+    in pins, 1
+    wait 0 gpio 6
+    jmp x-- second_bit
+    push block
+    wait 1 gpio 5
+.wrap

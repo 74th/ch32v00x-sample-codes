@@ -1,0 +1,16 @@
+.program spi_loopback_slave
+; One 8-bit mode-0 transaction: MOSI GP20, SCK GP21, CS GP22, MISO GP26.
+; Host preloads OSR with response byte in bits 31:24.
+.wrap_target
+    wait 0 gpio 22
+    pull block
+    set x, 7
+bitloop:
+    out pins, 1
+    wait 1 gpio 21
+    in pins, 1
+    wait 0 gpio 21
+    jmp x-- bitloop
+    push block
+    wait 1 gpio 22
+.wrap

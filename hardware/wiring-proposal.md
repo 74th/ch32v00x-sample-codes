@@ -27,22 +27,22 @@ Pico の番号はボード上の物理ピン。試験は同時に行わず、PC0
 
 | ネット | DUT F4P6（物理） | Pico（物理） | 用途・初期部品 |
 |---|---|---|---|
-| `GPIO_SPI_NSS` | PC0 (10) | GP5 (7) | GPIO 観測 / SPI NSS、1 kΩ。既存 LED の負荷を確認 |
-| `I2C_SDA` | PC1 (11) | GP10 (14) | I2C SDA、220 Ω、DUT VDD へ 4.7 kΩ pull-up |
-| `I2C_SCL` | PC2 (12) | GP11 (15) | I2C SCL、220 Ω、DUT VDD へ 4.7 kΩ pull-up |
-| `SPI_SCK` | PC5 (15) | GP6 (9) | SPI SCK、1 kΩ |
-| `SPI_MOSI` | PC6 (16) | GP7 (10) | SPI MOSI、1 kΩ |
-| `SPI_MISO` | PC7 (17) | GP4 (6) | SPI MISO、1 kΩ |
+| `BLINK` | PC0 (10) | GP5 (7) | DUT → Pico GPIO 観測 / SPI NSS、1 kΩ。既存 LED の負荷を確認 |
+| `I2C_SDA` | PC1 (11) | GP10 (14) | I2C SDA 双方向、220 Ω、DUT VDD へ 4.7 kΩ pull-up |
+| `I2C_SCL` | PC2 (12) | GP11 (15) | I2C SCL 双方向、220 Ω、DUT VDD へ 4.7 kΩ pull-up |
+| `SPI_SCK` | PC5 (15) | GP6 (9) | DUT → Pico SPI SCK、1 kΩ |
+| `SPI_MOSI` | PC6 (16) | GP7 (10) | DUT → Pico SPI MOSI、1 kΩ |
+| `SPI_MISO` | PC7 (17) | GP4 (6) | Pico → DUT SPI MISO、1 kΩ |
 | `UART_TX` | PD5 (2) | GP9 (12) | DUT TX → Pico RX、1 kΩ |
 | `UART_RX` | PD6 (3) | GP8 (11) | Pico TX → DUT RX、1 kΩ |
 | `PWM_CH1` | PD2 (19) | GP14 (19) | DUT → Pico、1 kΩ |
 | `PWM_CH4` | PC4 (14) | GP15 (20) | DUT → Pico、1 kΩ |
-| `ADC_A1_BUTTON` | PA1 (5) | GP12 (16) | PWM → 10 kΩ → PA1、PA1 から 1 µF → GND。低速ボタン刺激にも使う |
-| `ADC_A0` | PA2 (6) | GP13 (17) | PWM → 10 kΩ → PA2、PA2 から 1 µF → GND |
+| `ADC_A1_BUTTON` | PA1 (5) | GP12 (16) | Pico → DUT PWM → 10 kΩ → PA1、PA1 から 1 µF → GND。低速ボタン刺激にも使う |
+| `ADC_A0` | PA2 (6) | GP13 (17) | Pico → DUT PWM → 10 kΩ → PA2、PA2 から 1 µF → GND |
 | `GND` | VSS (7) | GND (3) | 共通 GND |
 | `SWIO` | PD1 (18) | WCH-LinkE SWIO | Pico には接続しない |
 
-Pico は SPI0 GP4–GP7、I2C1 GP10/GP11、UART1 GP8/GP9 を候補とする。GPIO v1 の現行配線は PC0–GP0 であり、この案の PC0–GP5 と異なる。対応ファームウェア・ホスト側を準備し、安全に電源を切って配線を変更するまで既存手順を維持する。
+構成名 `gpio_blink` と各ネットの機械可読設定は [hil/configs/gpio_blink.json](../hil/configs/gpio_blink.json) にある。Pico は SPI0 GP4–GP7、I2C1 GP10/GP11、UART1 GP8/GP9 を候補とする。GPIO v1 の現行配線は PC0–GP0 であり、この案の PC0–GP5 と異なる。対応ファームウェア・ホスト側を準備し、安全に電源を切って配線を変更するまで既存手順を維持する。
 
 ## 概略回路図
 
@@ -78,6 +78,12 @@ Pico は SPI0 GP4–GP7、I2C1 GP10/GP11、UART1 GP8/GP9 を候補とする。GP
 - I2C は各線を open-drain とし、DUT 側 3.3 V への 4.7 kΩ pull-up を各1本。既存モジュールの pull-up と並列にならないようにする。100 kHz から開始し、400 kHz 以上は波形、立上り、Low 電圧、容量と双方の電圧を実測後に決める。220 Ω や 1 kΩ はレベル変換器でも電源断時の逆流防止回路でもない。
 - ADC の RC は 10 kΩ × 1 µF = 公称 10 ms。PA1 のボタン入力はこの RC を経由するため、DUT の内蔵 pull-up と 10 kΩ による分圧を含め、PA1 実測 Low が DUT の入力 Low 規格を満たすか、High・応答遅延も含めて測り、満たす場合に限って低速操作に使う。満たさない場合は抵抗値や駆動回路の再設計が必要。設定変更後 100 ms 以上を初期待ち時間とし、PWM 周波数、リップル、サンプリング負荷と DUT の VDD を踏まえて再評価する。両電源と入力電圧が許容範囲内であることを確認し、RC の測定点を独立した電圧計で測る。Pico は校正済み DAC ではない。切断後のコンデンサの残留電圧も測定する。
 - 使用前に各 Pico 機能を DUT とは独立に自己検証し、timeout、USB 切断、異常時の safe state を確認する。現行ファームウェアは GP0 入力の v1 のみで、提案の出力・バス機能は未実装。
+
+## watchdog・sleep の観測案
+
+watchdog の標準 ch32fun サンプルは、PC0→GP5 の信号として初回に3パルス、watchdog による再起動後に6パルスを出す。各 High は約100 ms、両グループの間には watchdog 待ちの長い Low を置く。Pico は bounded な GPIO サンプル列を返し、ホストは9パルスと3パルス後の長い間隔を確認する。これは DUT が報告する reset 理由に依存する観測で、電源の電圧・電流を直接観測するものではない。timeout、部分列、電源喪失で波形が途切れた場合は watchdog 成功としない。
+
+sleep サンプルは TIM1 割り込み後の WFI 復帰により PC0 を約500 msごとに切り替える予定。GPIO の周期は観測できても、sleep 中の消費電力はこの配線からは測れない。どちらも実機で確認するまでは未検証。
 
 ## AFIO リマップを後で検証するとき
 

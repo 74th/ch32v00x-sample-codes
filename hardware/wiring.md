@@ -45,7 +45,20 @@ Pico の GP0 入力ファームウェアと PC 側の判定手順は [pico-teste
 
 ## 周辺機能構成の状態
 
-新しい固定配線の候補は [周辺機能 HIL 配線案](wiring-proposal.md) にある。PC0–GP5 を含み、上記の実績がある PC0–GP0 の v1 配線とは異なる。新しいファームウェアと配線はまだ検証されていない。
+新しい固定配線の候補は [周辺機能 HIL 配線案](wiring-proposal.md) にある。PC0–GP5 を含み、上記の実績がある PC0–GP0 の v1 配線とは異なる。新しい配線の各線は GPIO レベルで接続先を確認済みだが、電気特性と全周辺機能は未検証。対応する設定は [gpio_blink](../hil/configs/gpio_blink.json)。
 
 
-GPIO 出力刺激、UART、I2C、SPI、PWM/timer、ADC のピン割当、保護部品、電源断時の切断手段および試験設定は提案段階で未確定である。これらはこの GPIO 観測配線から推測して接続しない。各構成の配線表と回路図、電源・電圧条件のレビュー、および DUT から独立した治具の自己検証が完了するまで DUT 試験には使用しない。
+各周辺機能の DUT 固定配線は [周辺機能 HIL 配線案](wiring-proposal.md) の表に従い、実機の HIL で機能確認済み（GPIO、UART、I2C、SPI、PWM/timer、ADC、watchdog/sleep）。これは機能確認であり、電圧・波形・タイミング精度の実測や、逆給電を防ぐ保護の検証ではない。電源・GND の規則と接続・切断順は上記の手順を守る。
+
+## Pico 単体の loopback 配線（DUT とは接続しない）
+
+Pico の自己検証用で、DUT 固定配線とは別の GPIO を使う。電源ピン（3V3、VSYS、VBUS）には接続しない。I2C と SPI の loopback は GP16–GP19 を共有するため同時には構成できず、切り替えは Pico を USB から外して行う。
+
+| 構成 | 接続（各 1 kΩ、特記を除く） | 検証スクリプト |
+|---|---|---|
+| I2C | GP16–GP18 を SDA、GP17–GP19 を SCL とし、それぞれ 3V3 へ 4.7 kΩ pull-up | `hardware/pico-tester/i2c_loopback.py` |
+| SPI | GP19→GP20（MOSI）、GP18→GP21（SCK）、GP17→GP22（CS）、GP26→GP16（MISO） | `hardware/pico-tester/spi_loopback.py` |
+| UART | [pico-tester README](pico-tester/README.md) と `uart_loopback.py` を参照 | `hardware/pico-tester/uart_loopback.py` |
+| PWM 測定 | GP16→GP18（I2C 配線が残っていれば兼用可） | `hardware/pico-tester/pwm_selftest.py` |
+
+DUT 試験（`tests/hil`）は loopback 配線の有無に依存しない。2026-11-07 の最後の確認時は SPI 配線にしてある。

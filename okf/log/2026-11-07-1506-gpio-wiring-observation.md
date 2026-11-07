@@ -1,0 +1,12 @@
+# CH32V003–Pico GPIO 配線観測
+
+- 作業日時: 2026-11-07 15:06–15:08 JST。記録は作業後。
+- 目的: 配線案の12信号が対応する Pico GPIO に到達するか、一線ずつ駆動して確認する。
+- 条件: CH32V003F4P6（ユーザー申告）、WCH-LinkE 2.22、RP2040 Pico。ユーザーは pull-up 等を2回確認したと申告。今回の測定では電源・信号の電圧、抵抗値、RC、DUT 側配線の物理接続は独立に測っていない。Pico USB `2e8a:000a`、WCH USB `1a86:8010`。WCH-LinkE の通常操作で DUT 3.3 V が有効化されうる。
+- ソース・ツール: DUT は固定 `externals/ch32fun` revision `b28d285460ce052a179dba8f4a22c6f73ff8e328`、`riscv64-unknown-elf-gcc` 14.2.0。Pico SDK 2.2.0 commit `a1438dff1d38bd9c65dbd693f0e5db4b9ae91779`、TinyUSB `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`、arm GCC 14.2.1、picotool 2.1.1。作業用ソースは `/tmp/ch32-gpio-wiring/main.c` と `/tmp/pico-input-observer/main.c`（一時ファイル）。SHA-256 は前者 `1053e9ad5ceff18a285fb02f15dd8a342932baa2a8eb878dd66543394fe23ef5`、後者 `736bf25be2cef69c324f541944107f0b59626ab1fe2616e22daf3cb5496d7b9c`。
+- 方法: Pico は GP4〜GP15 を入力・pull 無効にし、USB の `s` ごとに100サンプルを約20 ms間隔で返す。DUT は `PC0 PC1 PC2 PC5 PC6 PC7 PD5 PD6 PD2 PC4 PA1 PA2` の順に、他の対象ピンを floating 入力に保ち、対象だけ push-pull 出力にして Low/High/Low 各800 ms、入力に戻して400 ms を繰り返す。起動時は対象を入力として3秒待つ。12ピンの順序と高パルスの時間を全 Pico 入力の同時記録と照合した。Pico が出力駆動していないため Pico→DUT 方向の受信能力は未確認。
+- コマンド: `picotool load -f -v -x /tmp/pico-input-observer/build/pico_input_observer.uf2`（照合成功）、`hardware/pico-tester/measure.py` の `discover(20)` で再認識後 pyserial で `s` を送り記録。`make -C /tmp/ch32-gpio-wiring build PREFIX=riscv64-unknown-elf`。まず `./scripts/ch32fun.sh flash ch32v003` で対象検出・書き込み確認。続いて `externals/ch32fun/minichlink/minichlink -w /tmp/ch32-gpio-wiring/main.bin flash -b` を実行し終了コード、`Detected CH32V003`、`Image written.`、否定出力不在を確認。20回 `s` を送り2000サンプルを約41秒記録。終了後 `./scripts/ch32fun.sh flash ch32v003` で `blink_and_read` に戻し、GP5 を100点観測。測定記録原本は `/tmp/ch32-gpio-wiring/observations.json`（一時ファイル）。
+- 書き込み: Pico UF2 の picotool verify 成功。DUT は診断用および復旧用の各書き込みで CH32V003 検出と `Image written.` を確認。DUT 読み戻しは行っていない。
+- 観測: DUT→Pico の順に `PC0→GP5`, `PC1→GP10`, `PC2→GP11`, `PC5→GP6`, `PC6→GP7`, `PC7→GP4`, `PD5→GP9`, `PD6→GP8`, `PD2→GP14`, `PC4→GP15`, `PA1→GP12`, `PA2→GP13` で各々ほぼ800 ms の High を観測。I2C の PC1/PC2 は pull-up によると考えられる通常 High からの Low も確認。PA1/PA2 は RC 経由の観測を含む。未駆動の floating ピンに短い変化があり、特に GP15 は PC4 駆動後に短い周期的変動を示した。浮遊・漏れ・クロストークなどが考えられるが原因は未特定。
+- 復旧観測: blink 再書き込み後、GP5 100サンプルの High 51、Low 49、遷移4回。Pico は入力専用観測ファームウェアのまま。旧 `PICO_GPIO_V1` ではない。
+- 失敗: なし。未確認: 抵抗値、電圧、短絡の完全な排除、各 GPIO の逆方向、ADC 電圧・settle、周辺機能、信号品質、電源断時の挙動、DUT readback。短い未駆動線の変動は接続異常と断定できず、完全な絶縁試験でもない。

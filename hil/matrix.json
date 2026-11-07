@@ -1,0 +1,139 @@
+{
+  "entries": [
+    {
+      "book_sample": "blink_and_read-ch32fun",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "manually-verified",
+      "sample": "blink_and_read",
+      "note": "existing manual HIL; automation pending"
+    },
+    {
+      "book_sample": "adc-ch32fun",
+      "class": "not-yet-automatable",
+      "peripheral": "adc",
+      "state": "not-automated",
+      "note": "USE_BRANCHLESS=0 selects standard API; pinned ch32fun compatibility and result observation remain unverified; helper-dependent branch is excluded"
+    },
+    {
+      "book_sample": "i2c_oled-ch32fun",
+      "class": "extralibs-excluded",
+      "peripheral": "i2c",
+      "state": "excluded",
+      "note": "ssd1306 extralibs; display content out of scope"
+    },
+    {
+      "book_sample": "i2c_slave-ch32fun",
+      "class": "extralibs-excluded",
+      "peripheral": "i2c",
+      "state": "excluded",
+      "note": "i2c_slave.h extralib; standard-header equivalent tracked separately"
+    },
+    {
+      "book_sample": "neopixel-ch32fun",
+      "class": "extralibs-excluded",
+      "peripheral": "gpio",
+      "state": "excluded",
+      "note": "ws2812 extralibs; emission content out of scope"
+    },
+    {
+      "book_sample": "spi_master-ch32fun",
+      "class": "extralibs-excluded",
+      "peripheral": "spi",
+      "state": "excluded",
+      "note": "ch32v003_SPI.h extralib; standard-header equivalent tracked separately"
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "gpio-input",
+      "state": "build-only",
+      "sample": "gpio_input",
+      "requires": [
+        "gpio-drive"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "uart",
+      "state": "build-only",
+      "sample": "uart",
+      "requires": [
+        "uart"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "i2c",
+      "state": "build-only",
+      "sample": "i2c_master",
+      "requires": [
+        "i2c-slave"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "i2c",
+      "state": "build-only",
+      "sample": "i2c_slave",
+      "requires": [
+        "i2c-master"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "spi",
+      "state": "build-only",
+      "sample": "spi_master",
+      "requires": [
+        "spi-slave"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "pwm",
+      "state": "build-only",
+      "sample": "timer_pwm",
+      "requires": [
+        "pulse-measure"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "adc",
+      "state": "build-only",
+      "sample": "adc",
+      "requires": [
+        "adc-stimulus"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "not-yet-automatable",
+      "peripheral": "watchdog",
+      "state": "build-only",
+      "sample": "watchdog",
+      "requires": [
+        "sequence-observe"
+      ],
+      "note": "watchdog reset signature; separate sleep_wake test"
+    },
+    {
+      "book_sample": null,
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "sleep",
+      "state": "build-only",
+      "sample": "sleep_wake",
+      "requires": [
+        "gpio-sample"
+      ],
+      "note": "timer wake GPIO signature; no power consumption measurement"
+    }
+  ]
+}
