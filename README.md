@@ -128,7 +128,7 @@ CH32V003 と Pico の観測用配線の準備案と接続前の確認項目は [
 
 CH32V003F4P6 の build → flash → measure をまとめた手順は [hardware/ch32v003-reproduction.md](hardware/ch32v003-reproduction.md) にあります。
 
-CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。
+CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。固定配線の Pico 治具で、CH32V003 と同じ 11 件の HIL（機能確認のみ）を `--hil-device ch32v002` で実行でき、2026-11-07 の実機で成功しています（状態は [hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)）。
 
 ## `okf/` に残す知識
 

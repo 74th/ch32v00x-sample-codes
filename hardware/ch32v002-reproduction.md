@@ -14,7 +14,7 @@
 uv run pytest --hil --hil-device ch32v002 -q tests/hil --hil-port=/dev/serial/by-id/<PicoのID>
 ```
 
-2026-11-07 の実機で、GPIO、UART、I2C master/slave、SPI、PWM、ADC、watchdog、sleep の 11 テストが成功した（機能確認のみ。条件・ADC のトリガ設定の差分・未確認事項は [実測ログ](../okf/log/2026-11-07-1926-ch32v002-hil.md)）。別環境での再現は未確認。
+2026-11-07 の実機で、GPIO、UART、I2C master/slave、SPI、PWM、ADC、watchdog、sleep の 11 テストが成功した（機能確認のみ。条件・ADC のトリガ設定の差分・未確認事項は [実測ログ](../okf/log/2026-11-07-1926-ch32v002-hil.md)）。別環境での再現は未確認。同日の統合確認（[9.1/9.2](../okf/log/2026-11-07-1935-ch32v002-integration-9-1-9-2.md)）でも、CH32V002 で単体テストを含め 123 passed だった。
 
 ## DUT の差し替え
 
@@ -28,6 +28,8 @@ CH32V003F4P6 から CH32V002F4P6 へ DUT を替えるときの手順。人が行
 6. Pico を接続し、安全状態（出力なし・プルなし）を確認してから HIL を実行する。最初の HIL は GPIO（`-m 'hil and gpio'`）とする。
 
 CH32V002 で異なる点（資料確認。[詳細](../okf/peripherals/ch32v002-port-differences.md)）: Flash 16 KB / RAM 4 KB、GPIO の MODE が 1 ビット、ADC が 12 ビットで校正ビットなし、AFIO_PCFR1 のレイアウトが異なる（本構成では書かない）。
+
+逆方向（CH32V002 から CH32V003 へ戻す）も同じ手順で、`flash ch32v003` の検出確認を使う。2026-11-07 にユーザーが実施し、`--hil-device` なしの全 HIL が 123 passed だった（[9.3](../okf/log/2026-11-07-1937-ch32v003-regression-9-3.md)。差し替え時の電圧測定値は記録していない）。
 
 書き込みは既存ファームウェアを上書きする。現在の submodule の minichlink は WCH-LinkE firmware 2.22 で CH32V002 と 16 KB を正しく報告した。スクリプトは書き込み前に `0x1ffff704` の識別値の型番部分が `0x002` であることも確認する。旧 minichlink の誤表示については過去の実機記録を参照。
 
