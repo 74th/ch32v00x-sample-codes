@@ -13,7 +13,7 @@
 
 - [x] 2.1 固定配線の各ネット（PC0、PC1/PC2 I2C、PC5/PC6/PC7 SPI と PC0 NSS リマップ、PD5/PD6 USART、PD2/PC4 TIM1、PA1/PA2 ADC、SWIO、VDD/VSS）について、CH32V002 データシート V1.7 のピン定義と CH32V00X RM V1.5 の AFIO リマップを照合し、ページ付きで `okf/peripherals/` または `okf/log/` に記録する。成立しないネットがあれば配線変更案を `hardware/wiring-proposal.md` に追記し、ユーザーレビュー待ちとして以降の該当サンプルを止める。
 - [x] 2.2 `hil/configs/` に CH32V002F4P6 用の設定を追加し、2.1 の結果とネット名・物理ピン・部品値を一致させる。`uv run pytest -q tests/unit/test_config_matrix.py tests/unit/test_wiring_consistency.py` が通り、意図的に CH32V003 用の値を混ぜた設定を検出できることを確認する。
-- [ ] 2.3 `hardware/wiring.md` と `hardware/ch32v002-reproduction.md` に、CH32V003 から CH32V002 へ DUT を差し替える手順（電源断、WCH-LinkE の 3.3 V 出力、交換、電圧確認、`./scripts/ch32fun.sh flash ch32v002` による検出確認、Pico 安全状態確認）と、CH32V002 で異なる点を記載する。ユーザーがレビューして差し替えを実施できることを確認する。
+- [x] 2.3 `hardware/wiring.md` と `hardware/ch32v002-reproduction.md` に、CH32V003 から CH32V002 へ DUT を差し替える手順（電源断、WCH-LinkE の 3.3 V 出力、交換、電圧確認、`./scripts/ch32fun.sh flash ch32v002` による検出確認、Pico 安全状態確認）と、CH32V002 で異なる点を記載する。ユーザーがレビューして差し替えを実施できることを確認する。
 - [x] 2.4 `hil/matrix_ch32v002.json` を追加し、CH32V003 マトリクスの各サンプルに対応する行を「未移植」状態で用意する。CH32V003 で `hil-verified` のサンプルが CH32V002 側に欠けたら失敗する整合性テストを追加し、`hil-verified` に `hil_tests` と `evidence` を要求する既存検証が CH32V002 マトリクスにも適用されることを確認する。
 
 ## 3. GPIO（blink_and_read）
