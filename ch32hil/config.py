@@ -126,13 +126,15 @@ def load(path, device: str | None = None) -> dict:
     return validate(json.loads(Path(path).read_text()), device)
 
 
-def select(device_name: str | None = None, config_path=None, root: Path | None = None):
+def select(device_name: str | None = None, config_path=None, root: Path | None = None,
+           framework: str | None = None):
     """Resolve the HIL device and its configuration before any hardware access.
 
     Returns (Device, config Path, validated config). Without a device the default
     (CH32V003) is used; without a config path the device's default config is used.
+    Without a framework the default (ch32fun) samples and matrix are used.
     """
-    device = devices.get(device_name or devices.DEFAULT)
+    device = devices.get(device_name or devices.DEFAULT, framework or devices.DEFAULT_FRAMEWORK)
     root = Path(root) if root else devices.ROOT
     path = root / (config_path or device.default_config)
     if not path.is_file():

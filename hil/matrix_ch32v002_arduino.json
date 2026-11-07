@@ -1,0 +1,153 @@
+{
+  "device": "CH32V002F4P6",
+  "framework": "arduino",
+  "core": "WCH:ch32v 1.0.6 (official Board Manager package)",
+  "entries": [
+    {
+      "book_sample": "adc-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "adc",
+      "state": "hil-verified",
+      "sample": "adc",
+      "note": "same source as samples_ch32v003_arduino; borrowed CH32VM00X/CH32V006K8 definition with the overrides in samples_ch32v002_arduino/arduino.mk; 12-bit ADC (0..4095)",
+      "hil_tests": [
+        "tests/hil/arduino/test_adc.py::test_arduino_adc"
+      ],
+      "criteria": "uncalibrated: channel whose RC was driven high (GPIO_DRIVE 500 ms) reads >= 2800, driven low <= 1200 (0..4095, 12-bit variant); X=PA1/GP12, Y=PA2/GP13",
+      "evidence": [
+        "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md"
+      ]
+    },
+    {
+      "book_sample": "blink_and_read-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "sample": "blink_and_read",
+      "note": "works by borrowing CH32VM00X/CH32V006K8 with size, _eusrstack and _heap_end overrides (no CH32V002 board definition in official 1.0.6). Size override alone: does not run (measured)",
+      "hil_tests": [
+        "tests/hil/arduino/test_blink_and_read.py::test_arduino_blink_and_read"
+      ],
+      "criteria": "same as CH32V003: boot Serial text; PC0 500/500 ms; PA1 low pauses blink",
+      "evidence": [
+        "okf/log/2026-11-07-2125-arduino-ch32v002-survey.md",
+        "okf/log/2026-11-07-2156-arduino-ch32v002-hil.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_master-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_master",
+      "note": "same source as samples_ch32v003_arduino; borrowed CH32VM00X/CH32V006K8 definition with the overrides in samples_ch32v002_arduino/arduino.mk",
+      "hil_tests": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master"
+      ],
+      "criteria": "Pico I2C_SLAVE as SHT31 0x44: after reset writes 30a2 then 3041; loop writes 2400 and reads 6 bytes; 0x45 receives nothing; loop period ~5.3 s",
+      "evidence": [
+        "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_oled-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_oled",
+      "note": "library 'OLED SSD1306 - SH1106' 1.0.7 pinned in sketch.yaml; relies on the Pico SSD1306 model fix of 2026-11-07 (0x21 resets only the column pointer); real OLED not used",
+      "hil_tests": [
+        "tests/hil/arduino/test_oled.py::test_arduino_i2c_oled"
+      ],
+      "criteria": "Pico SSD1306 model (0x3C): pages 0..3 and 4..7 equal the 128x32 buffer rendered on the host from the same sketch and library 1.0.7; display on, charge pump on, no bad control/overflow",
+      "evidence": [
+        "okf/log/2026-11-07-2225-pico-ssd1306-model-arduino-oled.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_slave-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "build-only",
+      "sample": "i2c_slave",
+      "note": "intermittent with official core 1.0.6 on both CH32V003 and CH32V002: the Wire slave stays inside the EV interrupt handler (Wire.write busy-waits for BYTE_TRANSMITTED after the master's NACK) and holds SCL low; a read followed closely by another transaction hangs. Earlier passes were runs that did not hang; non-strict xfail",
+      "hil_tests": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave"
+      ],
+      "criteria": "Pico I2C_MASTER/I2C_PROBE: 0x10 ACK, 0x11 NACK; reg 0x20 reads 00102030; write 10 aabbccdd reads back aabbccdd; read at 0x12 gives ccdd",
+      "evidence": [
+        "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md",
+        "okf/log/2026-11-07-2310-arduino-neopixel-timing.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_slave-test_master_arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_slave_test_master",
+      "note": "copied unchanged from book-code; the Pico plays the book's i2c_slave DUT; Serial output not observed",
+      "hil_tests": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave_test_master"
+      ],
+      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s",
+      "evidence": [
+        "okf/log/2026-11-07-2215-arduino-excluded-sketches.md"
+      ]
+    },
+    {
+      "book_sample": "neopixel-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "sample": "neopixel",
+      "note": "sample corrected from book-code: data pin PC0 -> PC6, bytes MSB first, nop counts tuned per series (CH32V002: T0H 7, T0L 11, T1H 24, T1L 2) to the WS2812B timing centre, interrupts off while sending; byte-boundary T0L 1280 ns",
+      "hil_tests": [
+        "tests/hil/arduino/test_neopixel.py::test_arduino_neopixel"
+      ],
+      "criteria": "WS2812_CAPTURE on GP7: 18-byte frames, each one of the 6 colour rotations (MSB first), advancing one step per frame; measured High/Low widths inside WS2812B T0H 0.4 / T1H 0.8 / T0L 0.85 / T1L 0.45 us +-150 ns (byte-boundary T0L up to 1200 ns)",
+      "evidence": [
+        "okf/log/2026-11-07-2310-arduino-neopixel-timing.md"
+      ]
+    },
+    {
+      "book_sample": "pwm-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "pwm",
+      "state": "hil-verified",
+      "sample": "pwm",
+      "note": "same source as samples_ch32v003_arduino; borrowed CH32VM00X/CH32V006K8 definition with the overrides in samples_ch32v002_arduino/arduino.mk; PATTERN 3 remap reference xfail as on CH32V003",
+      "hil_tests": [
+        "tests/hil/arduino/test_pwm.py::test_arduino_pwm",
+        "tests/hil/arduino/test_pwm.py::test_arduino_pwm_remap_reference"
+      ],
+      "criteria": "PATTERN 2: PD2->GP14, PC4->GP15; 1 kHz (800..1200 us), duty within 15000 ppm of k/32, LED1+LED2 ~ 33/32, duty ramps. PATTERN 3 (PC6->GP7, PC5->GP6) reference xfail",
+      "evidence": [
+        "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md"
+      ]
+    },
+    {
+      "book_sample": "spi_master-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "spi",
+      "state": "hil-verified",
+      "sample": "spi_master",
+      "note": "same source as samples_ch32v003_arduino; borrowed CH32VM00X/CH32V006K8 definition with the overrides in samples_ch32v002_arduino/arduino.mk",
+      "hil_tests": [
+        "tests/hil/arduino/test_spi.py::test_arduino_spi_master"
+      ],
+      "criteria": "Pico SPI_SLAVE mode 0: reset frame starts ffff; read frames 0000; valid reply -> next read ~1 s; reply 0000 -> CS low >= 400 ms (reset_adt7310) then reads resume",
+      "evidence": [
+        "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md"
+      ]
+    },
+    {
+      "book_sample": "uart-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "uart",
+      "state": "excluded",
+      "sample": "uart",
+      "note": "HIL excluded: CO2 sensor over UART at 9600 baud plus SSD1306 OLED output; the Pico runs one command at a time, so a sensor reply and the OLED cannot be observed together. Compile comparison only (same on CH32V002; not built for CH32V002)"
+    }
+  ]
+}

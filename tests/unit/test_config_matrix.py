@@ -128,3 +128,44 @@ def test_helper_verification_entry_valid_and_strict():
     assert any("unknown helper" in x for x in p)
     p = matrix.problems([_helper_entry(state="hil-verified")])
     assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)
+
+
+ARDUINO_MATRICES = ["hil/matrix_arduino.json", "hil/matrix_ch32v002_arduino.json"]
+
+
+@pytest.mark.parametrize("path", ARDUINO_MATRICES)
+def test_arduino_matrix_lists_every_arduino_core_sketch(path):
+    book = ROOT / "externals/ch32v003-book-code"
+    if not book.is_dir():
+        pytest.skip("book-code reference not checked out")
+    entries = matrix.load(ROOT / path)
+    assert matrix.problems(entries, book_dir=book, framework="arduino") == []
+    assert len({e["book_sample"] for e in entries}) == len(entries) == 10
+    # arduino-wch32v003 (another core) sketches are not part of the Arduino Core CH32 matrix
+    assert not any("arduino_ch32v003" in e["book_sample"] or "wch32v003" in e["book_sample"] for e in entries)
+
+
+@pytest.mark.parametrize("path", ARDUINO_MATRICES)
+def test_arduino_matrix_hil_verified_requires_tests_and_evidence(path):
+    entries = copy.deepcopy(matrix.load(ROOT / path))
+    entries[0].update(state="hil-verified")
+    entries[0].pop("hil_tests", None)
+    entries[0].pop("evidence", None)
+    p = matrix.problems(entries, root=ROOT, framework="arduino")
+    assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)
+
+
+def test_arduino_matrix_detects_unaccounted_sketch(tmp_path):
+    (tmp_path / "new-arduino_core_ch32").mkdir()
+    (tmp_path / "other-arduino_ch32v003").mkdir()
+    p = matrix.problems([], book_dir=tmp_path, framework="arduino")
+    assert p == ["book-code sample not accounted for: new-arduino_core_ch32"]
+
+
+def test_every_arduino_hil_test_is_referenced_by_matrix():
+    import re
+    referenced = {ref for path in ARDUINO_MATRICES for e in matrix.load(ROOT / path) for ref in e.get("hil_tests", [])}
+    defined = {f"tests/hil/arduino/{p.name}::{name}"
+               for p in (ROOT / "tests/hil/arduino").glob("test_*.py")
+               for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
+    assert defined - referenced == set()

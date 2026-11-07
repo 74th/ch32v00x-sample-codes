@@ -1,4 +1,4 @@
-"""Per-device ch32fun verification matrix loader and checks (hil/matrix*.json)."""
+"""Per-device / per-framework verification matrix loader and checks (hil/matrix*.json)."""
 from __future__ import annotations
 
 import json
@@ -15,6 +15,12 @@ HELPER_REQUIRED = ("sample", "helpers", "requires", "criteria")
 STATES = {"not-ported", "not-automated", "build-only", "manually-verified", "hil-verified", "excluded"}
 # Baseline states whose sample must have a row in every other device matrix.
 COVERED_STATES = {"hil-verified", "not-automated", "build-only", "manually-verified"}
+# book-code directory patterns accounted for by each framework's matrix.
+BOOK_PATTERNS = {
+    "ch32fun": ("*-ch32fun",),
+    # Arduino Core CH32 sketches; *-arduino_ch32v003 / *-arduino_wch32v003 are another core and not listed.
+    "arduino": ("*-arduino_core_ch32", "*_arduino_core_ch32"),
+}
 
 
 def load(path):
@@ -27,7 +33,7 @@ def _test_exists(root: Path, ref: str) -> bool:
     return bool(name) and file.is_file() and f"def {name}(" in file.read_text()
 
 
-def problems(entries, book_dir=None, samples_dir=None, root=None):
+def problems(entries, book_dir=None, samples_dir=None, root=None, framework="ch32fun"):
     out = []
     for e in entries:
         if e.get("state") != "hil-verified":
@@ -66,7 +72,8 @@ def problems(entries, book_dir=None, samples_dir=None, root=None):
             out.append(f"sample dir missing: {e['sample']}")
     if book_dir:
         listed = {e["book_sample"] for e in entries if e["book_sample"]}
-        actual = {p.name for p in Path(book_dir).glob("*-ch32fun") if p.is_dir()}
+        actual = {p.name for pattern in BOOK_PATTERNS[framework]
+                  for p in Path(book_dir).glob(pattern) if p.is_dir()}
         for name in sorted(actual - listed):
             out.append(f"book-code sample not accounted for: {name}")
         for name in sorted(listed - actual):

@@ -162,11 +162,12 @@ def test_hil_skip_reason_is_reported_without_hardware(tmp_path):
     assert "1 skipped" in p.stdout
 
 
+@pytest.mark.parametrize("framework", devices.FRAMEWORKS)
 @pytest.mark.parametrize("name", sorted(devices.DEVICES))
-def test_device_matrix_states_are_backed(name):
-    dev = devices.get(name)
+def test_device_matrix_states_are_backed(name, framework):
+    dev = devices.get(name, framework)
     entries = matrix.load(ROOT / dev.matrix)
-    assert matrix.problems(entries, samples_dir=dev.sample_root, root=ROOT) == []
+    assert matrix.problems(entries, samples_dir=dev.sample_root, root=ROOT, framework=framework) == []
 
 
 def test_ch32v002_matrix_covers_ch32v003_samples():
@@ -183,3 +184,75 @@ def test_ch32v002_matrix_hil_verified_requires_tests_and_evidence():
     entries[0].update(state="hil-verified", hil_tests=[], evidence=[])
     p = matrix.problems(entries, root=ROOT)
     assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)
+
+
+def test_default_framework_keeps_ch32fun_values():
+    for name in devices.DEVICES:
+        assert devices.get(name) is devices.DEVICES[name]
+        assert devices.get(name, "ch32fun") is devices.DEVICES[name]
+        assert devices.get(name).framework == "ch32fun"
+    assert devices.get("ch32v003").sample_root == ROOT / "samples_ch32v003_ch32fun"
+    assert devices.get("ch32v003").matrix == "hil/matrix.json"
+    assert devices.get("ch32v002").matrix == "hil/matrix_ch32v002.json"
+    device, _, _ = config.select(None, None, framework=None)
+    assert device.framework == "ch32fun"
+
+
+@pytest.mark.parametrize("name,matrix_path", [("ch32v003", "hil/matrix_arduino.json"),
+                                              ("ch32v002", "hil/matrix_ch32v002_arduino.json")])
+def test_arduino_framework_paths(name, matrix_path):
+    dev = devices.get(name, "arduino")
+    assert dev.framework == "arduino" and dev.matrix == matrix_path
+    assert dev.sample_dir("blink_and_read") == ROOT / f"samples_{name}_arduino/blink_and_read"
+    # device identity (programmer checks) does not depend on the framework
+    base = devices.get(name)
+    assert (dev.part, dev.chip, dev.chip_id_type, dev.default_config) == \
+        (base.part, base.chip, base.chip_id_type, base.default_config)
+    device, _, _ = config.select(name, framework="arduino")
+    assert device == dev
+
+
+def test_unknown_framework_is_rejected_before_hardware():
+    with pytest.raises(devices.DeviceError, match="unknown HIL framework"):
+        devices.get("ch32v003", "platformio")
+    with pytest.raises(devices.DeviceError):
+        config.select("ch32v003", framework="platformio")
+
+
+def test_unknown_framework_option_is_usage_error():
+    p = subprocess.run([sys.executable, "-m", "pytest", "--hil-framework", "platformio", "--collect-only", "-q",
+                        "-p", "no:cacheprovider", "tests/hil"], cwd=ROOT, capture_output=True, text=True)
+    assert p.returncode != 0 and "unknown HIL framework" in p.stderr + p.stdout
+
+
+def _run_fake_hil(tmp_path, *args):
+    test = tmp_path / "test_fake_fw.py"
+    test.write_text("import pytest\n\n"
+                    "@pytest.mark.hil\ndef test_ch32fun_side():\n    pass\n\n"
+                    "@pytest.mark.hil\n@pytest.mark.arduino\ndef test_arduino_side():\n    pass\n")
+    return subprocess.run([sys.executable, "-m", "pytest", "-p", "conftest", "-p", "no:cacheprovider",
+                           "--rootdir", str(ROOT), "-c", str(ROOT / "pyproject.toml"), "-rs", "-q",
+                           *args, str(test)], cwd=ROOT, capture_output=True, text=True)
+
+
+def test_framework_mismatched_hil_tests_are_skipped_with_reason(tmp_path):
+    p = _run_fake_hil(tmp_path, "--hil")
+    assert "1 passed, 1 skipped" in p.stdout, p.stdout
+    assert "arduino HIL test; --hil-framework ch32fun selected" in p.stdout
+    p = _run_fake_hil(tmp_path, "--hil", "--hil-framework", "arduino")
+    assert "1 passed, 1 skipped" in p.stdout, p.stdout
+    assert "ch32fun HIL test; --hil-framework arduino selected" in p.stdout
+    p = _run_fake_hil(tmp_path)
+    assert "2 skipped" in p.stdout and "pass --hil" in p.stdout, p.stdout
+
+
+def test_arduino_missing_sample_is_reasoned_skip(tmp_path):
+    test = tmp_path / "test_fake_ard.py"
+    test.write_text("import pytest\n\n@pytest.mark.hil\n@pytest.mark.arduino\n"
+                    "def test_x(hil_dut):\n    hil_dut('no_such_sample')\n")
+    p = subprocess.run([sys.executable, "-m", "pytest", "-p", "conftest", "-p", "no:cacheprovider",
+                        "--rootdir", str(ROOT), "-c", str(ROOT / "pyproject.toml"),
+                        "--hil", "--hil-framework", "arduino", "-rs", "-q", str(test)],
+                       cwd=ROOT, capture_output=True, text=True)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert "samples_ch32v003_arduino/no_such_sample does not exist" in p.stdout

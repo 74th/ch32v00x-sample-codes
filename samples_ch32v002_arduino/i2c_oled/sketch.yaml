@@ -1,0 +1,12 @@
+# CH32V002F4P6 用。公式配布 core 1.0.6 には CH32V002 のボード定義がないため、同系列の CH32VM00X / CH32V006K8 の
+# 定義を流用する（okf/log/2026-11-07-2125-arduino-ch32v002-survey.md）。Flash/RAM サイズとスタック・ヒープの
+# 上書きは profile では指定できないので、Makefile の ARDUINO_FLAGS（--build-property）で与える。
+profiles:
+  ch32v002:
+    fqbn: WCH:ch32v:CH32VM00X_EVT:pnum=CH32V006K8,clock=48MHz_HSI
+    platforms:
+      - platform: WCH:ch32v (1.0.6)
+        platform_index_url: https://github.com/openwch/board_manager_files/raw/main/package_ch32v_index.json
+    libraries:
+      - OLED SSD1306 - SH1106 (1.0.7)
+default_profile: ch32v002

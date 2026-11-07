@@ -1,12 +1,16 @@
 """Per-device constants for HIL (single source of truth for device-specific values)."""
 from __future__ import annotations
 
+import dataclasses
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT = "ch32v003"
+# Sample frameworks: samples live in samples_<device>_<framework>/. ch32fun is the default.
+FRAMEWORKS = ("ch32fun", "arduino")
+DEFAULT_FRAMEWORK = "ch32fun"
 
 # TSSOP20 physical pin numbers. CH32V003F4P6: CH32V003 datasheet pin table.
 # CH32V002F4P6: CH32V002 datasheet V1.7 pinout (PDF p.13) and table 2-1 (PDF p.16-19);
@@ -33,10 +37,11 @@ class Device:
     physical: dict
     default_config: str
     matrix: str
+    framework: str = DEFAULT_FRAMEWORK
 
     @property
     def sample_root(self) -> Path:
-        return ROOT / f"samples_{self.name}_ch32fun"
+        return ROOT / f"samples_{self.name}_{self.framework}"
 
     def sample_dir(self, sample: str) -> Path:
         return self.sample_root / sample
@@ -62,10 +67,25 @@ DEVICES = {
                        "hil/configs/ch32v002_gpio_blink.json", "hil/matrix_ch32v002.json"),
 }
 BY_PART = {d.part: d for d in DEVICES.values()}
+# Verification matrix per (device, non-default framework); the ch32fun matrix is Device.matrix.
+FRAMEWORK_MATRICES = {
+    ("ch32v003", "arduino"): "hil/matrix_arduino.json",
+    ("ch32v002", "arduino"): "hil/matrix_ch32v002_arduino.json",
+}
 
 
-def get(name: str) -> Device:
+def check_framework(framework: str) -> str:
+    if framework not in FRAMEWORKS:
+        raise DeviceError(f"unknown HIL framework {framework!r}; use one of {list(FRAMEWORKS)}")
+    return framework
+
+
+def get(name: str, framework: str = DEFAULT_FRAMEWORK) -> Device:
+    """Device for `name`; with a non-default framework, its sample root and matrix follow that framework."""
     try:
-        return DEVICES[name]
+        device = DEVICES[name]
     except (KeyError, TypeError):
         raise DeviceError(f"unknown HIL device {name!r}; use one of {sorted(DEVICES)}") from None
+    if check_framework(framework) == DEFAULT_FRAMEWORK:
+        return device
+    return dataclasses.replace(device, framework=framework, matrix=FRAMEWORK_MATRICES[(name, framework)])

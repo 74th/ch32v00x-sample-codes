@@ -247,6 +247,7 @@ xprivate/               # PDF、変換データ、非公開の調査メモ
 2026-11-07 時点で、CH32V003F4P6 と CH32V002F4P6 を対象に、ビルド、書き込み（読み戻し照合付き）、Pico による観測、判定までを `uv run pytest --hil` で実行できます（実機を書き換えるため、明示したときだけ動きます）。ホストだけで動く単体テストは `uv run pytest` です。
 
 - 実機で確認済み: 上記 2 デバイスでの周辺機能の HIL（詳細は [hil/matrix.json](hil/matrix.json)、[hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、実験ごとの記録は `okf/log/`）。
+- Arduino Core CH32（公式 1.0.6）のサンプル: CH32V003 で 7 本、CH32V002 で 8 本を HIL 確認済み（`i2c_slave` は両デバイスで、`i2c_oled` は CH32V003 で問題あり）（下の「Arduino Core CH32 のサンプルの検証状況」）。
 - 未着手・未確認: CH32V006 / CH32V005 / CH32V007、QFN32、ADC+DMA、Standby。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
 - 配線・電源の扱いは [hardware/wiring.md](hardware/wiring.md) の安全手順に従ってください。実機を使う試験は、Pico と DUT の電源・信号線を確認してから行います。
 
@@ -274,6 +275,33 @@ CH32V003 と CH32V002 の両方で、Pico が観測した内容が期待どお�
 - 電圧・波形の実測、1 kΩ 経由の波形の質、DUT 差し替え時の電圧。
 - 複数回のリセットを跨ぐ再現性（各確認は build・flash・reset を行った数回の実行のみ）。
 - Pico 単体の自己検証で試していない異常系（SSD1306 模擬の不完全な転送や `overflow` の実機での発生など。ホストの単体試験でのみ確認）。
+
+## Arduino Core CH32 のサンプルの検証状況
+
+書籍第2章の Arduino IDE の手順を arduino-cli で再現し、book-code の Arduino Core CH32 用スケッチ（10 本）を `samples_ch32v003_arduino/` と `samples_ch32v002_arduino/` に置いています。書き込みは core 同梱の OpenOCD ではなく、固定 submodule の minichlink で行います。
+
+```sh
+./scripts/arduino.sh setup                    # arduino-cli 1.5.1 を .arduino/ に取得（チェックサム照合）
+./scripts/arduino.sh core-install official    # 公式 Board Manager 配布の WCH:ch32v 1.0.6
+make -C samples_ch32v003_arduino/blink_and_read build
+uv run pytest --hil --hil-framework arduino -m 'hil and arduino' tests/hil/arduino --hil-port=/dev/serial/by-id/<PicoのID>
+```
+
+- **公式 core の追従判定: 追従済み**（CH32V00x、ビルドとソース比較の範囲）。書籍がサードパーティ版（robinjanssens 1.0.5-beta）を使う理由だった、公式にマージ済みで配布に未反映の PR 26 件は、すべて公式配布 1.0.6 に入っています。CH32V00x のボード定義も同じです。維持するサンプルは公式 1.0.6 に固定しています（[比較の記録](okf/log/2026-11-07-2102-arduino-core-supplier-compare.md)）。
+- **供給元ごとの compile 結果**（サードパーティ 1.0.5-beta / 公式 1.0.6 / 公式リポジトリ d62c6b1）: 3 つとも同じ結果です。8 本が成功し、`i2c_oled` と `uart` はライブラリ「OLED SSD1306 - SH1106」が無いと失敗します（入れると成功）。
+- **CH32V003F4P6 で HIL 確認済み**: `blink_and_read`、`adc`、`pwm`、`i2c_master`、`spi_master`、`i2c_slave-test_master`、`neopixel`（[hil/matrix_arduino.json](hil/matrix_arduino.json)）。`pwm` は PD4 が未配線なので PATTERN 2（PD2/PC4）、`spi_master` は書籍のスケッチに CS が無いので PC0 を CS として追加しています。`neopixel` は書籍のコードを直しています（データピンを PC6 に、送り順を MSB 先頭に、タイミングを WS2812B の規格の中央に合わせる。書籍のコードは LSB から送っています。[記録](okf/log/2026-11-07-2310-arduino-neopixel-timing.md)）。
+- **CH32V003 + 公式 1.0.6 で見つかった問題**: `i2c_oled` は RAM が足りず描画バッファ（512 B）を確保できないため、正しく表示されません（ヒープ 504 B。GCC 15 の newlib の stdio 用構造体などが RAM を使う）。`i2c_slave` は、Wire の slave がときどき SCL を Low のまま固定し、バスが止まります。core の slave 処理が、割り込みの中で送信完了を待ち続けるためで、**CH32V002 でも起きます**（読み出しの直後に次の転送があると起きやすい）。`i2c_oled` の問題は CH32V002 では起きていません。HIL の対象外は `uart` だけです。
+- **CH32V002F4P6: 流用で動作**。公式 1.0.6 には CH32V002 のボード定義がありません。CH32VM00X（CH32V006K8）の定義に、Flash/RAM サイズとスタック・ヒープの位置（`_eusrstack`、`_heap_end`）の上書きを加えて（`samples_ch32v002_arduino/arduino.mk`）、`blink_and_read`、`adc`、`pwm`、`i2c_master`、`spi_master`、`i2c_slave-test_master`、`i2c_oled`、`neopixel`（タイミングを CH32V002 用に調整）が動作しました（`i2c_slave` は上記の問題あり）（ADC は 12 ビット）。サイズの上書きだけでは、スタックが RAM の外になって動きません（[調査](okf/log/2026-11-07-2125-arduino-ch32v002-survey.md)、[実機](okf/log/2026-11-07-2156-arduino-ch32v002-hil.md)、[移植](okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md)、[hil/matrix_ch32v002_arduino.json](hil/matrix_ch32v002_arduino.json)）。
+
+**確認できていないこと**:
+
+- 書籍の IDE の「Verified OK」表示など、Arduino IDE と WCH 版 OpenOCD に固有の挙動。
+- I2C・SPI の転送後に DUT が Serial に出す値（判定はバス上の内容とタイミングで行っています）。`printf`（`USART_Printf_Init`）の出力は受信できませんでした。
+- ADC の電圧・精度、PWM の周波数・デューティの校正値。`pwm` の PATTERN 3（PC6/PC5 のリマップ）は出力が出ません（書籍の記述と同じ）。
+- サードパーティ版と公式リポジトリ版の実機での動作（ビルドの比較のみ。実機で確かめるのは公式配布だけとしました）。
+- `neopixel` の実 LED での発光と色。CH32V003 ではバイトの切れ目の T0L が規格の上限を約 100 ns 超えます。CH32V002 では切れ目の T0L が 1280 ns です。
+- `i2c_oled` の実物の OLED での表示（Pico の模擬で受けた内容のみ）、`uart`、別 core（arduino-wch32v003）の 3 本。
+- CH32V002 用の専用ボード定義（流用と上書きで動かしています）。CH32V002 での Arduino HIL は各 3 回の実行です。
 
 ## 関連資料
 

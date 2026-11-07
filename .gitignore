@@ -16,3 +16,6 @@ samples/**/*.map
 samples/**/generated_*.ld
 hardware/pico-tester/build/
 __pycache__/
+
+# arduino-cli と core の導入物（scripts/arduino.sh で再取得できる）
+.arduino/

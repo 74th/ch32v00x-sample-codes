@@ -16,6 +16,22 @@ uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port
 
 DUT は一度に一つだけ接続する。CH32V003 と CH32V002 の差し替えは自動化外の手作業で、電源断（WCH-LinkE の 3.3 V 出力停止を含む）、交換、電圧確認、`./scripts/ch32fun.sh flash <device>` による検出確認の順に行う。手順は [配線資料](../hardware/wiring.md) を参照する。
 
+## サンプルのフレームワークの選択
+
+HIL で使うサンプルのフレームワークは `--hil-framework {ch32fun,arduino}` で選ぶ。既定は `ch32fun` で、指定しない既存コマンドの挙動と結果は変わらない。`arduino` を選ぶと `samples_<device>_arduino/` のサンプルと Arduino 用マトリクス（CH32V003 は [matrix_arduino.json](matrix_arduino.json)、CH32V002 は [matrix_ch32v002_arduino.json](matrix_ch32v002_arduino.json)）を使う。Arduino 用 HIL テストは `tests/hil/arduino/` にあり、マーカー `arduino` が付く。選択したフレームワークと一致しない HIL テストは理由付きで skip され、未対応のフレームワーク名は実機に触れる前にエラーで止まる。pytest の結果（`user_properties`）と Arduino テストの結果メタデータに `device` と `framework` を記録する。
+
+Arduino サンプルのビルドは固定した arduino-cli と core だけを使う（`scripts/arduino.sh`。ホームの `~/.arduino15` や PATH 上の arduino-cli は使わない）。
+
+- arduino-cli 1.5.1（`./scripts/arduino.sh setup` が `.arduino/bin/` に取得し、チェックサムを照合する）
+- core: 公式 Board Manager 配布の `WCH:ch32v` 1.0.6（index `https://github.com/openwch/board_manager_files/raw/main/package_ch32v_index.json`、ツールチェーン riscv-wch-gcc 15.2.0）。各サンプルの `sketch.yaml` の profile で固定する。導入は `./scripts/arduino.sh core-install official`。
+
+各サンプルの `make build` が `scripts/arduino.sh` で compile し、成果物を `main.bin` にコピーする。書き込みはフレームワークによらず `externals/ch32fun` の固定 minichlink だけで行い、ch32fun サンプルと同じ検出・識別領域・readback の確認を通す。core に同梱の書き込みツール（WCH 版 OpenOCD、`arduino-cli upload`）は使わない。
+
+```sh
+./scripts/arduino.sh setup && ./scripts/arduino.sh core-install official
+uv run pytest --hil --hil-framework arduino -m 'hil and arduino' tests/hil/arduino --hil-port=/dev/serial/by-id/<PicoのID>
+```
+
 ## 実行
 
 検証は `uv run pytest -q tests/unit/test_config_matrix.py tests/unit/test_devices.py`。通常の `uv run pytest` は HIL を実行しない。実機を変更する GPIO HIL は次のように明示する。Pico v2 と固定配線、WCH-LinkE、対象 DUT が必要で、DUT firmware を書き換える。
