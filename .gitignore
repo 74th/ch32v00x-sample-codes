@@ -1,0 +1,10 @@
+xprivate
+externals
+samples/**/*.elf
+samples/**/*.bin
+samples/**/*.hex
+samples/**/*.lst
+samples/**/*.map
+samples/**/generated_*.ld
+hardware/pico-tester/build/
+__pycache__/

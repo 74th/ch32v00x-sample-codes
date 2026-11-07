@@ -1,0 +1,38 @@
+import unittest
+from unittest.mock import patch
+import io
+import sys
+import measure
+
+
+def response(samples):
+    return 'PICO_GPIO_V1 10000 ' + samples
+
+
+class Tests(unittest.TestCase):
+    def test_matching_pattern(self):
+        self.assertTrue(measure.analyse(response('0' * 50 + '1' * 50 + '0' * 50 + '1' * 50 + '0' * 50 + '1' * 50))[0])
+
+    def test_constant_and_wrong_period(self):
+        self.assertFalse(measure.analyse(response('0' * 300))[0])
+        self.assertFalse(measure.analyse(response('01' * 150))[0])
+
+    def test_bad_frame(self):
+        with self.assertRaises(ValueError):
+            measure.analyse(response('0' * 299))
+
+    def test_timeout(self):
+        class EmptyDevice:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def reset_input_buffer(self): pass
+            def write(self, data): pass
+            def read(self, count): return b''
+        with patch.object(sys, 'argv', ['measure.py', '--port', 'fake', '--timeout', '0.001']), \
+             patch.object(measure.serial, 'Serial', return_value=EmptyDevice()), \
+             patch('sys.stderr', new_callable=io.StringIO):
+            self.assertEqual(measure.main(), 2)
+
+
+if __name__ == '__main__':
+    unittest.main()
