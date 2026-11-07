@@ -1,4 +1,11 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: the ch32fun CH32V00x header has no short TIM_* macros, so TIM1_CTLR1_CEN,
+ * TIM1_SWEVGR_UG, TIM1_CTLR1_ARPE, TIM1_CCER_CC1E, TIM1_BDTR_MOE, TIM1_CHCTLR1_OC1M_1/2, TIM1_CHCTLR1_OC1PE are used
+ * (same bit values). Timing is the same: PSC for a 1 MHz tick from the 48 MHz HCLK.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs). Related book-code intent: pwm-register (CC0-1.0).
  * Contract: TIM1 CH1 on PD2 outputs 1 kHz PWM, 25% duty (PWM mode 1, active high). */
 #include "ch32fun.h"

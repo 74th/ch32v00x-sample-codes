@@ -1,4 +1,10 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: TIM_* short macros do not exist in the CH32V00x header; TIM1_CTLR1_CEN and
+ * TIM1_SWEVGR_UG are used. TIM1_UP_IRQn = 35, PFIC->SCTLR SLEEPDEEP/WFITOWFE bits are the same. PSC = 48000-1 fits 16 bits.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard ch32fun sleep/wake test, informed by book-code sleep_mode_blink-register (CC0-1.0).
  * TIM1 update wakes WFI every ~500ms; main toggles PC0 after return. Does not measure current. */
 #include "ch32fun.h"

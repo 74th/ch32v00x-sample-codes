@@ -1,4 +1,10 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: none in code (BRR = HCLK/baud is the same formula; HCLK is 48 MHz
+ * on both). Differences that exist: only the GPIO MODE note below, and the 24 MHz HSI is set in funconfig.h.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs). Related book-code intent: uart-register (CC0-1.0).
  * Contract: USART1 115200 8N1 on PD5(TX)/PD6(RX), no remap. Sends "HELLO\n" once at start, then echoes. */
 #include "ch32fun.h"

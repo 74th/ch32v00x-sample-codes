@@ -1,4 +1,13 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version (measured on hardware unless noted):
+ * - 12-bit result (V003: 10-bit). The DUT reports result >> 2 (10-bit equivalent) because the Pico fixture accepts 0..1023.
+ * - CTLR2.EXTTRIG must be set for the software trigger (EXTSEL=111 + SWSTART). Without it conversions complete only
+ *   on every other attempt and the EOC wait stalls (observed with SWIO printf; reason not in the manual we read).
+ * - No RSTCAL/CAL bits (reserved), so no calibration step. SMP=7 is 239.5 cycles (V003: 241). ADC_LP stays default.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs, no ch32v003_GPIO_branchless.h). Related book-code intent: adc-ch32fun (CC0-1.0).
  * Contract: ADC1 channel 0 (PA2), 12-bit conversion every 200 ms (VDD reference),
  * reported as result >> 2 (10-bit equivalent) because the Pico fixture accepts 0..1023 only.

@@ -1,4 +1,10 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: none in code. LSI is nominally 128 kHz but spans 90-172 kHz on CH32V002,
+ * so only the 3+6 pulse signature is checked, not the absolute IWDG period.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs). Related book-code intent: watchdogtimer-register (CC0-1.0).
  * Contract (PC0 signature): after power-on: 3 pulses (100 ms) then the IWDG (~1 s) is started and not fed -> reset.
  * After an IWDG reset: 6 pulses are emitted instead, then the sample idles with PC0 low.

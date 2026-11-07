@@ -1,4 +1,9 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: none in registers (see i2c_master). No AFIO write; PC1/PC2 default pins.
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs). Related book-code intent: i2c_slave-register (CC0-1.0).
  * Contract: I2C1 slave address 0x42 on PC2(SCL)/PC1(SDA). Master writes are stored (last 2 bytes);
  * master reads return the stored bytes (0x00,0x00 before any write). Polling implementation. */

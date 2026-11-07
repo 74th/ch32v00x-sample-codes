@@ -1,4 +1,10 @@
-/* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
+/* CH32V002 port of the CH32V003 sample; details: okf/peripherals/ch32v002-port-differences.md
+ *
+ * Differences from the CH32V003 version: none in registers (CTLR2.FREQ accepts 8-48 MHz, so 48 is valid;
+ * CKCFGR 240 fits CCR). No AFIO write: PC1/PC2 are the default I2C1 pins (AFIO_PCFR1 layout differs from V003).
+ * - GPIO MODE is 1 bit on CH32V00x (V003: 2 bits). GPIO_Speed_10MHz (=1) sets it and works as output;
+ *   GPIO_Speed_2MHz (=2) would only set a reserved bit and leave the pin an input. Use 10MHz.
+ *
  * Standard-ch32fun test sample (no extralibs). Related book-code intent: i2c_master-register (CC0-1.0).
  * Contract: I2C1 master 100 kHz on PC2(SCL)/PC1(SDA), external pull-ups required.
  * Every 500 ms: write {0x55,0xAA} to address 0x42, then read 2 bytes. PC0 is high only if the read was {0x12,0x34}. */
