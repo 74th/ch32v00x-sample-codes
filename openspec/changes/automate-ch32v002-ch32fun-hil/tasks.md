@@ -51,8 +51,8 @@
 
 ## 9. 統合受け入れ
 
-- [ ] 9.1 `uv run pytest -q` を実機なしで実行して全単体テストが通ることを確認し、`openspec validate automate-ch32v002-ch32fun-hil --strict` を通す。
-- [ ] 9.2 CH32V002 で `uv run pytest --hil --hil-device ch32v002 -q --hil-port=<Pico>` を単一コマンドで実行し、全 HIL が成功または理由付き skip になることを確認して記録する。
+- [x] 9.1 `uv run pytest -q` を実機なしで実行して全単体テストが通ることを確認し、`openspec validate automate-ch32v002-ch32fun-hil --strict` を通す。
+- [x] 9.2 CH32V002 で `uv run pytest --hil --hil-device ch32v002 -q --hil-port=<Pico>` を単一コマンドで実行し、全 HIL が成功または理由付き skip になることを確認して記録する。
 - [ ] 9.3 DUT を CH32V003 へ戻し、`--hil-device` なしの全 HIL を再実行して回帰がないことを確認して記録する。
 - [ ] 9.4 `hil/matrix_ch32v002.json`、`hardware/ch32v002-reproduction.md`、README の状態が実測ログと一致し、実測・ユーザー申告・推定が区別され、`xprivate/` の内容を含まないことをレビューする。
 
