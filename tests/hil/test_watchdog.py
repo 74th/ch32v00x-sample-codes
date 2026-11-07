@@ -5,7 +5,6 @@ import tempfile
 import time
 import pytest
 from serial.tools import list_ports
-from ch32hil.dut import Dut, ROOT
 from ch32hil.phases import Run
 from ch32hil.pico import discover
 from ch32hil.watchdog import analyse_signature
@@ -33,11 +32,11 @@ def _sequence(port, dut):
     print(f"watchdog signature: 3+6 pulses, gap={result['gap_us']} us, highs={result['high_us']}")
 
 
-def test_watchdog_reset(request):
-    run = Run(meta={'sample': 'watchdog', 'target': 'CH32V003'})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/watchdog')
+def test_watchdog_reset(request, hil_device, hil_dut):
+    run = Run(meta={'sample': 'watchdog', 'target': hil_device.target_mcu})
+    dut = hil_dut('watchdog')
     holder = {}
-    print('HIL WATCHDOG: flash and reset CH32V003; observe PC0 -> Pico GP5')
+    print('HIL WATCHDOG: flash and reset DUT; observe PC0 -> Pico GP5')
     try:
         run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, request.config.getoption('--hil-port'), 30)))
         run.phase('fixture_setup', _prepare, holder.get('port'), 6)
@@ -51,11 +50,11 @@ def test_watchdog_reset(request):
     assert run.ok, run.to_json()
 
 
-def test_sleep_wake(request):
+def test_sleep_wake(request, hil_device, hil_dut):
     from test_blink_and_read import _measure
-    run = Run(meta={'sample': 'sleep_wake', 'target': 'CH32V003',
+    run = Run(meta={'sample': 'sleep_wake', 'target': hil_device.target_mcu,
                     'limitation': 'GPIO wake signature only; power consumption not measured'})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/sleep_wake')
+    dut = hil_dut('sleep_wake')
     holder = {}
     print('HIL SLEEP: flash sleep_wake; observe PC0 -> Pico GP5')
     try:

@@ -2,19 +2,19 @@
 
 ## 1. HIL ホスト層のデバイス選択
 
-- [ ] 1.1 `ch32hil` にデバイス定義（device 名、`TARGET_MCU`、minichlink 期待型番、識別領域の期待型番、TSSOP20 物理ピン表、サンプルディレクトリ、既定設定、マトリクス）を追加し、`ch32v003` と `ch32v002` を登録する。不明なデバイス名が実機操作前にエラーになることを単体テストで確認する。
-- [ ] 1.2 `conftest.py` に `--hil-device`（既定 `ch32v003`）を追加し、`--hil-config` 未指定時は選択デバイスの既定設定を使う。設定の `dut.device` と選択デバイスの不一致を実機操作前に拒否し、`--hil-device` 未指定の既存コマンドで選ばれる設定・サンプル・期待型番が従来どおりであることを単体テストで確認する。
-- [ ] 1.3 `ch32hil/config.py` の `CH32V003F4P6` 固定チェックと `DUT_PHYSICAL` をデバイス定義参照へ置き換える。CH32V002F4P6 の物理ピン番号はデータシート V1.7 のピン定義と照合して記録し、既存の CH32V003 設定検証テストが全て通ることを確認する。
-- [ ] 1.4 `ch32hil/dut.py` に CH32V002 の識別領域 `0x1ffff704` 読み出しと型番 `0x002` 照合を追加し、flash 前に実行する。正常、型番不一致、読み出し失敗、終了コード 0 の空出力を模擬した単体テストで、いずれも flash 前に `flash` 段階の失敗になることを確認する。
-- [ ] 1.5 `tests/hil/*.py` のサンプルパスと結果メタデータの `target` を選択デバイスから導出するよう書き換え、選択デバイスにサンプル・設定がないかマトリクスで対象外のテストは理由付き skip にする。`--hil` なしの `uv run pytest` が実機へ書き込まず成功することと、skip 理由の表示を確認する。
-- [ ] 1.6 `hil/README.md` に `--hil-device` の使い方、既定値、DUT 差し替えの前提を記載し、記載したコマンドを `--collect-only` で実行してオプションが認識されることを確認する。
+- [x] 1.1 `ch32hil` にデバイス定義（device 名、`TARGET_MCU`、minichlink 期待型番、識別領域の期待型番、TSSOP20 物理ピン表、サンプルディレクトリ、既定設定、マトリクス）を追加し、`ch32v003` と `ch32v002` を登録する。不明なデバイス名が実機操作前にエラーになることを単体テストで確認する。
+- [x] 1.2 `conftest.py` に `--hil-device`（既定 `ch32v003`）を追加し、`--hil-config` 未指定時は選択デバイスの既定設定を使う。設定の `dut.device` と選択デバイスの不一致を実機操作前に拒否し、`--hil-device` 未指定の既存コマンドで選ばれる設定・サンプル・期待型番が従来どおりであることを単体テストで確認する。
+- [x] 1.3 `ch32hil/config.py` の `CH32V003F4P6` 固定チェックと `DUT_PHYSICAL` をデバイス定義参照へ置き換える。CH32V002F4P6 の物理ピン番号はデータシート V1.7 のピン定義と照合して記録し、既存の CH32V003 設定検証テストが全て通ることを確認する。
+- [x] 1.4 `ch32hil/dut.py` に CH32V002 の識別領域 `0x1ffff704` 読み出しと型番 `0x002` 照合を追加し、flash 前に実行する。正常、型番不一致、読み出し失敗、終了コード 0 の空出力を模擬した単体テストで、いずれも flash 前に `flash` 段階の失敗になることを確認する。
+- [x] 1.5 `tests/hil/*.py` のサンプルパスと結果メタデータの `target` を選択デバイスから導出するよう書き換え、選択デバイスにサンプル・設定がないかマトリクスで対象外のテストは理由付き skip にする。`--hil` なしの `uv run pytest` が実機へ書き込まず成功することと、skip 理由の表示を確認する。
+- [x] 1.6 `hil/README.md` に `--hil-device` の使い方、既定値、DUT 差し替えの前提を記載し、記載したコマンドを `--collect-only` で実行してオプションが認識されることを確認する。
 
 ## 2. CH32V002 の配線成立確認と設定
 
 - [ ] 2.1 固定配線の各ネット（PC0、PC1/PC2 I2C、PC5/PC6/PC7 SPI と PC0 NSS リマップ、PD5/PD6 USART、PD2/PC4 TIM1、PA1/PA2 ADC、SWIO、VDD/VSS）について、CH32V002 データシート V1.7 のピン定義と CH32V00X RM V1.5 の AFIO リマップを照合し、ページ付きで `okf/peripherals/` または `okf/log/` に記録する。成立しないネットがあれば配線変更案を `hardware/wiring-proposal.md` に追記し、ユーザーレビュー待ちとして以降の該当サンプルを止める。
-- [ ] 2.2 `hil/configs/` に CH32V002F4P6 用の設定を追加し、2.1 の結果とネット名・物理ピン・部品値を一致させる。`uv run pytest -q tests/unit/test_config_matrix.py tests/unit/test_wiring_consistency.py` が通り、意図的に CH32V003 用の値を混ぜた設定を検出できることを確認する。
+- [x] 2.2 `hil/configs/` に CH32V002F4P6 用の設定を追加し、2.1 の結果とネット名・物理ピン・部品値を一致させる。`uv run pytest -q tests/unit/test_config_matrix.py tests/unit/test_wiring_consistency.py` が通り、意図的に CH32V003 用の値を混ぜた設定を検出できることを確認する。
 - [ ] 2.3 `hardware/wiring.md` と `hardware/ch32v002-reproduction.md` に、CH32V003 から CH32V002 へ DUT を差し替える手順（電源断、WCH-LinkE の 3.3 V 出力、交換、電圧確認、`./scripts/ch32fun.sh flash ch32v002` による検出確認、Pico 安全状態確認）と、CH32V002 で異なる点を記載する。ユーザーがレビューして差し替えを実施できることを確認する。
-- [ ] 2.4 `hil/matrix_ch32v002.json` を追加し、CH32V003 マトリクスの各サンプルに対応する行を「未移植」状態で用意する。CH32V003 で `hil-verified` のサンプルが CH32V002 側に欠けたら失敗する整合性テストを追加し、`hil-verified` に `hil_tests` と `evidence` を要求する既存検証が CH32V002 マトリクスにも適用されることを確認する。
+- [x] 2.4 `hil/matrix_ch32v002.json` を追加し、CH32V003 マトリクスの各サンプルに対応する行を「未移植」状態で用意する。CH32V003 で `hil-verified` のサンプルが CH32V002 側に欠けたら失敗する整合性テストを追加し、`hil-verified` に `hil_tests` と `evidence` を要求する既存検証が CH32V002 マトリクスにも適用されることを確認する。
 
 ## 3. GPIO（blink_and_read）
 

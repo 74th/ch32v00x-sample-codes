@@ -6,22 +6,23 @@ import math
 import re
 from pathlib import Path
 
+from . import devices
+
 REQUIRED = ["name", "dut", "pico", "pins", "voltage", "timeouts", "readback"]
 READBACK = {"required", "optional", "disabled"}
 UNSAFE_PICO_PINS = {23, 24, 25, 29}  # Pico SMPS/LED/VSYS-sense: not usable fixture pins
 MAX_DUT_VOLTAGE = 3.6
 PICO_PHYSICAL = {0:1,1:2,2:4,3:5,4:6,5:7,6:9,7:10,8:11,9:12,10:14,11:15,
                  12:16,13:17,14:19,15:20,16:21,17:22,18:24,19:25,20:26,21:27,22:29}
-DUT_PHYSICAL = {"PD4":1,"PD5":2,"PD6":3,"PD7":4,"PA1":5,"PA2":6,"PD0":8,
-                "PC0":10,"PC1":11,"PC2":12,"PC3":13,"PC4":14,"PC5":15,
-                "PC6":16,"PC7":17,"PD1":18,"PD2":19,"PD3":20}
+DUT_PHYSICAL = devices.DEVICES[devices.DEFAULT].physical  # backward-compatible alias
 
 
 class ConfigError(ValueError):
     pass
 
 
-def validate(cfg: dict) -> dict:
+def validate(cfg: dict, device: str | None = None) -> dict:
+    """Validate `cfg`; with `device`, also require cfg dut.device to be that device's part."""
     if not isinstance(cfg, dict):
         raise ConfigError("configuration must be an object")
     errors = [f"missing field: {k}" for k in REQUIRED if k not in cfg]
@@ -40,8 +41,12 @@ def validate(cfg: dict) -> dict:
     for k in ("device", "sample"):
         if k not in dut:
             errors.append(f"dut.{k} missing")
-    if dut.get("device") != "CH32V003F4P6":
-        errors.append("dut.device must be CH32V003F4P6 for this configuration")
+    dev = devices.BY_PART.get(dut.get("device"))
+    if dev is None:
+        errors.append(f"dut.device must be one of {sorted(devices.BY_PART)}")
+    elif device is not None and dev.name != device:
+        errors.append(f"dut.device {dut['device']} does not match selected HIL device {device}")
+    physical = dev.physical if dev else {}
     if not isinstance(dut.get("sample"), str) or not re.fullmatch(r"[a-z0-9_]+", dut["sample"]):
         errors.append("dut.sample must be a simple sample name")
     v = cfg["voltage"]
@@ -98,7 +103,7 @@ def validate(cfg: dict) -> dict:
             errors.append(f"pins.{net}: ADC RC capacitance missing or unsafe")
         if not isinstance(m.get("dut_physical"), int) or not 1 <= m["dut_physical"] <= 20 or not isinstance(m.get("pico_physical"), int) or not 1 <= m["pico_physical"] <= 40:
             errors.append(f"pins.{net}: physical pin numbers required")
-        if m.get("dut") not in DUT_PHYSICAL or m.get("dut_physical") != DUT_PHYSICAL.get(m.get("dut")):
+        if m.get("dut") not in physical or m.get("dut_physical") != physical.get(m.get("dut")):
             errors.append(f"pins.{net}: DUT physical pin mismatch")
         if m.get("pico_physical") != PICO_PHYSICAL.get(pin):
             errors.append(f"pins.{net}: Pico physical pin mismatch")
@@ -117,5 +122,19 @@ def validate(cfg: dict) -> dict:
     return cfg
 
 
-def load(path) -> dict:
-    return validate(json.loads(Path(path).read_text()))
+def load(path, device: str | None = None) -> dict:
+    return validate(json.loads(Path(path).read_text()), device)
+
+
+def select(device_name: str | None = None, config_path=None, root: Path | None = None):
+    """Resolve the HIL device and its configuration before any hardware access.
+
+    Returns (Device, config Path, validated config). Without a device the default
+    (CH32V003) is used; without a config path the device's default config is used.
+    """
+    device = devices.get(device_name or devices.DEFAULT)
+    root = Path(root) if root else devices.ROOT
+    path = root / (config_path or device.default_config)
+    if not path.is_file():
+        raise ConfigError(f"HIL config {path} not found for device {device.name}")
+    return device, path, load(path, device.name)

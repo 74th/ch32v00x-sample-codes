@@ -1,9 +1,8 @@
-"""CH32V003 timer PWM HIL, measured on Pico GP14. Flashes DUT."""
+"""DUT timer PWM HIL, measured on Pico GP14. Flashes DUT."""
 from pathlib import Path
 import tempfile
 import pytest
 from serial.tools import list_ports
-from ch32hil.dut import Dut, ROOT
 from ch32hil.phases import Run
 from ch32hil.pico import discover
 from test_blink_and_read import _prepare, _with_client, _cleanup
@@ -25,9 +24,9 @@ def _measure_pwm(port):
     return _with_client(port, 5, action)
 
 
-def test_pwm(request):
-    run = Run(meta={'sample': 'timer_pwm', 'target': 'CH32V003'})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/timer_pwm')
+def test_pwm(request, hil_device, hil_dut):
+    run = Run(meta={'sample': 'timer_pwm', 'target': hil_device.target_mcu})
+    dut = hil_dut('timer_pwm')
     holder = {}
     print('HIL PWM: flash timer_pwm; DUT PD2 -> Pico GP14')
     try:

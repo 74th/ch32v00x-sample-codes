@@ -1,10 +1,9 @@
-"""CH32V003 ADC functional HIL; flashes ADC sample and drives GP13 PWM/RC."""
+"""DUT ADC functional HIL; flashes ADC sample and drives GP13 PWM/RC."""
 from pathlib import Path
 import tempfile
 
 import pytest
 from serial.tools import list_ports
-from ch32hil.dut import Dut, ROOT
 from ch32hil.phases import Run
 from ch32hil.pico import PicoError, discover
 from test_blink_and_read import _prepare, _with_client, _cleanup
@@ -31,11 +30,11 @@ def _adc_sweep(port):
     return _with_client(port, 5, action)
 
 
-def test_adc_functional(request):
-    run = Run(meta={'sample': 'adc', 'target': 'CH32V003', 'uncalibrated': True})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/adc')
+def test_adc_functional(request, hil_device, hil_dut):
+    run = Run(meta={'sample': 'adc', 'target': hil_device.target_mcu, 'uncalibrated': True})
+    dut = hil_dut('adc')
     holder = {}
-    print('HIL ADC: flash CH32V003 ADC sample; PWM GP13 -> RC -> PA2, UART PD5 -> GP9')
+    print('HIL ADC: flash DUT ADC sample; PWM GP13 -> RC -> PA2, UART PD5 -> GP9')
     try:
         run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, request.config.getoption('--hil-port'), 30)))
         run.phase('fixture_setup', _prepare, holder.get('port'), 6)

@@ -1,10 +1,24 @@
 # HIL 設定
 
-`configs/gpio_blink.json` は CH32V003F4P6 と Pico の固定配線を宣言する公開可能な設定例。`dut.device` と `sample`、Pico USB VID/PID と `selection=explicit_or_unique`、ピン・物理ピン・方向・直列抵抗、I2C pull-up と ADC RC、電源と公称電圧、タイムアウト、readback 方針を持つ。`readback` は `required`、`optional`、`disabled`。ポートは実行時 `--hil-port` で指定できる。
+`configs/gpio_blink.json` は CH32V003F4P6、`configs/ch32v002_gpio_blink.json` は CH32V002F4P6 と Pico の固定配線を宣言する公開可能な設定。`dut.device` と `sample`、Pico USB VID/PID と `selection=explicit_or_unique`、ピン・物理ピン・方向・直列抵抗、I2C pull-up と ADC RC、電源と公称電圧、タイムアウト、readback 方針を持つ。`readback` は `required`、`optional`、`disabled`。ポートは実行時 `--hil-port` で指定できる。
 
 電圧の `source=declared_unmeasured` は設定値が配線案の公称値であり、実測・安全確認ではないことを示す。設定の整合性チェックは物理配線、電圧、レベル変換や逆給電を確認できない。使用前の手順は [配線資料](../hardware/wiring.md) と [固定配線案](../hardware/wiring-proposal.md) を参照する。
 
-検証は `uv run pytest -q tests/unit/test_config_matrix.py`。通常の `uv run pytest` は HIL を実行しない。実機を変更する GPIO HIL は次のように明示する。Pico v2 と固定配線、WCH-LinkE、対象 DUT が必要で、DUT firmware を書き換える。
+## 対象デバイスの選択
+
+HIL の対象は `--hil-device {ch32v003,ch32v002}` で選ぶ。既定は `ch32v003` で、指定しない既存コマンドは従来どおり `configs/gpio_blink.json`、`samples_ch32v003_ch32fun/`、`Detected CH32V003` を使う。`--hil-config` を省略すると選択デバイスの既定設定（CH32V002 は `configs/ch32v002_gpio_blink.json`）を使う。設定の `dut.device` と `--hil-device` が食い違う場合や未対応のデバイス名は、実機に触れる前にエラーで止まる。デバイス固有値（型番、`TARGET_MCU`、物理ピン、サンプル・設定・マトリクスの場所）は `ch32hil/devices.py` にまとめている。
+
+CH32V002 では、固定 minichlink の `Detected CH32V002` に加えて識別領域 `0x1ffff704` の上位型番 `0x002` を書き込み前に確認し、一致しない・読めない場合は書き込まずに `flash` 段階で失敗する。選択デバイスにサンプルがない、またはそのデバイスのマトリクス（CH32V002 は [matrix_ch32v002.json](matrix_ch32v002.json)）で `not-ported`／`excluded` のテストは、理由付きで skip される（成功ではない）。結果メタデータの `target` に対象デバイスを記録する。
+
+```sh
+uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port=/dev/serial/by-id/<PicoのID>
+```
+
+DUT は一度に一つだけ接続する。CH32V003 と CH32V002 の差し替えは自動化外の手作業で、電源断（WCH-LinkE の 3.3 V 出力停止を含む）、交換、電圧確認、`./scripts/ch32fun.sh flash <device>` による検出確認の順に行う。手順は [配線資料](../hardware/wiring.md) を参照する。
+
+## 実行
+
+検証は `uv run pytest -q tests/unit/test_config_matrix.py tests/unit/test_devices.py`。通常の `uv run pytest` は HIL を実行しない。実機を変更する GPIO HIL は次のように明示する。Pico v2 と固定配線、WCH-LinkE、対象 DUT が必要で、DUT firmware を書き換える。
 
 ```sh
 uv run pytest --hil -m 'hil and gpio' tests/hil/test_blink_and_read.py --hil-port /dev/serial/by-id/<PicoのID>

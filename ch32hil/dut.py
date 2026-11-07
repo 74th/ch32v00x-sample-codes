@@ -7,11 +7,15 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import devices
+
 ROOT = Path(__file__).resolve().parent.parent
 CH32FUN = ROOT / "externals" / "ch32fun"
 MINICHLINK = CH32FUN / "minichlink" / "minichlink"
 
-EXPECTED_CHIP = {"ch32v003": "Detected CH32V003", "ch32v002": "Detected CH32V002"}
+EXPECTED_CHIP = {name: f"Detected {d.chip}" for name, d in devices.DEVICES.items()}
+CHIP_ID_ADDRESS = 0x1FFFF704
+_CHIP_ID_LINE = re.compile(r"(?m)^1ffff704:((?:\s+[0-9a-fA-F]{2}){4})\b")
 NEGATIVE = ("No detected chip.", "Unknown chip", "Could not initialize", "Could not find")
 
 
@@ -47,6 +51,23 @@ def _check_detected(output: str, target: str, phase: str) -> None:
         raise DutError(phase, f"expected only {expected}, detected {detected}")
     if any(negative in output for negative in NEGATIVE):
         raise DutError(phase, "negative programmer output")
+
+
+def check_chip_id(result: CmdResult, expected_type: int) -> int:
+    """Check `minichlink -r + 0x1ffff704 4` output; the upper 12 bits of the LE word are the type."""
+    if result.returncode != 0:
+        raise DutError("flash", f"chip identifier read failed (exit {result.returncode})")
+    for neg in NEGATIVE:
+        if neg in result.output:
+            raise DutError("flash", f"chip identifier read: negative output: {neg}")
+    found = _CHIP_ID_LINE.findall(result.output)
+    if len(found) != 1:
+        raise DutError("flash", f"chip identifier at 0x{CHIP_ID_ADDRESS:08x} not readable")
+    value = int.from_bytes(bytes.fromhex("".join(found[0].split())), "little")
+    if value >> 20 != expected_type:
+        raise DutError("flash", f"chip identifier 0x{value:08x}: type 0x{value >> 20:03x}, "
+                                f"expected 0x{expected_type:03x}")
+    return value
 
 
 def check_flash_output(result: CmdResult, target: str = "ch32v003") -> None:
@@ -85,6 +106,10 @@ class Dut:
     ready_interval: float = 1.0
     sleep: object = field(default=time.sleep)
 
+    def __post_init__(self):
+        devices.get(self.target)  # unknown device -> DeviceError before any programmer access
+        self.chip_id = None
+
     @property
     def binary(self) -> Path:
         return self.sample_dir / "main.bin"
@@ -115,10 +140,24 @@ class Dut:
                 raise DutError(phase, f"programmer/chip not detected within {self.ready_timeout}s ({last})")
             self.sleep(self.ready_interval)
 
+    @property
+    def device(self) -> devices.Device:
+        return devices.get(self.target)
+
+    def verify_chip_id(self):
+        """For devices whose minichlink name alone is not trusted, check 0x1ffff704 before writing."""
+        expected = self.device.chip_id_type
+        if expected is None:
+            return None
+        r = self.run([str(self.minichlink), "-r", "+", hex(CHIP_ID_ADDRESS), "4", "-b"], self.timeout)
+        self.chip_id = check_chip_id(r, expected)
+        return self.chip_id
+
     def flash(self) -> CmdResult:
         if not self.binary.is_file():
             raise DutError("flash", "build artifact missing")
         self.wait_ready("flash")
+        self.verify_chip_id()
         r = self.run([str(self.minichlink), "-w", str(self.binary), "flash", "-b"], self.timeout)
         check_flash_output(r, self.target)
         return r

@@ -3,7 +3,6 @@ from pathlib import Path
 import tempfile
 import pytest
 from serial.tools import list_ports
-from ch32hil.dut import Dut, ROOT
 from ch32hil.phases import Run
 from ch32hil.pico import PicoError, discover
 from test_blink_and_read import _prepare, _with_client, _cleanup
@@ -49,11 +48,11 @@ def _i2c_slave(port):
 
 
 @pytest.mark.parametrize(('sample', 'operation'), [('i2c_slave', _i2c_master), ('i2c_master', _i2c_slave)])
-def test_i2c_roles(request, sample, operation):
-    run = Run(meta={'sample': sample, 'target': 'CH32V003', 'readback_policy': 'required'})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun' / sample)
+def test_i2c_roles(request, sample, operation, hil_device, hil_dut):
+    run = Run(meta={'sample': sample, 'target': hil_device.target_mcu, 'readback_policy': 'required'})
+    dut = hil_dut(sample)
     holder = {}
-    print(f'HIL I2C: flash CH32V003 {sample}; Pico GP10 SDA/GP11 SCL')
+    print(f'HIL I2C: flash DUT {sample}; Pico GP10 SDA/GP11 SCL')
     try:
         run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, request.config.getoption('--hil-port'), 30)))
         run.phase('fixture_setup', _prepare, holder.get('port'), 6)

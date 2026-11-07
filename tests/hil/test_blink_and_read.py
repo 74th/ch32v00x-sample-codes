@@ -1,6 +1,6 @@
-"""HIL: CH32V003 blink_and_read, observed by Pico GPIO protocol v2.
+"""HIL: blink_and_read (selected --hil-device, default CH32V003), observed by Pico GPIO protocol v2.
 
-DESTRUCTIVE: rebuilds and flashes the connected CH32V003 via WCH-LinkE.
+DESTRUCTIVE: rebuilds and flashes the connected DUT via WCH-LinkE.
 Run: uv run pytest --hil -m "hil and gpio" --hil-port /dev/serial/by-id/...
 """
 import subprocess
@@ -12,8 +12,7 @@ import serial
 from serial.tools import list_ports
 
 import measure
-from ch32hil import config
-from ch32hil.dut import Dut, ROOT, MINICHLINK
+from ch32hil.dut import ROOT, MINICHLINK
 from ch32hil.phases import Run
 from ch32hil.pico import PicoClient, PicoError, discover, wait_ready
 
@@ -66,14 +65,14 @@ def _cleanup(port, timeout):
         _with_client(port, timeout, action)
 
 
-def test_blink_and_read(request):
-    cfg = config.load(ROOT / request.config.getoption("--hil-config"))
+def test_blink_and_read(request, hil_device, hil_config, hil_dut):
+    cfg = hil_config
+    dut = hil_dut(cfg["dut"]["sample"])
     port_opt = request.config.getoption("--hil-port")
     pin = cfg["pins"]["BLINK"]["pico_gpio"]
     print(f"HIL TARGET: {cfg['dut']['device']} sample={cfg['dut']['sample']}; "
           f"will BUILD, FLASH and READBACK the DUT; Pico GP{pin} input")
-    dut = Dut(ROOT / "samples_ch32v003_ch32fun" / cfg["dut"]["sample"])
-    run = Run(meta={"config": cfg["name"], "revision": _revision(), "minichlink": str(MINICHLINK),
+    run = Run(meta={"config": cfg["name"], "target": hil_device.target_mcu, "revision": _revision(), "minichlink": str(MINICHLINK),
                     "readback_policy": cfg["readback"], "dut_command_log": []})
     t = cfg["timeouts"]
     port = {}
@@ -103,9 +102,9 @@ def test_blink_and_read(request):
     assert run.ok, run.to_json()
 
 
-def test_intentional_mismatch_cleanup(request):
+def test_intentional_mismatch_cleanup(request, hil_config):
     """GP10 is the normally pulled-up I2C SDA, not the blinking PC0 signal."""
-    cfg = config.load(ROOT / request.config.getoption("--hil-config"))
+    cfg = hil_config
     port = discover(list_ports.comports, request.config.getoption("--hil-port"),
                     cfg["timeouts"]["pico_enumeration"])
     run = Run(meta={"test": "intentional_mismatch", "pin": 10})
@@ -121,12 +120,12 @@ def test_intentional_mismatch_cleanup(request):
     assert state.ok and {"output=0", "pull_up=0", "pull_down=0"}.issubset(state.fields)
 
 
-def test_button_input(request):
+def test_button_input(request, hil_device, hil_config, hil_dut):
     """GP12 drives the PA1 RC low; verify blink pauses and resumes."""
-    cfg = config.load(ROOT / request.config.getoption('--hil-config'))
+    cfg = hil_config
+    dut = hil_dut('blink_and_read')
     port = discover(list_ports.comports, request.config.getoption('--hil-port'), cfg['timeouts']['pico_enumeration'])
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/blink_and_read')
-    run = Run(meta={'test': 'button_input', 'sample': 'blink_and_read'})
+    run = Run(meta={'test': 'button_input', 'sample': 'blink_and_read', 'target': hil_device.target_mcu})
     print('HIL GPIO: flash blink; GP12 drives DUT PA1 low via 10k/RC')
     def exercise(client):
         client.negotiate(['GPIO_BUTTON_TEST', 'GPIO_SAMPLE'])

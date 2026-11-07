@@ -38,8 +38,10 @@ def problems(config, markdown):
 
 
 def main():
-    errors = problems(load(ROOT / 'hil/configs/gpio_blink.json'),
-                      (ROOT / 'hardware/wiring-proposal.md').read_text())
+    from .devices import DEVICES
+    doc = (ROOT / 'hardware/wiring-proposal.md').read_text()
+    errors = [f'{d.name}: {e}' for d in DEVICES.values()
+              for e in problems(load(ROOT / d.default_config, d.name), doc)]
     if errors:
         for error in errors:
             print(error)

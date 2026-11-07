@@ -1,11 +1,10 @@
-"""CH32V003 UART echo HIL; flashes UART sample. Requires reviewed UART wiring."""
+"""DUT UART echo HIL; flashes UART sample. Requires reviewed UART wiring."""
 from pathlib import Path
 import tempfile
 
 import pytest
 from serial.tools import list_ports
 
-from ch32hil.dut import Dut, ROOT
 from ch32hil.phases import Run
 from ch32hil.pico import PicoError, discover
 from test_blink_and_read import _prepare, _with_client, _cleanup
@@ -34,12 +33,12 @@ def _no_data_timeout(port):
     return _with_client(port, 4, action)
 
 
-def test_uart_echo(request):
+def test_uart_echo(request, hil_device, hil_dut):
     port_opt = request.config.getoption('--hil-port')
-    run = Run(meta={'sample': 'uart', 'target': 'CH32V003', 'readback_policy': 'required'})
-    dut = Dut(ROOT / 'samples_ch32v003_ch32fun/uart')
+    run = Run(meta={'sample': 'uart', 'target': hil_device.target_mcu, 'readback_policy': 'required'})
+    dut = hil_dut('uart')
     holder = {}
-    print('HIL UART: flash CH32V003 uart sample; Pico GP8 TX/GP9 RX')
+    print('HIL UART: flash DUT uart sample; Pico GP8 TX/GP9 RX')
     try:
         run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, port_opt, 30)))
         run.phase('fixture_setup', _prepare, holder.get('port'), 6)
