@@ -22,8 +22,8 @@ typedef struct {
     uint8_t pending_cmd, pending_left, pending_n, pending_args[6];
     bool display_on, charge_pump, display_on_seen;
     uint32_t transfers, cmds, data_bytes, unknown, bad_control;
-    uint32_t frame_bytes;               /* data bytes since the last 0x21/0x22 window command */
-    uint32_t frames;                    /* completed windows (frame_bytes reached the window area) */
+    uint32_t frame_bytes;               /* data bytes since the last 0x21/0x22 command (diagnostic) */
+    uint32_t frames;                    /* completed windows (last cell of the window written) */
     uint8_t unknown_first[SSD1306_MODEL_UNKNOWN_KEEP];
 } ssd1306_model_t;
 

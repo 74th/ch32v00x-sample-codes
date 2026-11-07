@@ -15,6 +15,7 @@
 #define WS2812_ONE_MAX_NS 1150u
 #define WS2812_IDLE_HIGH_NS 100000u         /* a last pulse wider than this is the line idling High, not data */
 #define WS2812_THRESHOLD_NS 655u            /* bit value of an out-of-range pulse: High wider than this -> 1 */
+#define WS2812_GAP_LIMIT_COUNTS 3125u       /* initial Low counter of ws2812_decode.pio (50 us at 16 ns/count) */
 
 typedef struct {
     unsigned bits;                          /* bits decoded (including out-of-range ones) */
@@ -27,6 +28,11 @@ typedef struct {
     uint8_t tail;                           /* those bits, left-aligned in a byte */
     unsigned last_high_ns;                  /* High width of the last decoded data pulse */
     bool idle_high;                         /* the frame ended with the line idling High (not counted as a bit) */
+    /* Ranges over all decoded bits, split by the bit value (threshold), in ns; 0 when there is no such bit.
+     * High: every pulse including out-of-range ones. Low: the Low after the bit, only when another bit follows
+     * (the Low before the reset gap is not a bit time). Software-counted PIO loops: about +-1 count. */
+    unsigned h0_min, h0_max, h1_min, h1_max;
+    unsigned l0_min, l0_max, l1_min, l1_max;
 } ws2812_decode_t;
 
 void ws2812_classify(const uint32_t *words, unsigned nwords, unsigned ns_per_count,

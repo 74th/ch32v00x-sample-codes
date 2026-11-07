@@ -11,6 +11,11 @@ static unsigned median(uint16_t *v, unsigned n) {
     return v[n / 2];
 }
 
+static void range(unsigned v, unsigned *lo, unsigned *hi) {
+    if (!*hi || v < *lo) *lo = v;
+    if (v > *hi) *hi = v;
+}
+
 void ws2812_classify(const uint32_t *words, unsigned nwords, unsigned ns_per_count,
                      uint8_t *out, unsigned out_max, ws2812_decode_t *r) {
     static uint16_t zeros[WS2812_MAX_BITS], ones[WS2812_MAX_BITS];
@@ -24,6 +29,11 @@ void ws2812_classify(const uint32_t *words, unsigned nwords, unsigned ns_per_cou
         if (l == WS2812_MARKER && (h > 0xFFFFu || ns > WS2812_IDLE_HIGH_NS)) { r->idle_high = true; r->ended = true; break; }
         bool bit = ns > WS2812_THRESHOLD_NS;
         r->last_high_ns = ns;
+        if (bit) range(ns, &r->h1_min, &r->h1_max); else range(ns, &r->h0_min, &r->h0_max);
+        if (l != WS2812_MARKER && l <= WS2812_GAP_LIMIT_COUNTS) {
+            unsigned low_ns = (WS2812_GAP_LIMIT_COUNTS - l) * ns_per_count;
+            if (bit) range(low_ns, &r->l1_min, &r->l1_max); else range(low_ns, &r->l0_min, &r->l0_max);
+        }
         if (ns >= WS2812_ZERO_MIN_NS && ns <= WS2812_ZERO_MAX_NS) { if (nz < WS2812_MAX_BITS) zeros[nz++] = (uint16_t)ns; }
         else if (ns >= WS2812_ONE_MIN_NS && ns <= WS2812_ONE_MAX_NS) { if (no < WS2812_MAX_BITS) ones[no++] = (uint16_t)ns; }
         else r->bad_pulses++;

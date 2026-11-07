@@ -10,7 +10,7 @@
 #include "ws2812_fixture.h"
 #include "ws2812_decode.pio.h"
 
-#define GAP_LIMIT_COUNTS 3125u        /* 3125 loops x 2 cycles x 8 ns = 50 us of Low ends a frame */
+#define GAP_LIMIT_COUNTS WS2812_GAP_LIMIT_COUNTS   /* 3125 loops x 2 cycles x 8 ns = 50 us of Low ends a frame */
 #define SYNC_QUIET_US 200u
 
 typedef void (*feeder_t)(void *ctx);

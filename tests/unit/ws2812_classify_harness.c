@@ -11,6 +11,7 @@ int main(void) {
     printf("bits=%u bytes=%u ended=%d partial=%d bad=%u t0h=%u t1h=%u tail_bits=%u tail=%02x last=%u idle=%d rx=", r.bits, r.bytes, r.ended,
            r.partial_byte, r.bad_pulses, r.t0h_ns, r.t1h_ns, r.tail_bits, r.tail, r.last_high_ns, r.idle_high);
     for (unsigned i = 0; i < r.bytes; i++) printf("%02x", out[i]);
+    printf(" h0=%u-%u h1=%u-%u l0=%u-%u l1=%u-%u", r.h0_min, r.h0_max, r.h1_min, r.h1_max, r.l0_min, r.l0_max, r.l1_min, r.l1_max);
     printf("\n");
     return 0;
 }

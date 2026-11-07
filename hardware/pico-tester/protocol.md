@@ -60,11 +60,11 @@ GP10 SDA・GP11 SCL、外付け pull-up、100 kHz を使用する。`I2C_MASTER 
 
 ## SSD1306 OLED の模擬
 
-`SSD1306_CAPTURE <frames 1-8> <timeout_ms 10-5000> [INIT]` は I2C1 を 0x3C の slave（GP10 SDA・GP11 SCL、内蔵 pull なし）にし、DUT が送る SSD1306 のコマンドとデータを 128×64 のフレームバッファへ再構成する。1 回の I2C 転送（START から STOP）ごとに先頭の制御バイト（0x00 コマンド、0x40 データ、Co ビット対応）で分類し、引数が転送をまたぐコマンドも状態を引き継ぐ。`0x21`/`0x22` のウィンドウ指定の後にウィンドウ面積分（全画面で 1024 バイト）のデータが届くと 1 フレームとして数え、指定数に達した時点でフレームバッファを凍結する（以後の転送は無視）。`ssd1306_init` は最後に空のフレームを送るため、起動直後から取得すると `frames=2` で最後のフレームが描画内容になる。DUT が先に動いていれば最初の 2 フレームが描画内容になる。
+`SSD1306_CAPTURE <frames 1-8> <timeout_ms 10-5000> [INIT]` は I2C1 を 0x3C の slave（GP10 SDA・GP11 SCL、内蔵 pull なし）にし、DUT が送る SSD1306 のコマンドとデータを 128×64 のフレームバッファへ再構成する。1 回の I2C 転送（START から STOP）ごとに先頭の制御バイト（0x00 コマンド、0x40 データ、Co ビット対応）で分類し、引数が転送をまたぐコマンドも状態を引き継ぐ。水平・垂直モードで、ウィンドウの最後のセル（最終ページ・最終列）にデータが書かれると 1 フレームとして数え（`0x21`/`0x22` で全画面を指定して 1024 バイト送る場合は従来と同じ）、指定数に達した時点でフレームバッファを凍結する（以後の転送は無視）。`ssd1306_init` は最後に空のフレームを送るため、起動直後から取得すると `frames=2` で最後のフレームが描画内容になる。DUT が先に動いていれば最初の 2 フレームが描画内容になる。
 
 成功例: `OK frames=2 transfers=.. cmds=.. data=.. unknown=.. bad_control=.. overflow=.. display_on=1 display_on_seen=1 charge_pump=1 crc32=<フレームバッファの CRC-32> safe=1`。`INIT` を付けると、表示オフ（`0x00 0xAE`）を受けるまでの転送を無視し、以後も表示オフを受けるたびに模擬の状態をクリアする。件数とフレームは最後の初期化シーケンスからのものになり、DUT のリセット前の通信や起動の二重化が混ざらない（実機で、`minichlink -i` が DUT を再起動して初期化が 2 回流れることを確認した）。期限内にフレーム数に届かなければ `ERR TIMEOUT` と途中の件数（フレームバッファは診断用に残る）。`unknown` は未対応コマンドの件数（模擬は成功のまま無視する）、`bad_control` は予約ビットが 0 でない制御バイト、`overflow` は 256 バイトを超えた転送。`display_on_seen=0` なら DUT の初期化を観測していない。`SSD1306_PAGE <0-7>` は直前の取得の 1 ページ（128 バイト、256 桁の hex）を返す。取得前は `ERR INVALID no_capture`。
 
-対応する範囲はアドレッシングモード（水平・垂直・ページ）、列・ページ範囲、表示 on/off、チャージポンプの状態。スクロール、コントラスト、反転、リマップの描画への影響、SH1107 は模擬しない。解釈ロジック `ssd1306_model.c` はホストの単体テスト（`tests/unit/test_ssd1306_model.py`）でも検証している。
+対応する範囲はアドレッシングモード（水平・垂直・ページ）、列・ページ範囲、表示 on/off、チャージポンプの状態。データシートどおり、`0x21` は列ポインタだけ、`0x22` はページポインタだけを先頭に戻す（2026-11-07 修正。以前は `0x21` でページも戻していたため、ページごとに `0x21` を送る Arduino の OLED ライブラリの描画が重なっていた。[記録](../../okf/log/2026-11-07-2225-pico-ssd1306-model-arduino-oled.md)）。`0xB0`〜`0xB7` はページアドレッシングモードでだけ有効。スクロール、コントラスト、反転、リマップの描画への影響、SH1107 は模擬しない。解釈ロジック `ssd1306_model.c` はホストの単体テスト（`tests/unit/test_ssd1306_model.py`）でも検証している。
 
 `SSD1306_SELFTEST` は Pico 単体の自己検証で、I2C loopback 配線（GP16–GP18 SDA、GP17–GP19 SCL、4.7 kΩ pull-up）で I2C0 master から I2C1 slave（0x3C）へヘルパーと同じ形の転送（コマンド 1 バイトごとの転送、32 バイト単位のデータ転送、未対応コマンド 1 個、2 フレーム）を送り、フレームバッファの CRC を独立に作った期待値と照合する。あわせて存在しない 0x3D への書き込みが失敗すること、何も送らない状態で `frames=0` になることを確認する。実行は `uv run python hardware/pico-tester/ssd1306_selftest.py`。2026-11-07 に I2C loopback 配線（ユーザー申告）で 2 回成功した（100 kHz）。この自己検証は DUT 側の GP10/GP11 のピン接続や 1 MHz での受信は確認しない。
 
@@ -74,7 +74,7 @@ GP10 SDA・GP11 SCL、外付け pull-up、100 kHz を使用する。`I2C_MASTER 
 
 開始時に 200 µs 以上 Low なら間のフレーム間と見なしてそのまま開始する。そうでなければ最初のリセット間隔を待って同期する。ピンの内部 pull は無効。
 
-成功例: `OK pin=7 bytes=18 bits=144 bad_pulses=0 idle_high=1 t0h_ns=304 t1h_ns=976 threshold_ns=655 ns_per_count=16 rx=<hex> safe=1`。`t0h_ns`/`t1h_ns` は範囲内の 0/1 の High 幅の中央値。`bad_pulses` が 1 以上なら `ERR WS2812`（受信データは付く）。フレーム長が指定と違えば `ERR WS2812 frame_bits=<実際> expected=<期待> bad_pulses=.. tail_bits=.. tail=.. last_high_ns=..`（短い場合）または `frame_too_long`（長い場合）、期限までに揃わなければ `ERR TIMEOUT ws2812 bits=<受信済み>`。
+成功例: `OK pin=7 bytes=18 bits=144 bad_pulses=0 idle_high=1 t0h_ns=304 t1h_ns=976 threshold_ns=655 ns_per_count=16 rx=<hex> safe=1`。`t0h_ns`/`t1h_ns` は範囲内の 0/1 の High 幅の中央値。`h0_ns`/`h1_ns` は閾値で分けた 0/1 のすべてのパルス（範囲外を含む）の High 幅の `最小-最大`、`l0_ns`/`l1_ns` はそのビットの後の Low 幅の `最小-最大`（次のビットが続く場合のみ）。いずれも ns で、該当するビットがなければ `0-0`。PIO のループ数から求めるので ±1 カウント程度（2026-11-07 追加。[記録](../../okf/log/2026-11-07-2310-arduino-neopixel-timing.md)）。`bad_pulses` が 1 以上なら `ERR WS2812`（受信データは付く）。フレーム長が指定と違えば `ERR WS2812 frame_bits=<実際> expected=<期待> bad_pulses=.. tail_bits=.. tail=.. last_high_ns=..`（短い場合）または `frame_too_long`（長い場合）、期限までに揃わなければ `ERR TIMEOUT ws2812 bits=<受信済み>`。
 
 実測の注意: 自己検証（3 MHz 相当、実効 2.976 MHz）では High 幅が理論値（336/1008 ns）より常に約 32 ns 小さく出た。PIO ループの入口の遅れによる固定の偏りと推定している。値は WS2812 規格適合の判定には使えない。GP7 は `SPI_SLAVE` の PIO と同じピンだが、コマンドは直列実行され、どちらも終了時にピンを入力・pull 無効へ戻す。
 

@@ -28,9 +28,11 @@ static unsigned arg_count(uint8_t c, bool *known) {
     }
 }
 
-static void window_reset(ssd1306_model_t *m) {
-    m->col = m->col_start; m->page = m->page_start; m->frame_bytes = 0;
-}
+/* SSD1306 datasheet (0x21/0x22): Set Column Address resets only the column pointer, Set Page Address only the
+ * page pointer. A driver that sends 0x21 per page in horizontal mode (e.g. the Arduino "OLED SSD1306 - SH1106"
+ * library) therefore keeps advancing pages instead of overwriting page 0. */
+static void column_reset(ssd1306_model_t *m) { m->col = m->col_start; m->frame_bytes = 0; }
+static void page_reset(ssd1306_model_t *m) { m->page = m->page_start; m->frame_bytes = 0; }
 
 static void finish_cmd(ssd1306_model_t *m) {
     const uint8_t *a = m->pending_args;
@@ -38,12 +40,12 @@ static void finish_cmd(ssd1306_model_t *m) {
     case 0x20: if (a[0] <= 2) m->mode = a[0]; else unknown_cmd(m, 0x20); break;
     case 0x21:
         if (a[0] < SSD1306_MODEL_W && a[1] < SSD1306_MODEL_W && a[0] <= a[1]) {
-            m->col_start = a[0]; m->col_end = a[1]; window_reset(m);
+            m->col_start = a[0]; m->col_end = a[1]; column_reset(m);
         } else unknown_cmd(m, 0x21);
         break;
     case 0x22:
         if (a[0] < SSD1306_MODEL_PAGES && a[1] < SSD1306_MODEL_PAGES && a[0] <= a[1]) {
-            m->page_start = a[0]; m->page_end = a[1]; window_reset(m);
+            m->page_start = a[0]; m->page_end = a[1]; page_reset(m);
         } else unknown_cmd(m, 0x22);
         break;
     case 0x8D: m->charge_pump = (a[0] & 0x04) != 0; break;
@@ -71,8 +73,8 @@ static void data_byte(ssd1306_model_t *m, uint8_t d) {
     m->data_bytes++;
     m->fb[(size_t)m->page * SSD1306_MODEL_W + m->col] = d;
     m->frame_bytes++;
-    unsigned area = (unsigned)(m->col_end - m->col_start + 1) * (m->page_end - m->page_start + 1);
-    if (m->mode != 2 && m->frame_bytes == area) m->frames++;
+    /* A frame is complete when the last cell of the window is written (horizontal/vertical modes). */
+    if (m->mode != 2 && m->page == m->page_end && m->col == m->col_end) m->frames++;
     if (m->mode == 0) {
         if (++m->col > m->col_end) {
             m->col = m->col_start;

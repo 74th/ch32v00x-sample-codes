@@ -112,3 +112,25 @@ def test_co_bit_alternates_command_and_data(binary):
     out = run(binary, 'T c011c022', 'S', 'P 0')
     s = stats(out[0])
     assert s['data'] == '2' and out[1].startswith('1122')
+
+
+def test_column_command_keeps_page_pointer_like_the_arduino_oled_library(binary):
+    """Horizontal mode, per page 0xB0+page (ignored outside page mode) and 0x21 0 127, then 128 data bytes, as the
+    Arduino "OLED SSD1306 - SH1106" library does for a 128x32 panel. 0x21 resets only the column pointer
+    (datasheet), so pages advance instead of overlapping on page 0."""
+    def display(fill):
+        lines = []
+        for page in range(4):
+            lines += [cmd(0xB0 + page, 0x21, 0, 127), data([fill + page] * 128)]
+        return lines
+    out = run(binary, cmd(0x20, 0), *display(0x10), 'S', *display(0x20), 'S', *[f'P {n}' for n in range(8)])
+    first, second = stats(out[0]), stats(out[1])
+    assert first['frames'] == '0' and first['page'] == '4' and first['col'] == '0'
+    assert second['frames'] == '1' and second['page'] == '0'
+    assert [out[2 + n][:2] for n in range(8)] == ['10', '11', '12', '13', '20', '21', '22', '23']
+
+
+def test_page_command_resets_only_the_page_pointer(binary):
+    out = run(binary, cmd(0x20, 0), cmd(0x21, 0, 127, 0x22, 0, 7), data([1] * 130), cmd(0x22, 2, 7), 'S')
+    s = stats(out[0])
+    assert s['page'] == '2' and s['col'] == '2' and s['frames'] == '0'

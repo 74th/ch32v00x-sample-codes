@@ -37,8 +37,10 @@ void ws2812_fixture_capture(unsigned long id, char *args) {
         else printf("%lu ERR WS2812 frame_too_long expected=%u safe=1\n", id, expected_bits);
         return;
     }
-    printf("%lu %s pin=%lu bytes=%lu bits=%u bad_pulses=%u idle_high=%d t0h_ns=%u t1h_ns=%u threshold_ns=%u ns_per_count=%u rx=", id,
-           r.bad_pulses ? "ERR WS2812" : "OK", pin, bytes, r.bits, r.bad_pulses, r.idle_high, r.t0h_ns, r.t1h_ns, WS2812_THRESHOLD_NS, npc);
+    printf("%lu %s pin=%lu bytes=%lu bits=%u bad_pulses=%u idle_high=%d t0h_ns=%u t1h_ns=%u threshold_ns=%u ns_per_count=%u "
+           "h0_ns=%u-%u h1_ns=%u-%u l0_ns=%u-%u l1_ns=%u-%u rx=", id,
+           r.bad_pulses ? "ERR WS2812" : "OK", pin, bytes, r.bits, r.bad_pulses, r.idle_high, r.t0h_ns, r.t1h_ns, WS2812_THRESHOLD_NS, npc,
+           r.h0_min, r.h0_max, r.h1_min, r.h1_max, r.l0_min, r.l0_max, r.l1_min, r.l1_max);
     print_hex(rx, r.bytes); printf(" safe=1\n");
 }
 

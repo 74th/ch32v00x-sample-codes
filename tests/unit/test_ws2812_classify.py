@@ -126,3 +126,21 @@ def test_wide_pulse_inside_a_frame_is_still_a_bad_pulse(binary):
 def test_boundary_of_the_idle_high_limit(binary):
     assert decode(binary, [6250, MARK])['idle'] == '0'                 # exactly 100 us is still a pulse
     assert decode(binary, [6251, MARK])['idle'] == '1'
+
+
+def test_high_and_low_ranges_per_bit_value(binary):
+    """h0/h1: High widths of all 0/1 bits (in-range or not, split by the threshold); l0/l1: the Low after each bit
+    except the last one, measured as GAP_LIMIT (3125) minus the remaining Low counter."""
+    ws = []
+    for h, low_left in ((19, 3125 - 53), (50, 3125 - 28), (21, 3125 - 52), (45, 3125 - 25)):   # 0 1 0 1 at 16 ns
+        ws += [h, low_left]
+    ws += [19, MARK]
+    r = decode(binary, ws)
+    assert r['h0'] == f'{19 * NS}-{21 * NS}' and r['h1'] == f'{45 * NS}-{50 * NS}'
+    assert r['l0'] == f'{52 * NS}-{53 * NS}' and r['l1'] == f'{25 * NS}-{28 * NS}'
+    assert r['bad'] == '2'                      # 720 and 800 ns: 1 by threshold, below the 830 ns window
+
+
+def test_ranges_are_zero_without_such_bits(binary):
+    r = decode(binary, [19, MARK])
+    assert r['h0'] == f'{19 * NS}-{19 * NS}' and r['h1'] == '0-0' and r['l0'] == '0-0' and r['l1'] == '0-0'
