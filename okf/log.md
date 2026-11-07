@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-11-07
+* **Reproduction**: [初回コミットの別 checkout](log/2026-11-07-1120-clean-checkout-reproduction.md)で build・flash・measure を実施した。
 * **Review**: [CH32V003 再現手順](log/2026-11-07-1119-ch32v003-repro-review.md)とコミット未作成の制約を記録した。
 * **Review**: [Pico 配線手順](log/2026-11-07-1116-wiring-review.md)のレビューと未確認事項を記録した。
 * **Preparation**: [DUT 未接続時の書き込み確認](log/2026-11-07-1113-disconnected-flash-preparation.md)に向け電源停止を指示した。
