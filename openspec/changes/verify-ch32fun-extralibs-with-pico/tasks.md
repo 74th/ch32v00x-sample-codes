@@ -43,9 +43,9 @@
 
 ## 8. 統合確認
 
-- [ ] 8.1 `uv run pytest -q`（実機なし）が通ることと、`openspec validate verify-ch32fun-extralibs-with-pico --strict` が通ることを確認する。
-- [ ] 8.2 CH32V003 で全 HIL（既存 + extralibs）を1つのコマンドで実行し、既存試験に回帰がないことを確認して記録する。
-- [ ] 8.3 マトリクス、`hardware/wiring-proposal.md` の対象外の記述、README、protocol.md が実測ログと一致しているかを見直す。実測・ユーザー申告・推定が区別されていることと、`xprivate/` の内容を含まないことを確認する。
+- [x] 8.1 `uv run pytest -q`（実機なし）が通ることと、`openspec validate verify-ch32fun-extralibs-with-pico --strict` が通ることを確認する。
+- [x] 8.2 CH32V003 で全 HIL（既存 + extralibs）を1つのコマンドで実行し、既存試験に回帰がないことを確認して記録する。
+- [x] 8.3 マトリクス、`hardware/wiring-proposal.md` の対象外の記述、README、protocol.md が実測ログと一致しているかを見直す。実測・ユーザー申告・推定が区別されていることと、`xprivate/` の内容を含まないことを確認する。
 
 ## Workflow follow-up
 

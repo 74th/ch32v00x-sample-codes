@@ -8,10 +8,10 @@
 |---|---|
 | `blink_and_read-ch32fun` | PC0 出力、PA1 入力。そのまま対応 |
 | `adc-ch32fun` | PA1/A1 と PA2/A0 の2入力に対応。コメントの PA0 は誤記とみられ、実際の定義は PA2。標準 API 分岐と固定 ch32fun の適合は別途確認 |
-| `i2c_slave-ch32fun` | デフォルト PC1 SDA、PC2 SCL。配線は対応するが helper 依存のため現計画では直接検証対象外 |
-| `i2c_oled-ch32fun` | I2C の接続を提供。helper 依存と画面表示の検証は現計画の対象外 |
+| `i2c_slave-ch32fun` | デフォルト PC1 SDA、PC2 SCL。固定 submodule の `i2c_slave.h` を使う `i2c_slave_helper` を Pico の I2C master で検証（CH32V003/CH32V002 で HIL 確認済み。[ログ](../okf/log/2026-11-07-1956-i2c-slave-helper-hil.md)） |
+| `i2c_oled-ch32fun` | PC1/PC2 を GP10/GP11 の SSD1306 模擬（0x3C）へ接続。`ssd1306_i2c` で送信内容（フレームバッファ）を照合（100 kHz で HIL 確認済み。実 OLED の表示と helper 既定の 1 MHz は未確認。[ログ](../okf/log/2026-11-07-2012-ssd1306-helper-hil.md)） |
 | `spi_master-ch32fun` | PC1 NSS、PC5 SCK、PC6 MOSI、PC7 MISO、mode 0、設定 1 MHz。基本構成は NSS を PC0 にリマップし、helper 依存のため同等機能を新規実装 |
-| `neopixel-ch32fun` | PC6 出力は引き出せるが helper と発光内容の検証は対象外 |
+| `neopixel-ch32fun` | PC6 を GP7 の WS2812 デコードへ接続。`ws2812_spi` で送信バイト列を照合（HIL 確認済み。実 LED の発光とタイミング規格適合は未確認。[ログ](../okf/log/2026-11-07-2027-ws2812-helper-hil.md)） |
 | `i2c_master-register` | 実設定はリマップ先 PC6/PC5。基本構成では PC1/PC2 の同等機能を試し、元のリマップ設定は後日手動配線 |
 | `uart-register` | 実設定はリマップ先 PC0 TX/PC1 RX。基本構成では PD5 TX/PD6 RX の同等機能を試し、元の設定は後日手動配線。実際の BRR は 9600 baud |
 | `pwm-register` | 実設定はリマップ先 PC6/PD3。基本構成では PD2/PC4 の同等機能を試し、元の設定は後日手動配線 |
