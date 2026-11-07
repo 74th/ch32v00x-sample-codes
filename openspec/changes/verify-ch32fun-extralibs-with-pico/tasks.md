@@ -38,7 +38,7 @@
 
 ## 7. CH32V002 への移植
 
-- [ ] 7.1 3サンプルを `samples_ch32v002_ch32fun/` へ移植する。CH32V002 で異なる点（WS2812 helper の HSCR 分岐、I2C1 の割り込みベクタ、I2C の CKCFGR の計算、SPI1 のクロック）を RM V1.5 と照合して記録し、build を確認する。
+- [x] 7.1 3サンプルを `samples_ch32v002_ch32fun/` へ移植する。CH32V002 で異なる点（WS2812 helper の HSCR 分岐、I2C1 の割り込みベクタ、I2C の CKCFGR の計算、SPI1 のクロック）を RM V1.5 と照合して記録し、build を確認する。
 - [ ] 7.2 DUT を CH32V002 に差し替えて（既存の手順 `hardware/ch32v002-reproduction.md` に従う）、`--hil-device ch32v002` で3サンプルの HIL を実行する。結果を `hil/matrix_ch32v002.json` と `okf/log/` に記録し、DUT を CH32V003 に戻す。
 
 ## 8. 統合確認

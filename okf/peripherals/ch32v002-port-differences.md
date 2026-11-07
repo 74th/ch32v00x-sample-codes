@@ -102,6 +102,16 @@ sources:
 - 差分: `TIM_*` マクロを `TIM1_*` に置換（timer_pwm と同じ）。`TIM1_UP_IRQn = 35`（RM PDF p.52、ヘッダ確認）、`PFIC->SCTLR` の SLEEPDEEP=bit 2、WFITOWFE=bit 3（RM PDF p.68）は同じ。PSC = 48000 − 1 は 16 ビットに収まる。
 - sleep 中の電流は測らない。実機: HIL で機能確認済み。
 
+## helper 検証サンプル 3 件（i2c_slave_helper、ssd1306_i2c、ws2812_spi）
+
+2026-11-07、`verify-ch32fun-extralibs-with-pico` タスク 7.1。以下の RM の記述は、変換資料（`xprivate/` の `ch32v00x-rm`、V1.5）をこの作業で自分で読んで確認した。PDF ページ番号を示す。build のみで、実機は未確認（7.2 で確認する）。
+
+- **差分 1（ビルドが通らない）**: `i2c_slave.h` と `ssd1306_i2c.h` は `RCC->APB1PRSTR` を使うが、V00x の `ch32x00xhw.h` の `RCC_TypeDef` では名前が `PB1PRSTR` で、V003 互換の別名 `APB1PRSTR`（`APB2PRSTR` にはある）がない。helper は変更しないため、Makefile に `EXTRA_CFLAGS += -DAPB1PRSTR=PB1PRSTR` を加えた（名前だけの置換）。RM PDF p.38（3.4.5）で `RCC_PB1PRSTR`（0x10）の bit 21 が I2C1RST、ヘッダの `RCC_APB1Periph_I2C1` が 0x00200000 で一致する。
+- **差分 2（確認済み・変更不要）**: 割り込み番号は DMA1_CH3 が 24（0x60）、I2C1_EV が 30、I2C1_ER が 31（RM PDF p.52）。ヘッダの `*_IRQn` と同じ。ハンドラ名は `ch32fun.c` のベクタ表と一致し、ELF の `nm` で各ハンドラが定義されていることを確認した。SPI1_TX の DMA は channel 3（RM PDF p.94、図 8-1）。
+- **差分 3（確認済み）**: SPI の BR=3（`3<<3`）は FHCLK/16。システムクロックは 48 MHz（HSI 24 MHz × PLL 2）なので 3 MHz（RM PDF p.228）。`SPI1->HSCR`（高速読み出し、RM PDF p.231）は helper が `CH32V003` のときだけ設定するため V002 では設定されない。送信専用なので影響しない見込みだが、V003 で HSCR を設定した場合の BR の意味（`HSRXEN=1` では FHCLK/(BR+2)）との整合は未確認で、実機で測った幅（7.2）で確認する。
+- **funconfig**: 既存の V002 サンプルと同じ `HSI_VALUE 24000000`（`CH32V00x` が定義されるため既定でも同じ値）。
+- build: FLASH は i2c_slave_helper 1468 B、ssd1306_i2c 5420 B、ws2812_spi 1224 B。
+
 # 未確認
 
 - 実機確認（機能確認のみ）は 9 サンプルの HIL 成功で、`okf/log/2026-11-07-1926-ch32v002-hil.md` に記録した。個別の「実機未確認」の記述は、この記録の時点で HIL が成功したものについては機能確認済みに読み替える。電圧・波形・クロックの精度は未確認。

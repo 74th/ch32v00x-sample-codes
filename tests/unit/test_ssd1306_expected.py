@@ -46,3 +46,10 @@ def test_scene_pixels_match_the_drawing_intent(expected):
     assert pixel(4, 28) == 1 and pixel(6, 29) == 1                      # drawPixel dots 4+2i, 28+(i%8)
     assert pixel(60, 40) == 0                                           # empty area
     assert sum(bin(b).count('1') for p in fb for b in p) > 400          # text, sprite, border present
+
+
+def test_v002_port_uses_the_same_scene_and_colors():
+    v3, v2 = ROOT / 'samples_ch32v003_ch32fun', ROOT / 'samples_ch32v002_ch32fun'
+    assert (v3 / 'ssd1306_i2c/scene.h').read_text() == (v2 / 'ssd1306_i2c/scene.h').read_text()
+    from ch32hil.expected import ws2812_sample_values
+    assert ws2812_sample_values(v2 / 'ws2812_spi/main.c') == ws2812_sample_values(v3 / 'ws2812_spi/main.c')
