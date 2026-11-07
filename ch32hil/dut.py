@@ -105,6 +105,9 @@ class Dut:
     ready_timeout: float = 20.0
     ready_interval: float = 1.0
     sleep: object = field(default=time.sleep)
+    # Extra `make` variables (e.g. ("HELPER_CLOCK=1",)). Because make does not notice changed variables,
+    # a non-empty value cleans the sample first so a previous variant cannot be flashed by mistake.
+    make_args: tuple = ()
 
     def __post_init__(self):
         devices.get(self.target)  # unknown device -> DeviceError before any programmer access
@@ -115,7 +118,9 @@ class Dut:
         return self.sample_dir / "main.bin"
 
     def build(self) -> Path:
-        r = self.run(["make", "-C", str(self.sample_dir), "build", "PREFIX=riscv64-unknown-elf"], 300)
+        if self.make_args:
+            self.run(["make", "-C", str(self.sample_dir), "clean", "PREFIX=riscv64-unknown-elf"], 300)
+        r = self.run(["make", "-C", str(self.sample_dir), "build", "PREFIX=riscv64-unknown-elf", *self.make_args], 300)
         if r.returncode != 0 or not self.binary.is_file():
             raise DutError("build", f"make failed (exit {r.returncode})")
         return self.binary

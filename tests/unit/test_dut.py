@@ -113,3 +113,28 @@ def test_wait_ready_rejects_wrong_chip(tmp_path):
     dut = Dut(tmp_path, run=lambda a, t: CmdResult(0, out), minichlink=tmp_path / "mc", ready_timeout=5)
     with pytest.raises(DutError):
         dut.wait_ready("flash")
+
+
+def test_build_make_args_clean_first_and_pass_variables(tmp_path):
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        if "build" in argv:
+            (tmp_path / "main.bin").write_bytes(b"x")
+        return CmdResult(0, "")
+    dut = Dut(tmp_path, run=runner, minichlink=tmp_path / "mc", ready_timeout=0, make_args=("HELPER_CLOCK=1",))
+    dut.build()
+    assert "clean" in calls[0] and "HELPER_CLOCK=1" not in calls[0]
+    assert "build" in calls[1] and "HELPER_CLOCK=1" in calls[1]
+
+
+def test_build_without_make_args_does_not_clean(tmp_path):
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        (tmp_path / "main.bin").write_bytes(b"x")
+        return CmdResult(0, "")
+    Dut(tmp_path, run=runner, minichlink=tmp_path / "mc", ready_timeout=0).build()
+    assert len(calls) == 1 and "clean" not in calls[0]

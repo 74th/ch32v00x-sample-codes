@@ -26,4 +26,5 @@ markers = [
     "pwm: HIL test using timer/PWM measurement capability",
     "adc: HIL test using ADC stimulus capability",
     "watchdog: HIL test of watchdog/sleep reset signatures",
+    "extralibs: HIL test of a pinned-ch32fun helper (extralibs/examples) sample",
 ]

@@ -50,3 +50,6 @@
 - [CH32V002 統合確認 9.1/9.2（Issue #9）](2026-11-07-1935-ch32v002-integration-9-1-9-2.md)
 - [CH32V003 への差し戻しと回帰確認 9.3（Issue #9）](2026-11-07-1937-ch32v003-regression-9-3.md)
 - [統合レビュー 9.4（Issue #9）](2026-11-07-1945-integration-review-9-4.md)
+- [i2c_slave helper サンプルの HIL（extralibs 検証 2.1〜2.3）](2026-11-07-1956-i2c-slave-helper-hil.md)
+- [SSD1306 模擬の治具実装（extralibs 検証 3.1〜3.2）](2026-11-07-2003-ssd1306-model-fixture.md)
+- [SSD1306 helper サンプルの HIL（extralibs 検証 4.1〜4.4）](2026-11-07-2012-ssd1306-helper-hil.md)

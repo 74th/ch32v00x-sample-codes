@@ -4,7 +4,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-CLASSES = {"direct-port", "equivalent-standard-ch32fun", "extralibs-excluded", "not-yet-automatable"}
+CLASSES = {"direct-port", "equivalent-standard-ch32fun", "extralibs-excluded", "not-yet-automatable",
+           "helper-verification"}
+# Helpers of the pinned externals/ch32fun that helper-verification samples may depend on.
+ALLOWED_HELPERS = {
+    "extralibs/ssd1306_i2c.h", "extralibs/ssd1306.h",
+    "extralibs/ws2812b_dma_spi_led_driver.h", "examples/i2c_slave/i2c_slave.h",
+}
+HELPER_REQUIRED = ("sample", "helpers", "requires", "criteria")
 STATES = {"not-ported", "not-automated", "build-only", "manually-verified", "hil-verified", "excluded"}
 # Baseline states whose sample must have a row in every other device matrix.
 COVERED_STATES = {"hil-verified", "not-automated", "build-only", "manually-verified"}
@@ -44,6 +51,14 @@ def problems(entries, book_dir=None, samples_dir=None, root=None):
             out.append(f"bad state: {e}")
         if e["class"] == "extralibs-excluded" and e["state"] != "excluded":
             out.append(f"extralibs entry must be excluded: {e['book_sample']}")
+        if e["class"] == "helper-verification":
+            label = e.get("sample") or e.get("book_sample")
+            for key in HELPER_REQUIRED:
+                if not e.get(key):
+                    out.append(f"helper-verification without {key}: {label}")
+            for helper in e.get("helpers") or []:
+                if helper not in ALLOWED_HELPERS:
+                    out.append(f"unknown helper {helper}: {label}")
         if e["state"] == "hil-verified" and not e.get("requires_verified", True):
             out.append("hil-verified without capability")
         if samples_dir and e.get("sample") and e["state"] in ("build-only", "hil-verified") \

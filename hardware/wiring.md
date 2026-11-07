@@ -57,9 +57,9 @@ Pico の自己検証用で、DUT 固定配線とは別の GPIO を使う。電�
 
 | 構成 | 接続（各 1 kΩ、特記を除く） | 検証スクリプト |
 |---|---|---|
-| I2C | GP16–GP18 を SDA、GP17–GP19 を SCL とし、それぞれ 3V3 へ 4.7 kΩ pull-up | `hardware/pico-tester/i2c_loopback.py` |
+| I2C | GP16–GP18 を SDA、GP17–GP19 を SCL とし、それぞれ 3V3 へ 4.7 kΩ pull-up | `hardware/pico-tester/i2c_loopback.py`、`ssd1306_selftest.py` |
 | SPI | GP19→GP20（MOSI）、GP18→GP21（SCK）、GP17→GP22（CS）、GP26→GP16（MISO） | `hardware/pico-tester/spi_loopback.py` |
 | UART | [pico-tester README](pico-tester/README.md) と `uart_loopback.py` を参照 | `hardware/pico-tester/uart_loopback.py` |
 | PWM 測定 | GP16→GP18（I2C 配線が残っていれば兼用可） | `hardware/pico-tester/pwm_selftest.py` |
 
-DUT 試験（`tests/hil`）は loopback 配線の有無に依存しない。2026-11-07 の最後の確認時は SPI 配線にしてある。
+DUT 試験（`tests/hil`）は loopback 配線の有無に依存しない。2026-11-07 20:02 JST の SSD1306 自己検証時は I2C 配線に切り替えた（ユーザー申告。それ以前の最後の確認時は SPI 配線）。

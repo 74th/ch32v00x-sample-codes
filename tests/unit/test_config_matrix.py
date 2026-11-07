@@ -109,3 +109,22 @@ def test_hil_verified_requires_tests_and_existing_evidence(tmp_path):
     p = matrix.problems([dict(base, hil_tests=["tests/hil/none.py::test_x"], evidence=["okf/log/none.md"])],
                         root=tmp_path)
     assert any("hil test not found" in x for x in p) and any("evidence log not found" in x for x in p)
+
+
+def _helper_entry(**mut):
+    e = {"book_sample": None, "class": "helper-verification", "peripheral": "i2c", "state": "not-automated",
+         "sample": "i2c_slave_helper", "helpers": ["examples/i2c_slave/i2c_slave.h"],
+         "requires": ["i2c-master"], "criteria": "x"}
+    e.update(mut)
+    return e
+
+
+def test_helper_verification_entry_valid_and_strict():
+    assert matrix.problems([_helper_entry()]) == []
+    for key in ("sample", "helpers", "requires", "criteria"):
+        p = matrix.problems([_helper_entry(**{key: None})])
+        assert any(f"without {key}" in x for x in p), key
+    p = matrix.problems([_helper_entry(helpers=["extralibs/ssd1306_spi.h"])])
+    assert any("unknown helper" in x for x in p)
+    p = matrix.problems([_helper_entry(state="hil-verified")])
+    assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)

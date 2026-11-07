@@ -58,6 +58,16 @@ GP10 SDA・GP11 SCL、外付け pull-up、100 kHz を使用する。`I2C_MASTER 
 
 `I2C_SLAVE <7bit_addr_decimal> <expected_rx_count> <reply_hex|-> <timeout_ms>` は DUT master からの書き込みと読み出しに応答し、受信・送信数と受信バイトを返す。上限は各32バイト、待機10〜5000 ms。途中経過で期限に達すれば `ERR TIMEOUT`、予定を超えるデータは `ERR I2C`。これらのコマンドと loopback の能力は電気的波形の校正を意味しない。
 
+## SSD1306 OLED の模擬
+
+`SSD1306_CAPTURE <frames 1-8> <timeout_ms 10-5000> [INIT]` は I2C1 を 0x3C の slave（GP10 SDA・GP11 SCL、内蔵 pull なし）にし、DUT が送る SSD1306 のコマンドとデータを 128×64 のフレームバッファへ再構成する。1 回の I2C 転送（START から STOP）ごとに先頭の制御バイト（0x00 コマンド、0x40 データ、Co ビット対応）で分類し、引数が転送をまたぐコマンドも状態を引き継ぐ。`0x21`/`0x22` のウィンドウ指定の後にウィンドウ面積分（全画面で 1024 バイト）のデータが届くと 1 フレームとして数え、指定数に達した時点でフレームバッファを凍結する（以後の転送は無視）。`ssd1306_init` は最後に空のフレームを送るため、起動直後から取得すると `frames=2` で最後のフレームが描画内容になる。DUT が先に動いていれば最初の 2 フレームが描画内容になる。
+
+成功例: `OK frames=2 transfers=.. cmds=.. data=.. unknown=.. bad_control=.. overflow=.. display_on=1 display_on_seen=1 charge_pump=1 crc32=<フレームバッファの CRC-32> safe=1`。`INIT` を付けると、表示オフ（`0x00 0xAE`）を受けるまでの転送を無視し、以後も表示オフを受けるたびに模擬の状態をクリアする。件数とフレームは最後の初期化シーケンスからのものになり、DUT のリセット前の通信や起動の二重化が混ざらない（実機で、`minichlink -i` が DUT を再起動して初期化が 2 回流れることを確認した）。期限内にフレーム数に届かなければ `ERR TIMEOUT` と途中の件数（フレームバッファは診断用に残る）。`unknown` は未対応コマンドの件数（模擬は成功のまま無視する）、`bad_control` は予約ビットが 0 でない制御バイト、`overflow` は 256 バイトを超えた転送。`display_on_seen=0` なら DUT の初期化を観測していない。`SSD1306_PAGE <0-7>` は直前の取得の 1 ページ（128 バイト、256 桁の hex）を返す。取得前は `ERR INVALID no_capture`。
+
+対応する範囲はアドレッシングモード（水平・垂直・ページ）、列・ページ範囲、表示 on/off、チャージポンプの状態。スクロール、コントラスト、反転、リマップの描画への影響、SH1107 は模擬しない。解釈ロジック `ssd1306_model.c` はホストの単体テスト（`tests/unit/test_ssd1306_model.py`）でも検証している。
+
+`SSD1306_SELFTEST` は Pico 単体の自己検証で、I2C loopback 配線（GP16–GP18 SDA、GP17–GP19 SCL、4.7 kΩ pull-up）で I2C0 master から I2C1 slave（0x3C）へヘルパーと同じ形の転送（コマンド 1 バイトごとの転送、32 バイト単位のデータ転送、未対応コマンド 1 個、2 フレーム）を送り、フレームバッファの CRC を独立に作った期待値と照合する。あわせて存在しない 0x3D への書き込みが失敗すること、何も送らない状態で `frames=0` になることを確認する。実行は `uv run python hardware/pico-tester/ssd1306_selftest.py`。2026-11-07 に I2C loopback 配線（ユーザー申告）で 2 回成功した（100 kHz）。この自己検証は DUT 側の GP10/GP11 のピン接続や 1 MHz での受信は確認しない。
+
 ## GPIO の継続観測
 
 `GPIO_SEQUENCE` は `GPIO_SAMPLE` と同じ引数・出力を持ち、最大300点、最大約30秒の有界観測を行う。観測中に改行なしの `!` を1文字送ると、次のサンプル時に `ERR CANCELED host_request` を返し安全状態へ戻る。観測中の他の入力は `ERR INVALID busy_input` として中断される。キャンセル後に `RESET_SAFE` を送れる。ピンの restart signature の解釈はホスト側で行う。

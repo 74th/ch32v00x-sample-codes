@@ -124,3 +124,10 @@ def test_cancellable_sequence_classification():
     assert link.sent == [b'1 GPIO_SEQUENCE 5 3 1000\n']
     client.cancel_sequence()
     assert link.sent[-1] == b'!'
+
+
+def test_long_ssd1306_page_response_line_is_parsed():
+    page = "ab" * 128
+    line = f"1 OK page=3 fb={page} safe=1\n".encode()
+    r = PicoClient(Link([line]), timeout=1).request("SSD1306_PAGE", 3)
+    assert r.ok and f"fb={page}" in r.fields and len(line) > 256

@@ -155,6 +155,49 @@
    "evidence": [
     "okf/log/2026-11-07-1926-ch32v002-hil.md"
    ]
+  },
+  {
+   "sample": "i2c_slave_helper",
+   "class": "helper-verification",
+   "peripheral": "i2c",
+   "state": "not-ported",
+   "helpers": [
+    "examples/i2c_slave/i2c_slave.h"
+   ],
+   "requires": [
+    "i2c-master"
+   ],
+   "criteria": "Pico I2C_MASTER: ACK at 0x42 / NACK at 0x43, register write and read-back, write/read callback counts and reg/length via observation registers, PC0 high on expected write callback",
+   "note": "not ported: CH32V003 helper verification is not hil-verified yet (verify-ch32fun-extralibs-with-pico task 7)"
+  },
+  {
+   "sample": "ssd1306_i2c",
+   "class": "helper-verification",
+   "peripheral": "i2c",
+   "state": "not-ported",
+   "helpers": [
+    "extralibs/ssd1306_i2c.h",
+    "extralibs/ssd1306.h"
+   ],
+   "requires": [
+    "ssd1306-emulation"
+   ],
+   "criteria": "Pico-reconstructed 128x64 frame buffer CRC equals host-generated expected CRC (100 kHz primary; 1 MHz helper default recorded separately). Real OLED display not verified",
+   "note": "not ported: CH32V003 helper verification is not hil-verified yet (verify-ch32fun-extralibs-with-pico task 7)"
+  },
+  {
+   "sample": "ws2812_spi",
+   "class": "helper-verification",
+   "peripheral": "spi",
+   "state": "not-ported",
+   "helpers": [
+    "extralibs/ws2812b_dma_spi_led_driver.h"
+   ],
+   "requires": [
+    "ws2812-decode"
+   ],
+   "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified",
+   "note": "not ported: CH32V003 helper verification is not hil-verified yet (verify-ch32fun-extralibs-with-pico task 7)"
   }
  ]
 }

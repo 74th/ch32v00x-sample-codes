@@ -27,24 +27,61 @@
     },
     {
       "book_sample": "i2c_oled-ch32fun",
-      "class": "extralibs-excluded",
+      "class": "helper-verification",
       "peripheral": "i2c",
-      "state": "excluded",
-      "note": "ssd1306 extralibs; display content out of scope"
+      "state": "hil-verified",
+      "note": "SSD1306 helper (book-code i2c_oled-ch32fun), 100 kHz override: Pico-reconstructed frame CRC equals the host-generated expected CRC (same ssd1306.h and scene.h). Helper default 1 MHz is recorded separately as xfail (0 transfers observed, cause not isolated). Real OLED display not verified",
+      "sample": "ssd1306_i2c",
+      "helpers": [
+        "extralibs/ssd1306_i2c.h",
+        "extralibs/ssd1306.h"
+      ],
+      "requires": [
+        "ssd1306-emulation"
+      ],
+      "criteria": "Pico-reconstructed 128x64 frame buffer CRC equals host-generated expected CRC (100 kHz primary; 1 MHz helper default recorded separately). Real OLED display not verified",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_ssd1306_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-2012-ssd1306-helper-hil.md"
+      ]
     },
     {
       "book_sample": "i2c_slave-ch32fun",
-      "class": "extralibs-excluded",
+      "class": "helper-verification",
       "peripheral": "i2c",
-      "state": "excluded",
-      "note": "i2c_slave.h extralib; standard-header equivalent tracked separately"
+      "state": "hil-verified",
+      "note": "SetupI2CSlave helper (book-code i2c_slave-ch32fun). Pico-observed ACK/NACK, write/read-back, callback counts (write: once per write-direction STOP incl. address-only probe; read: bytes+1 per read), PC0 latch. Master at 100 kHz; helper 1 MHz setting not exercised by a 1 MHz master. Standard-header sample i2c_slave is kept separately",
+      "sample": "i2c_slave_helper",
+      "helpers": [
+        "examples/i2c_slave/i2c_slave.h"
+      ],
+      "requires": [
+        "i2c-master"
+      ],
+      "criteria": "Pico I2C_MASTER: ACK at 0x42 / NACK at 0x43, register write and read-back, write/read callback counts and reg/length via observation registers, PC0 high on expected write callback",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_extralibs_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1956-i2c-slave-helper-hil.md"
+      ]
     },
     {
       "book_sample": "neopixel-ch32fun",
-      "class": "extralibs-excluded",
-      "peripheral": "gpio",
-      "state": "excluded",
-      "note": "ws2812 extralibs; emission content out of scope"
+      "class": "helper-verification",
+      "peripheral": "spi",
+      "state": "not-automated",
+      "note": "fixture capability ws2812-decode not implemented yet",
+      "sample": "ws2812_spi",
+      "helpers": [
+        "extralibs/ws2812b_dma_spi_led_driver.h"
+      ],
+      "requires": [
+        "ws2812-decode"
+      ],
+      "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified"
     },
     {
       "book_sample": "spi_master-ch32fun",
