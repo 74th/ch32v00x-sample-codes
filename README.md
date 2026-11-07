@@ -70,12 +70,10 @@ CH32V003向けに作成したサンプルコードを、CH32V002 / CH32V005 / CH
 
 現時点の確認環境は Ubuntu 26.04 x86-64、GCC 15.2、RISC-V GCC 14.2、GNU Make 4.4.1 です。必要なパッケージは `git make gcc gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf libnewlib-dev pkg-config libusb-1.0-0-dev libudev-dev` です。書き込みには WCH-LinkE と CH32V003 が必要です。USB アクセス権も必要です。
 
-book-code の参照コミットは `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae`、その ch32fun gitlink は `2679ac059f3ada402731e5a10818cc0814e9ec4c` です。既存の checkout を切り替える前に変更を確認してください。
+ビルドに必要な ch32fun は `externals/ch32fun` の Git submodule です。固定コミットは `b28d285460ce052a179dba8f4a22c6f73ff8e328` です。book-code はサンプルの出典・参照元であり、ビルドや書き込みには不要です。
 
 ```bash
-./scripts/setup-externals.sh
-git -C externals/ch32v003-book-code checkout 4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae
-git -C externals/ch32v003-book-code submodule update --init ch32fun
+git submodule update --init externals/ch32fun
 ./scripts/ch32fun.sh check
 ./scripts/ch32fun.sh build
 ./scripts/ch32fun.sh programmer
@@ -84,7 +82,7 @@ git -C externals/ch32v003-book-code submodule update --init ch32fun
 
 `build` は DUT 不要で `samples/ch32v003/blink_and_read/main.bin` を生成します。`flash` は既存ファームウェアを上書きします。固定 ch32fun の minichlink を使用し、書き込み成功と GPIO 実測は別です。サンプルは book-code の CC0 版を基に PC0 出力と PA1 入力を保持しています。CH32V003F4P6 の LED 点滅と Pico での測定は確認済みですが、配線条件の確認は残っています。詳細は [暫定観測記録](hardware/ch32v003-observation.md) を参照してください。将来の移植先は `samples/<device>/<sample>/` に配置します。
 
-固定版 minichlink は DUT 未検出でも終了コード 0 と `Image written` を返すことがあるため、`flash` スクリプトは検出結果も確認します。成功表示は読み戻し照合の代わりにはなりません。
+以前使用した book-code 内の古い minichlink は DUT 未検出でも終了コード 0 と `Image written` を返したため、`flash` スクリプトは現在の minichlink でも検出結果を確認します。成功表示は読み戻し照合の代わりにはなりません。
 
 ### 安全に失敗できる試験環境を作る
 

@@ -1,5 +1,6 @@
 xprivate
-externals
+externals/*
+!externals/ch32fun
 samples/**/*.elf
 samples/**/*.bin
 samples/**/*.hex

@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-book="$root/externals/ch32v003-book-code"
-fun="$book/ch32fun"
+fun="$root/externals/ch32fun"
 target="${2:-ch32v003}"
 case "$target" in
   ch32v003|ch32v002) ;;
   *) echo "error: unknown target $target (use ch32v003 or ch32v002)" >&2; exit 2;;
 esac
 sample="$root/samples/$target/blink_and_read"
-revision=2679ac059f3ada402731e5a10818cc0814e9ec4c
+revision=b28d285460ce052a179dba8f4a22c6f73ff8e328
 case "${1:-}" in
   check)
     missing=0
@@ -57,8 +56,8 @@ case "${1:-}" in
     result=0
     output="$("$fun/minichlink/minichlink" -w "$sample/main.bin" flash -b 2>&1)" || result=$?
     printf '%s\n' "$output"
-    expected='Detected: CH32V003'
-    [[ "$target" == ch32v002 ]] && expected='Detected: CH32V006'
+    expected='Detected CH32V003'
+    [[ "$target" == ch32v002 ]] && expected='Detected CH32V002'
     if [[ $result -ne 0 ]] || [[ "$output" != *"$expected"* ]] || [[ "$output" != *'Image written.'* ]] || [[ "$output" == *'No detected chip.'* ]] || [[ "$output" == *'Unknown chip'* ]]; then
       echo "FLASH FAILED: programmer failed or did not confirm $target and image write" >&2
       exit 1

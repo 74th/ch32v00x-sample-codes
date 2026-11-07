@@ -6,18 +6,15 @@
 
 このリポジトリの `samples/ch32v003/blink_and_read/` と `scripts/ch32fun.sh` を使う。[ビルド環境](../README.md#ch32v003-のビルド環境)の依存パッケージを導入する。Pico 用には [Pico 観測手順](pico-tester/README.md) の SDK と pyserial が必要。検証時の RISC-V GCC は 14.2.0、Make は 4.4.1、WCH-LinkE の firmware は 2.9。
 
-固定 book-code `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae` と、その gitlink の ch32fun `2679ac059f3ada402731e5a10818cc0814e9ec4c` を用意する。すでに checkout がある場合、切り替える前にその変更を確認する。
+ch32fun はプロジェクトの submodule `externals/ch32fun` を用いる。記録時の gitlink は `b28d285460ce052a179dba8f4a22c6f73ff8e328`。book-code はビルドに不要。
 
 ```sh
-./scripts/setup-externals.sh
-git -C externals/ch32v003-book-code checkout 4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae
-git -C externals/ch32v003-book-code submodule update --init ch32fun
-git -C externals/ch32v003-book-code rev-parse HEAD
-git -C externals/ch32v003-book-code/ch32fun rev-parse HEAD
+git submodule update --init externals/ch32fun
+git -C externals/ch32fun rev-parse HEAD
 ./scripts/ch32fun.sh check
 ```
 
-2026-11-07 の別 checkout での再現に使用したプロジェクトのコミットは `df9d42d442da91b9313d42665d1ef8d875fa4b97`。サンプルやコンパイラの差異によりバイナリのハッシュは変わり得る。
+以前の別 checkout 再現はプロジェクト `df9d42d442da91b9313d42665d1ef8d875fa4b97` と旧 ch32fun を使用した。現在の submodule での確認は作業ログを参照。サンプルやコンパイラの差異によりバイナリのハッシュは変わり得る。
 
 ## ビルド
 
@@ -26,7 +23,7 @@ git -C externals/ch32v003-book-code/ch32fun rev-parse HEAD
 sha256sum samples/ch32v003/blink_and_read/main.bin
 ```
 
-`BUILD OK` と終了コード 0 を確認する。2026-11-07 の成果物は 1056 bytes、SHA-256 `2edca10fa40bac56fa2131db88eeb1b47199408413ee2b2a85d42a1c12d83783`。ビルド成功は実機動作を意味しない。
+`BUILD OK` と終了コード 0 を確認する。ch32fun `b28d285` での成果物は 1056 bytes、SHA-256 `5688ff09715f63c04a6855129f7b3d6c85359a56ae3ba6cbd31130e9894561dc`。ビルド成功は実機動作を意味しない。
 
 ## 書き込みと読み戻し
 
@@ -35,7 +32,7 @@ Pico のファームウェアを [手順](pico-tester/README.md) で用意し、
 ```sh
 ./scripts/ch32fun.sh flash
 readback_file=$(mktemp)
-externals/ch32v003-book-code/ch32fun/minichlink/minichlink -r "$readback_file" flash 1056 -b
+externals/ch32fun/minichlink/minichlink -r "$readback_file" flash 1056 -b
 cmp samples/ch32v003/blink_and_read/main.bin "$readback_file"
 sha256sum "$readback_file"
 ```
@@ -45,7 +42,7 @@ sha256sum "$readback_file"
 ## 起動と測定
 
 ```sh
-timeout 5s stdbuf -oL -eL externals/ch32v003-book-code/ch32fun/minichlink/minichlink -b -T
+timeout 5s stdbuf -oL -eL externals/ch32fun/minichlink/minichlink -b -T
 python3 hardware/pico-tester/measure.py
 ```
 
