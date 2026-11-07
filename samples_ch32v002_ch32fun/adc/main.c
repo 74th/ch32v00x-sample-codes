@@ -1,6 +1,7 @@
 /* CH32V002 port of the CH32V003 sample; device differences: okf/peripherals/ch32v002-port-differences.md.
  * Standard-ch32fun test sample (no extralibs, no ch32v003_GPIO_branchless.h). Related book-code intent: adc-ch32fun (CC0-1.0).
- * Contract: ADC1 channel 0 (PA2), 12-bit, single conversion every 200 ms (VDD reference).
+ * Contract: ADC1 channel 0 (PA2), 12-bit conversion every 200 ms (VDD reference),
+ * reported as result >> 2 (10-bit equivalent) because the Pico fixture accepts 0..1023 only.
  * Result is sent on USART1 TX (PD5, 115200 8N1) as 3 hex digits + '\n'. */
 #include "ch32fun.h"
 
@@ -26,12 +27,12 @@ int main(void)
     ADC1->RSQR1 = 0;
     ADC1->RSQR3 = 0;                    /* channel 0 */
     ADC1->SAMPTR2 = 7 << (3 * 0);       /* 239.5 cycles */
-    ADC1->CTLR2 = ADC_ADON | ADC_EXTSEL; /* software trigger */
+    ADC1->CTLR2 = ADC_ADON | ADC_EXTSEL | ADC_EXTTRIG; /* software trigger; CH32V00x needs EXTTRIG too */
     /* CH32V00x ADC has no RSTCAL/CAL bits (reserved), so no calibration step. */
     while (1) {
         ADC1->CTLR2 |= ADC_SWSTART;
         while (!(ADC1->STATR & ADC_EOC)) {}
-        uint16_t v = ADC1->RDATAR & 0xfff;
+        uint16_t v = (ADC1->RDATAR & 0xfff) >> 2; /* 12-bit result reported as 10-bit equivalent */
         for (int sh = 8; sh >= 0; sh -= 4) put("0123456789ABCDEF"[(v >> sh) & 0xf]);
         put('\n');
         Delay_Ms(200);

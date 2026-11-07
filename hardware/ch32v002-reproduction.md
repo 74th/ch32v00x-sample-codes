@@ -8,7 +8,13 @@
 ./scripts/ch32fun.sh flash ch32v002
 ```
 
-下記の記録で使った `python3 hardware/pico-tester/measure.py` は、v1 firmware と PC0–GP0 配線専用である。現在の Pico は protocol v2 firmware と固定配線（PC0–GP5）なので、そのままでは使えない。CH32V002 の Pico 観測は、OpenSpec change `automate-ch32v002-ch32fun-hil` で HIL をデバイス選択に対応させてから行う。
+下記の記録で使った `python3 hardware/pico-tester/measure.py` は、v1 firmware と PC0–GP0 配線専用である。現在の Pico は protocol v2 firmware と固定配線（PC0–GP5）なので、そのままでは使えない。CH32V002 の Pico 観測は、デバイスを選択した HIL で行う（[HIL 設定](../hil/README.md#対象デバイスの選択)）。
+
+```sh
+uv run pytest --hil --hil-device ch32v002 -q tests/hil --hil-port=/dev/serial/by-id/<PicoのID>
+```
+
+2026-11-07 の実機で、GPIO、UART、I2C master/slave、SPI、PWM、ADC、watchdog、sleep の 11 テストが成功した（機能確認のみ。条件・ADC のトリガ設定の差分・未確認事項は [実測ログ](../okf/log/2026-11-07-1926-ch32v002-hil.md)）。別環境での再現は未確認。
 
 ## DUT の差し替え
 

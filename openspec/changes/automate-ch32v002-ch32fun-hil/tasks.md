@@ -20,34 +20,34 @@
 
 - [x] 3.1 既存 `samples_ch32v002_ch32fun/blink_and_read` を CH32V003 版の現行実装（ボタン入力を含む）と比較し、不足があれば追従する。デバイス差分（`TARGET_MCU`、HSI 24 MHz、GPIO MODE 等）を根拠付きで記録し、`make` で build できることを確認する。
 - [x] 3.2 `hil/matrix_ch32v002.json` の `gpio_input` 行を、CH32V003 と同じ理由（固定配線で PC4 を Pico から駆動しない）で HIL 対象外として記録し、マトリクス整合性テストが通ることを確認する。
-- [ ] 3.3 DUT を CH32V002 へ差し替え、`uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port=<Pico>` を実行する。識別付き flash、readback 一致、PC0 パターン、意図的不一致、PA1 ボタン入力、後始末を別々に確認し、`okf/log/` に記録してマトリクスを更新する。
+- [x] 3.3 DUT を CH32V002 へ差し替え、`uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port=<Pico>` を実行する。識別付き flash、readback 一致、PC0 パターン、意図的不一致、PA1 ボタン入力、後始末を別々に確認し、`okf/log/` に記録してマトリクスを更新する。
 
 ## 4. UART
 
 - [x] 4.1 `uart` を移植し、HSI 24 MHz と既定 PLL での USART ボーレート設定値を RM V1.5 と照合して記録する。build を確認する。
-- [ ] 4.2 CH32V002 で UART HIL を実行し、Pico→DUT、DUT→Pico、タイムアウト、後始末を確認して記録する。
+- [x] 4.2 CH32V002 で UART HIL を実行し、Pico→DUT、DUT→Pico、タイムアウト、後始末を確認して記録する。
 
 ## 5. I2C
 
 - [x] 5.1 `i2c_master` と `i2c_slave` を移植し、I2C クロック設定値とレジスタ差分を RM V1.5 と照合して記録する。両方の build を確認する。
-- [ ] 5.2 CH32V002 で両方の役割の I2C HIL を実行し、アドレス、データ、ACK/NACK、誤ったアドレスの場合を確認して記録する。
+- [x] 5.2 CH32V002 で両方の役割の I2C HIL を実行し、アドレス、データ、ACK/NACK、誤ったアドレスの場合を確認して記録する。
 
 ## 6. SPI
 
 - [x] 6.1 `spi_master` を移植し、2.1 で確認した NSS→PC0 リマップ設定と SPI レジスタ差分を記録する。build を確認する。
-- [ ] 6.2 CH32V002 で SPI HIL を実行し、転送データと mode 不一致の検出を確認して記録する。
+- [x] 6.2 CH32V002 で SPI HIL を実行し、転送データと mode 不一致の検出を確認して記録する。
 
 ## 7. timer/PWM と ADC
 
 - [x] 7.1 `timer_pwm` を移植し、TIM1 のクロック前提から CH32V002 での期待周期・デューティと許容範囲を決めて記録する。build を確認する。
-- [ ] 7.2 CH32V002 で PWM HIL を実行し、実測の周期・デューティと採用した許容範囲を記録する。
+- [x] 7.2 CH32V002 で PWM HIL を実行し、実測の周期・デューティと採用した許容範囲を記録する。
 - [x] 7.3 `adc` を移植し、ADC の分解能・チャネル・サンプリング設定の差分と、CH32V002 での粗い値域判定条件を資料から決めて記録する。build を確認する。
-- [ ] 7.4 CH32V002 で ADC HIL を実行し、PWM 設定ごとの報告値の変化と後始末を確認して記録する。電圧や精度は主張しない。
+- [x] 7.4 CH32V002 で ADC HIL を実行し、PWM 設定ごとの報告値の変化と後始末を確認して記録する。電圧や精度は主張しない。
 
 ## 8. watchdog と sleep
 
 - [x] 8.1 `watchdog` と `sleep_wake` を移植し、IWDG のクロック源・分周、sleep/wake の PFIC・EXTI 差分と、CH32V002 での期待パルス数・時間条件を記録する。両方の build を確認する。
-- [ ] 8.2 CH32V002 で watchdog/sleep HIL を実行し、reset 署名、sleep 中のトグル、テスト後の復旧可能性を確認して記録する。
+- [x] 8.2 CH32V002 で watchdog/sleep HIL を実行し、reset 署名、sleep 中のトグル、テスト後の復旧可能性を確認して記録する。
 
 ## 9. 統合受け入れ
 

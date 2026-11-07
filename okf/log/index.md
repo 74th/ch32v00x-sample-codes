@@ -46,3 +46,4 @@
 - [CH32V003 検証マトリクスと手順書の後始末](2026-11-07-1908-ch32v003-matrix-docs-cleanup.md)
 - [HIL ホスト層のデバイス選択（Issue #10）](2026-11-07-1917-hil-device-selection.md)
 - [CH32V002 サンプル 8 件の移植と build（Issue #11 前半）](2026-11-07-1920-ch32v002-samples-port-build.md)
+- [CH32V002F4P6 の全 HIL（Issue #11 後半）](2026-11-07-1926-ch32v002-hil.md)

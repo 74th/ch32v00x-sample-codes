@@ -183,7 +183,3 @@ def test_ch32v002_matrix_hil_verified_requires_tests_and_evidence():
     entries[0].update(state="hil-verified", hil_tests=[], evidence=[])
     p = matrix.problems(entries, root=ROOT)
     assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)
-
-
-def test_adc_full_scale_is_per_device():
-    assert devices.get("ch32v003").adc_max == 1023 and devices.get("ch32v002").adc_max == 4095

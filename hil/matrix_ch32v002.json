@@ -6,10 +6,16 @@
    "sample": "blink_and_read",
    "class": "direct-port",
    "peripheral": "gpio",
-   "state": "manually-verified",
-   "note": "ported before HIL automation: build, flash, readback and v1 Pico PASS with the old ch32fun; automated HIL not yet run",
+   "state": "hil-verified",
+   "note": "PC0 blink observed on GP5; mismatch detection; PA1 low-speed button input via GP12 and RC (covers GPIO input). Identifier 0x002 checked before flash",
    "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
     "okf/log/2026-11-07-1156-ch32v002-flash-measure.md"
+   ],
+   "hil_tests": [
+    "tests/hil/test_blink_and_read.py::test_blink_and_read",
+    "tests/hil/test_blink_and_read.py::test_intentional_mismatch_cleanup",
+    "tests/hil/test_blink_and_read.py::test_button_input"
    ]
   },
   {
@@ -26,81 +32,129 @@
    "sample": "uart",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "uart",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "uart"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "115200 8N1 only; framing/parity error injection not tested",
+   "hil_tests": [
+    "tests/hil/test_uart.py::test_uart_echo"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "i2c_master",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "i2c",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "i2c-slave"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "100 kHz; DUT-received bytes checked via PC0",
+   "hil_tests": [
+    "tests/hil/test_i2c.py::test_i2c_roles"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "i2c_slave",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "i2c",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "i2c-master"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "100 kHz; ACK at 0x42, NACK at 0x43, write/read-back, slave timeout",
+   "hil_tests": [
+    "tests/hil/test_i2c.py::test_i2c_roles"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "spi_master",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "spi",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "spi-slave"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "mode 0 only. Data mismatch is detected; SPI mode mismatch is NOT detected because the Pico slave supports mode 0 only",
+   "hil_tests": [
+    "tests/hil/test_spi.py::test_spi_master_with_pico_slave"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "timer_pwm",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "pwm",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "pulse-measure"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "PD2 only; period 800-1200 us, duty 20-30 %, measured 1001 us / 24.975 % by the Pico clock (not calibrated)",
+   "hil_tests": [
+    "tests/hil/test_pwm.py::test_pwm"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "adc",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "adc",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "adc-stimulus"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md. 12-bit result, no calibration bits"
+   "note": "functional change only; DUT reports the 12-bit result >> 2 (10-bit equivalent) because the Pico fixture accepts 0..1023; voltage and ADC accuracy are not calibrated",
+   "hil_tests": [
+    "tests/hil/test_adc.py::test_adc_functional"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "watchdog",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "watchdog",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "sequence-observe"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "3+6 pulse signature; IWDG period is not measured (LSI range is wide)",
+   "hil_tests": [
+    "tests/hil/test_watchdog.py::test_watchdog_reset"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   },
   {
    "sample": "sleep_wake",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "sleep",
-   "state": "build-only",
+   "state": "hil-verified",
    "requires": [
     "gpio-sample"
    ],
-   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
+   "note": "GPIO wake signature only; power consumption not measured",
+   "hil_tests": [
+    "tests/hil/test_watchdog.py::test_sleep_wake"
+   ],
+   "evidence": [
+    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+   ]
   }
  ]
 }
