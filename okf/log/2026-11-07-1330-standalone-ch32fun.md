@@ -15,3 +15,5 @@ status: draft
 - Pico PC 側の6テストは成功。GPIO のサンプル間隔は約10 msであり精密な時間測定ではない。
 
 新しい minichlink は CH32V002 の識別領域読み出し時に `Something went wrong and we couldn't detect memory region` と表示するが、4 bytes の値 `0x00200620` は取得でき、その後の書き込み・GPIO 動作は成功した。この警告の原因は未調査。実行終了時は CH32V003 が接続・動作中。
+
+追加確認: プロジェクトのコミット `ad29d49` を同一ホストの `/tmp/tmp.xVzNSbXcV3/project` に clone し、`git submodule update --init externals/ch32fun` のみで外部ソースを取得。参照用 book-code が存在しない状態で `build ch32v003` と `build ch32v002` がともに成功し、作業ツリーはクリーンだった。これは別マシンでの確認ではない。
