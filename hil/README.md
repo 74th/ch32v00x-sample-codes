@@ -27,7 +27,7 @@ uv run pytest --hil -m 'hil and watchdog' tests/hil --hil-port /dev/serial/by-id
 uv run pytest --hil -q --hil-port=/dev/serial/by-id/<PicoのID>
 ```
 
-`--hil` なしの HIL は `HIL not selected` の理由で skip される。extralibs 依存の book-code サンプルは [matrix.json](matrix.json) で対象外と分類しており、HIL テストはない。
+`--hil` なしの HIL は `HIL not selected` の理由で skip される。extralibs 依存の book-code サンプルは [matrix.json](matrix.json) で対象外と分類しており、HIL テストはない。 [matrix.json](matrix.json) の `hil-verified` には、根拠となる `hil_tests`（`tests/hil/<file>::<test>`）と `evidence`（`okf/log/` の実測記録）が必須で、単体テストが存在と網羅を確認する。SPI は Pico slave が mode 0 のみのため、データ不一致は検出できるが mode 不一致は検出しない。`gpio_input` サンプルは固定配線で PC4 を Pico から駆動しないため HIL 対象外で、GPIO 入力は `blink_and_read` の PA1 ボタン試験で確認する。
 
 Pico の独立自己検証は、[配線資料](../hardware/wiring.md) の loopback 配線を確認してから `hardware/pico-tester/` の `uart_loopback.py`、`i2c_loopback.py`、`spi_loopback.py`、`pwm_selftest.py`、`sequence_selftest.py` を `uv run python` で実行する。配線はそれぞれ異なり、I2C と SPI は同じピンを使うので同時に構成できない。ADC は PWM 設定と読み値の大まかな変化のみ確認し、電圧・精度の校正はしない。PWM の測定は Pico 内の時計による機能確認で、周波数・デューティの校正ではない。SPI は mode 0 のみ。watchdog/sleep は GPIO の観測のみで、消費電力は測らない。各実験の実施条件と限界は `okf/log/` を参照する。
 

@@ -86,3 +86,26 @@ def test_malformed_nested_pin_is_config_error():
     c['pins']['BLINK']['dut'] = []
     with pytest.raises(config.ConfigError):
         config.validate(c)
+
+
+def test_shipped_matrix_states_are_backed_by_tests_and_logs():
+    entries = matrix.load(ROOT / "hil/matrix.json")
+    assert matrix.problems(entries, samples_dir=ROOT / "samples_ch32v003_ch32fun", root=ROOT) == []
+
+
+def test_every_hil_test_is_referenced_by_matrix():
+    import re
+    referenced = {ref for e in matrix.load(ROOT / "hil/matrix.json") for ref in e.get("hil_tests", [])}
+    defined = {f"tests/hil/{p.name}::{name}"
+               for p in (ROOT / "tests/hil").glob("test_*.py")
+               for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
+    assert defined - referenced == set()
+
+
+def test_hil_verified_requires_tests_and_existing_evidence(tmp_path):
+    base = {"book_sample": None, "class": "equivalent-standard-ch32fun", "sample": "x", "state": "hil-verified"}
+    p = matrix.problems([dict(base)])
+    assert any("without hil_tests" in x for x in p) and any("without evidence" in x for x in p)
+    p = matrix.problems([dict(base, hil_tests=["tests/hil/none.py::test_x"], evidence=["okf/log/none.md"])],
+                        root=tmp_path)
+    assert any("hil test not found" in x for x in p) and any("evidence log not found" in x for x in p)

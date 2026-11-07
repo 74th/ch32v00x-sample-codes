@@ -1,19 +1,29 @@
 {
+  "device": "CH32V003F4P6",
   "entries": [
     {
       "book_sample": "blink_and_read-ch32fun",
       "class": "direct-port",
       "peripheral": "gpio",
-      "state": "manually-verified",
+      "state": "hil-verified",
       "sample": "blink_and_read",
-      "note": "existing manual HIL; automation pending"
+      "hil_tests": [
+        "tests/hil/test_blink_and_read.py::test_blink_and_read",
+        "tests/hil/test_blink_and_read.py::test_intentional_mismatch_cleanup",
+        "tests/hil/test_blink_and_read.py::test_button_input"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1646-gpio-hil-v2.md",
+        "okf/log/2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md"
+      ],
+      "note": "PC0 blink observed on GP5; PA1 low-speed button input via GP12 and RC (test_button_input) covers GPIO input"
     },
     {
       "book_sample": "adc-ch32fun",
       "class": "not-yet-automatable",
       "peripheral": "adc",
       "state": "not-automated",
-      "note": "USE_BRANCHLESS=0 selects standard API; pinned ch32fun compatibility and result observation remain unverified; helper-dependent branch is excluded"
+      "note": "book sample itself not run; the standard-ch32fun equivalent 'adc' is hil-verified. Helper-dependent branch is excluded"
     },
     {
       "book_sample": "i2c_oled-ch32fun",
@@ -51,89 +61,144 @@
       "sample": "gpio_input",
       "requires": [
         "gpio-drive"
-      ]
+      ],
+      "note": "no HIL test: sample expects Pico to drive PC4, but the fixed wiring uses PC4 as PWM_CH4 (DUT to Pico). GPIO input is covered by blink_and_read test_button_input on PA1"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "uart",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "uart",
       "requires": [
         "uart"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_uart.py::test_uart_echo"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1648-uart-dut-hil.md"
+      ],
+      "note": "115200 8N1 only; framing/parity error injection not tested"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "i2c",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "i2c_master",
       "requires": [
         "i2c-slave"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_i2c.py::test_i2c_roles"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1709-i2c-loopback-and-hil.md"
+      ],
+      "note": "100 kHz; DUT-received bytes checked via PC0 (12 34 high, de ad low)"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "i2c",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "i2c_slave",
       "requires": [
         "i2c-master"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_i2c.py::test_i2c_roles"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1709-i2c-loopback-and-hil.md"
+      ],
+      "note": "100 kHz; ACK at 0x42, NACK at 0x43, write/read-back, slave timeout"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "spi",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "spi_master",
       "requires": [
         "spi-slave"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_spi.py::test_spi_master_with_pico_slave"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1845-spi-loopback-and-hil.md"
+      ],
+      "note": "mode 0 only. Data mismatch is detected; SPI mode mismatch is NOT detected because the Pico slave supports mode 0 only"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "pwm",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "timer_pwm",
       "requires": [
         "pulse-measure"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_pwm.py::test_pwm"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md"
+      ],
+      "note": "PD2 only; period 800-1200 us, duty 20-30 %, measured by the Pico clock (not calibrated)"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "adc",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "adc",
       "requires": [
         "adc-stimulus"
-      ]
+      ],
+      "hil_tests": [
+        "tests/hil/test_adc.py::test_adc_functional"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1702-adc-functional-hil.md"
+      ],
+      "note": "functional change only; voltage and ADC accuracy are not calibrated"
     },
     {
       "book_sample": null,
-      "class": "not-yet-automatable",
+      "class": "equivalent-standard-ch32fun",
       "peripheral": "watchdog",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "watchdog",
       "requires": [
         "sequence-observe"
       ],
-      "note": "watchdog reset signature; separate sleep_wake test"
+      "hil_tests": [
+        "tests/hil/test_watchdog.py::test_watchdog_reset"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md"
+      ],
+      "note": "reset signature 3 pulses, ~1.1 s low, 6 pulses; absolute watchdog period not verified"
     },
     {
       "book_sample": null,
       "class": "equivalent-standard-ch32fun",
       "peripheral": "sleep",
-      "state": "build-only",
+      "state": "hil-verified",
       "sample": "sleep_wake",
       "requires": [
         "gpio-sample"
       ],
-      "note": "timer wake GPIO signature; no power consumption measurement"
+      "hil_tests": [
+        "tests/hil/test_watchdog.py::test_sleep_wake"
+      ],
+      "evidence": [
+        "okf/log/2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md"
+      ],
+      "note": "timer wake GPIO toggle only; entering WFI and power consumption are not observed"
     }
   ]
 }

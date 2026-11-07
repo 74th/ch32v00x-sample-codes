@@ -43,3 +43,4 @@
 - [クリーン環境での単体テストと設定照合](2026-11-07-1719-clean-unit-check.md)
 - [Pico SPI loopback と CH32V003 SPI HIL](2026-11-07-1845-spi-loopback-and-hil.md)
 - [PWM 自己テスト、GPIO_SEQUENCE 自己テスト、watchdog/sleep HIL、全 HIL 一括](2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md)
+- [CH32V003 検証マトリクスと手順書の後始末](2026-11-07-1908-ch32v003-matrix-docs-cleanup.md)

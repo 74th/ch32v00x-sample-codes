@@ -12,8 +12,29 @@ def load(path):
     return json.loads(Path(path).read_text())["entries"]
 
 
-def problems(entries, book_dir=None, samples_dir=None):
+def _test_exists(root: Path, ref: str) -> bool:
+    path, _, name = ref.partition("::")
+    file = root / path
+    return bool(name) and file.is_file() and f"def {name}(" in file.read_text()
+
+
+def problems(entries, book_dir=None, samples_dir=None, root=None):
     out = []
+    for e in entries:
+        if e.get("state") != "hil-verified":
+            continue
+        label = e.get("sample") or e.get("book_sample")
+        if not e.get("hil_tests"):
+            out.append(f"hil-verified without hil_tests: {label}")
+        if not e.get("evidence"):
+            out.append(f"hil-verified without evidence log: {label}")
+        if root:
+            for ref in e.get("hil_tests", []):
+                if not _test_exists(Path(root), ref):
+                    out.append(f"hil test not found: {ref}")
+            for log in e.get("evidence", []):
+                if not (Path(root) / log).is_file():
+                    out.append(f"evidence log not found: {log}")
     for e in entries:
         if e["class"] not in CLASSES:
             out.append(f"bad class: {e}")

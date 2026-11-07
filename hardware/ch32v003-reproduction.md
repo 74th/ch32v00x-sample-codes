@@ -1,4 +1,4 @@
-# CH32V003F4P6 の build → flash → measure
+# CH32V003F4P6 の build → flash → measure（手動手順）
 
 この手順は Ubuntu 26.04 x86-64 での検証を基にする。WCH-LinkE と Raspberry Pi Pico (RP2040) が必要。書き込みは DUT の既存ファームウェアを上書きする。配線・電源は [配線手順](wiring.md) の接続前レビューを済ませる。
 
@@ -41,11 +41,20 @@ sha256sum "$readback_file"
 
 ## 起動と測定
 
+起動ログは次で確認できる。
+
 ```sh
 timeout 5s stdbuf -oL -eL externals/ch32fun/minichlink/minichlink -b -T
-python3 hardware/pico-tester/measure.py
 ```
 
-起動ログ `blink_and_read started` と `PC0 high` / `PC0 low` の繰り返しを確認する。timeout の終了コード 124 は5秒でログ取得を止めたことを示す。測定コマンドは PASS、MISMATCH、TIMEOUT、通信・プロトコルエラーを区別する。PA1 が Low だと点滅しない。
+起動ログ `blink_and_read started` と `PC0 high` / `PC0 low` の繰り返しを確認する。timeout の終了コード 124 は5秒でログ取得を止めたことを示す。PA1 が Low だと点滅しない。
+
+Pico による観測は、現行の固定配線（PC0–GP5）と protocol v2 firmware を使う HIL で行う。build・flash・readback・reset・観測・後始末を一括で実行し、段階別に結果を報告する。
+
+```sh
+uv run pytest --hil -m 'hil and gpio' tests/hil/test_blink_and_read.py --hil-port /dev/serial/by-id/<PicoのID>
+```
+
+以前の `python3 hardware/pico-tester/measure.py` は v1 firmware と PC0–GP0 配線専用で、現行の v2 firmware・固定配線では使えない。
 
 結果と限界は [11:13 の作業ログ](../okf/log/2026-11-07-1113-ch32v003-flash-readback-measure.md)、[未接続時の確認](../okf/log/2026-11-07-1113-disconnected-flash-preparation.md) を参照。実際の電源、接続、部品値、ツール、ソース、各コマンドの結果を別途記録する。

@@ -1,6 +1,6 @@
-# CH32V003F4P6 HIL 固定配線案
+# CH32V003F4P6 HIL 固定配線
 
-これは未実測の提案であり、実配線の指示として確定したものではない。対象は CH32V003F4P6/TSSOP20 と Raspberry Pi Pico/RP2040。参照 book-code revision は `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae`。SPI NSS を AFIO で PC0 に移し、通常の周辺機能試験は信号ジャンパを切り替えずに実施する。元サンプルの別リマップ配置を試すときは後段の手動試験とし、電源を切って配線を変更する。
+2026-11-07 にこの配線で CH32V003F4P6 の全 HIL（GPIO、UART、I2C、SPI、PWM/timer、ADC、watchdog/sleep）が機能確認として成功した（[記録](../okf/log/2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md)）。電圧・波形・部品値の実測による確定ではない。対象は CH32V003F4P6/TSSOP20 と Raspberry Pi Pico/RP2040。参照 book-code revision は `4ce0a1b2fe0fa771e68e17944c4ce0d9b20924ae`。SPI NSS を AFIO で PC0 に移し、通常の周辺機能試験は信号ジャンパを切り替えずに実施する。元サンプルの別リマップ配置を試すときは後段の手動試験とし、電源を切って配線を変更する。
 
 ## book-code とカバー範囲
 
@@ -21,9 +21,9 @@
 
 直接移植できるものと、同じ周辺機能の新規サンプルは区別する。ADC の入力電圧を与えるだけでは変換結果は取得できないので、新規サンプルに UART などの機械可読な出力が必要。既存コードの SWIO `printf` を使う場合は WCH-LinkE の取得手段との共存を別途検証する。
 
-## ポートマップ案
+## ポートマップ
 
-Pico の番号はボード上の物理ピン。試験は同時に行わず、PC0 を GPIO 観測と SPI NSS、PA1 を ADC と低速ボタン刺激に共用する。全 GPIO の網羅と高速な GPIO 入力試験は対象外。値は初期案で、実機の電圧・負荷・波形確認後に決定する。
+Pico の番号はボード上の物理ピン。試験は同時に行わず、PC0 を GPIO 観測と SPI NSS、PA1 を ADC と低速ボタン刺激に共用する。全 GPIO の網羅と高速な GPIO 入力試験は対象外。値は HIL の機能確認に使った構成で、電圧・負荷・波形の実測による確定ではない。
 
 | ネット | DUT F4P6（物理） | Pico（物理） | 用途・初期部品 |
 |---|---|---|---|
@@ -42,7 +42,7 @@ Pico の番号はボード上の物理ピン。試験は同時に行わず、PC0
 | `GND` | VSS (7) | GND (3) | 共通 GND |
 | `SWIO` | PD1 (18) | WCH-LinkE SWIO | Pico には接続しない |
 
-構成名 `gpio_blink` と各ネットの機械可読設定は [hil/configs/gpio_blink.json](../hil/configs/gpio_blink.json) にある。Pico は SPI0 GP4–GP7、I2C1 GP10/GP11、UART1 GP8/GP9 を候補とする。GPIO v1 の現行配線は PC0–GP0 であり、この案の PC0–GP5 と異なる。対応ファームウェア・ホスト側を準備し、安全に電源を切って配線を変更するまで既存手順を維持する。
+構成名 `gpio_blink` と各ネットの機械可読設定は [hil/configs/gpio_blink.json](../hil/configs/gpio_blink.json) にある。Pico は SPI0 GP4–GP7、I2C1 GP10/GP11、UART1 GP8/GP9 を候補とする。過去の GPIO v1 配線は PC0–GP0 であり、この配線の PC0–GP5 と異なる。v1 firmware と `measure.py` はこの配線では使わない。
 
 ## 概略回路図
 
@@ -74,19 +74,19 @@ Pico の番号はボード上の物理ピン。試験は同時に行わず、PC0
 
 ## 電源と電気的条件
 
-- DUT は WCH-LinkE の 3.3 V、Pico は USB から給電する案。電源ピンは互いに接続せず GND を共通にする。信号は両電源が安定し電圧を確認した後に接続し、どちらかの電源を切る前に開く。WCH-LinkE の操作で出力が有効になる場合がある。詳細は [wiring.md](wiring.md)。
+- DUT は WCH-LinkE の 3.3 V、Pico は USB から給電する。電源ピンは互いに接続せず GND を共通にする。信号は両電源が安定し電圧を確認した後に接続し、どちらかの電源を切る前に開く。WCH-LinkE の操作で出力が有効になる場合がある。詳細は [wiring.md](wiring.md)。
 - I2C は各線を open-drain とし、DUT 側 3.3 V への 4.7 kΩ pull-up を各1本。既存モジュールの pull-up と並列にならないようにする。100 kHz から開始し、400 kHz 以上は波形、立上り、Low 電圧、容量と双方の電圧を実測後に決める。220 Ω や 1 kΩ はレベル変換器でも電源断時の逆流防止回路でもない。
 - ADC の RC は 10 kΩ × 1 µF = 公称 10 ms。PA1 のボタン入力はこの RC を経由するため、DUT の内蔵 pull-up と 10 kΩ による分圧を含め、PA1 実測 Low が DUT の入力 Low 規格を満たすか、High・応答遅延も含めて測り、満たす場合に限って低速操作に使う。満たさない場合は抵抗値や駆動回路の再設計が必要。設定変更後 100 ms 以上を初期待ち時間とし、PWM 周波数、リップル、サンプリング負荷と DUT の VDD を踏まえて再評価する。両電源と入力電圧が許容範囲内であることを確認し、RC の測定点を独立した電圧計で測る。Pico は校正済み DAC ではない。切断後のコンデンサの残留電圧も測定する。
-- 使用前に各 Pico 機能を DUT とは独立に自己検証し、timeout、USB 切断、異常時の safe state を確認する。現行ファームウェアは GP0 入力の v1 のみで、提案の出力・バス機能は未実装。
+- 使用前に各 Pico 機能を DUT とは独立に自己検証し、timeout、USB 切断、異常時の safe state を確認する。現行 v2 ファームウェアの各能力の自己検証手順は [pico-tester](pico-tester/README.md) を参照。
 
-## watchdog・sleep の観測案
+## watchdog・sleep の観測
 
 watchdog の標準 ch32fun サンプルは、PC0→GP5 の信号として初回に3パルス、watchdog による再起動後に6パルスを出す。各 High は約100 ms、両グループの間には watchdog 待ちの長い Low を置く。Pico は bounded な GPIO サンプル列を返し、ホストは9パルスと3パルス後の長い間隔を確認する。これは DUT が報告する reset 理由に依存する観測で、電源の電圧・電流を直接観測するものではない。timeout、部分列、電源喪失で波形が途切れた場合は watchdog 成功としない。
 
-sleep サンプルは TIM1 割り込み後の WFI 復帰により PC0 を約500 msごとに切り替える予定。GPIO の周期は観測できても、sleep 中の消費電力はこの配線からは測れない。どちらも実機で確認するまでは未検証。
+sleep サンプルは TIM1 割り込み後の WFI 復帰により PC0 を約500 msごとに切り替える。GPIO の周期は観測できても、sleep 中の消費電力はこの配線からは測れない。どちらも 2026-11-07 に実機 HIL で GPIO 署名を確認済み（watchdog は 3 パルス・約1.1 s の Low・6 パルス）。watchdog 周期の絶対精度と消費電力は未確認。
 
 ## AFIO リマップを後で検証するとき
 
 信号を安全に切り離し、両側の電源を切り、電圧と安全状態を確認してから、対象に合わせて一時的に配線する。I2C master は PC6 SDA / PC5 SCL、UART は PC0 TX / PC1 RX、PWM は PC6 / PD3 を使う。PC0 の LED 負荷や各試験での電源・pull-up を再確認し、毎回手動で戻す。PD1 は SWIO に使用中なので、そのリマップ先としての使用は別途設計する。
 
-次段階では、この案を HIL 設定、KiCad 回路図と出力に反映し、実配線と電圧・波形を確認する。現時点で一致確認や実機動作の成功は主張しない。
+ネット名・物理ピン・部品値は HIL 設定と `ch32hil/wiring.py`（`uv run pytest tests/unit/test_wiring_consistency.py`）で照合する。KiCad 回路図は作成しない方針とした。実配線の電圧・波形は未測定。

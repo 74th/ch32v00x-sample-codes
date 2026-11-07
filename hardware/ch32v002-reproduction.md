@@ -1,13 +1,14 @@
 # CH32V002F4P6 の build → flash → measure
 
-この手順は [CH32V003 の再現手順](ch32v003-reproduction.md) と同じホスト、固定 ch32fun、Pico と PC0 の観測経路を使う。電源・配線は [配線案](wiring.md) を確認する。F4P6 の PC0=10番、PA1=5番、VSS=7番、VDD=9番、SWIO=18番は CH32V003F4P6 と同じ。今回の開発ボードはユーザー申告でピン互換。
+この手順は [CH32V003 の再現手順](ch32v003-reproduction.md) と同じホストと固定 ch32fun を使う。電源・配線は [配線案](wiring.md) を確認する。F4P6 の PC0=10番、PA1=5番、VSS=7番、VDD=9番、SWIO=18番は CH32V003F4P6 と同じ。今回の開発ボードはユーザー申告でピン互換。
 
 ```sh
 ./scripts/ch32fun.sh check
 ./scripts/ch32fun.sh build ch32v002
 ./scripts/ch32fun.sh flash ch32v002
-python3 hardware/pico-tester/measure.py
 ```
+
+下記の記録で使った `python3 hardware/pico-tester/measure.py` は、v1 firmware と PC0–GP0 配線専用である。現在の Pico は protocol v2 firmware と固定配線（PC0–GP5）なので、そのままでは使えない。CH32V002 の Pico 観測は、OpenSpec change `automate-ch32v002-ch32fun-hil` で HIL をデバイス選択に対応させてから行う。
 
 書き込みは既存ファームウェアを上書きする。現在の submodule の minichlink は WCH-LinkE firmware 2.22 で CH32V002 と 16 KB を正しく報告した。スクリプトは書き込み前に `0x1ffff704` の識別値の型番部分が `0x002` であることも確認する。旧 minichlink の誤表示については過去の実機記録を参照。
 
