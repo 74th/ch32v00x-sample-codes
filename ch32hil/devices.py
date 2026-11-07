@@ -33,6 +33,7 @@ class Device:
     physical: dict
     default_config: str
     matrix: str
+    adc_max: int = 1023  # ADC full-scale code (resolution differs per device)
 
     @property
     def sample_root(self) -> Path:
@@ -59,7 +60,8 @@ DEVICES = {
     "ch32v003": Device("ch32v003", "CH32V003F4P6", "CH32V003", "CH32V003", None, _TSSOP20,
                        "hil/configs/gpio_blink.json", "hil/matrix.json"),
     "ch32v002": Device("ch32v002", "CH32V002F4P6", "CH32V002", "CH32V002", 0x002, _TSSOP20,
-                       "hil/configs/ch32v002_gpio_blink.json", "hil/matrix_ch32v002.json"),
+                       "hil/configs/ch32v002_gpio_blink.json", "hil/matrix_ch32v002.json",
+                       adc_max=4095),  # CH32V00X RM V1.5: 12-bit ADC (PDF p.100)
 }
 BY_PART = {d.part: d for d in DEVICES.values()}
 

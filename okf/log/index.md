@@ -45,3 +45,4 @@
 - [PWM 自己テスト、GPIO_SEQUENCE 自己テスト、watchdog/sleep HIL、全 HIL 一括](2026-11-07-1846-pwm-sequence-watchdog-and-full-hil.md)
 - [CH32V003 検証マトリクスと手順書の後始末](2026-11-07-1908-ch32v003-matrix-docs-cleanup.md)
 - [HIL ホスト層のデバイス選択（Issue #10）](2026-11-07-1917-hil-device-selection.md)
+- [CH32V002 サンプル 8 件の移植と build（Issue #11 前半）](2026-11-07-1920-ch32v002-samples-port-build.md)

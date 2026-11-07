@@ -16,91 +16,91 @@
    "sample": "gpio_input",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "gpio-input",
-   "state": "not-ported",
+   "state": "excluded",
    "requires": [
     "gpio-drive"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "no HIL test, same reason as CH32V003: the sample expects Pico to drive PC4, but the fixed wiring uses PC4 as PWM_CH4 (DUT to Pico). GPIO input is covered by blink_and_read test_button_input on PA1. Not ported"
   },
   {
    "sample": "uart",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "uart",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "uart"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "i2c_master",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "i2c",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "i2c-slave"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "i2c_slave",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "i2c",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "i2c-master"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "spi_master",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "spi",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "spi-slave"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "timer_pwm",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "pwm",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "pulse-measure"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "adc",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "adc",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "adc-stimulus"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md. 12-bit result, no calibration bits"
   },
   {
    "sample": "watchdog",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "watchdog",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "sequence-observe"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   },
   {
    "sample": "sleep_wake",
    "class": "equivalent-standard-ch32fun",
    "peripheral": "sleep",
-   "state": "not-ported",
+   "state": "build-only",
    "requires": [
     "gpio-sample"
    ],
-   "note": "not yet ported to CH32V002; CH32V003 results are not reused"
+   "note": "ported; build only, no flash or HIL on CH32V002 yet. Device differences: okf/peripherals/ch32v002-port-differences.md"
   }
  ]
 }
