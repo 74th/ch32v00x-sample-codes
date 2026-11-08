@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 
 CLASSES = {"direct-port", "equivalent-standard-ch32fun", "extralibs-excluded", "not-yet-automatable",
-           "helper-verification"}
+           "helper-verification", "additional-not-in-book"}
+# Rows of this class are repository-own samples that have no book-code counterpart: book_sample is null and they are not
+# part of the one-to-one accounting of the book examples (use book_rows() for that).
+ADDITIONAL = "additional-not-in-book"
+ADDITIONAL_REQUIRED = ("sample", "peripheral", "note", "criteria")
 # Helpers of the pinned externals/ch32fun that helper-verification samples may depend on.
 ALLOWED_HELPERS = {
     "extralibs/ssd1306_i2c.h", "extralibs/ssd1306.h",
@@ -27,6 +31,15 @@ BOOK_PATTERNS = {
 
 def load(path):
     return json.loads(Path(path).read_text())["entries"]
+
+
+def book_rows(entries):
+    """Rows that stand for a book-code example (everything except the additional-not-in-book rows)."""
+    return [e for e in entries if e.get("class") != ADDITIONAL]
+
+
+def additional_rows(entries):
+    return [e for e in entries if e.get("class") == ADDITIONAL]
 
 
 def _test_exists(root: Path, ref: str) -> bool:
@@ -67,6 +80,13 @@ def problems(entries, book_dir=None, samples_dir=None, root=None, framework="ch3
             for helper in e.get("helpers") or []:
                 if helper not in ALLOWED_HELPERS:
                     out.append(f"unknown helper {helper}: {label}")
+        if e["class"] == ADDITIONAL:
+            label = e.get("sample") or "?"
+            if e.get("book_sample"):
+                out.append(f"additional-not-in-book row names a book sample: {label}")
+            for key in ADDITIONAL_REQUIRED:
+                if not e.get(key):
+                    out.append(f"additional-not-in-book without {key}: {label}")
         if e["state"] == "hil-verified" and not e.get("requires_verified", True):
             out.append("hil-verified without capability")
         if samples_dir and e.get("sample") and e["state"] in ("build-only", "hil-verified") \

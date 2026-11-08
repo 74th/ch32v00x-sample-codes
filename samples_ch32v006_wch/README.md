@@ -24,3 +24,10 @@ uv run python scripts/wch-sdk.py flash --device ch32v006 --sample blink     # �
 - `watchdog`: IWDG が約 2.3〜3.1 s でリセットされるため、PA1 の保持を 3.5 s にして確認（要因フラグ IWDGRSTF は判定）。
 
 実行: `uv run python scripts/wch-sdk.py build --all`（006 の 14 例すべてでメモリ・SDK 参照元の検査を通る）、`uv run pytest --hil --hil-device ch32v006 --hil-framework wch -m 'hil and wch' tests/hil/wch --hil-port=/dev/serial/by-id/<PicoのID> --hil-run-dir=<run用ディレクトリ>`。
+
+## 書籍にない追加サンプル（種別 `additional-not-in-book`）
+上の13例は書籍との1対1の対応。次は書籍にない、このリポジトリ独自の追加で、`hil/matrix_ch32v006_wch.json` に別の種別で載る。
+
+| サンプル | 内容 | 状態（CH32V006） |
+|---|---|---|
+| [`wwdg`](wwdg/README.md) | WWDG（ウィンドウウォッチドッグ）。公式EVTの `EXAM/WWDG` が出典。`-DWWDG_MODE` の3ビルドで切り替える | hil-verified（CH32V006 実機、[ログ](../okf/log/2026-11-09-0751-ch32v006-wwdg-hil.md)） |

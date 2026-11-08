@@ -48,3 +48,5 @@ CH32V003用（`../samples_ch32v003_wch/PROVENANCE.md`）とは別のSDKで、フ
 | `sdk/Peripheral/src/ch32v00X_exti.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_exti.c` | `d0d1328129c2992857e3b57f93a345df349970cb46d85093082d510f3aa64498` |  |
 | `sdk/Peripheral/inc/ch32v00X_misc.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00X_misc.h` | `22776dc052eca4b3db08577f8c4c3a09733ca7ff119394ba68d5da326bbd5da4` |  |
 | `sdk/Peripheral/src/ch32v00X_misc.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_misc.c` | `5bedd3080cdea6c52a789c6ece760f8ca933d8a12aa2b75fd62cdef75170096b` |  |
+| `sdk/Peripheral/inc/ch32v00X_wwdg.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00X_wwdg.h` | `1784101ecb86cce5705d4f8d60819797cf44546e08215ac240e51cdabbe1fed3` | 無改変（change `add-wwdg-sample` で追加。`sdk/System/ch32v00X_conf.h` の集約にも追加） |
+| `sdk/Peripheral/src/ch32v00X_wwdg.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_wwdg.c` | `d68fd78e4373d36a4bdd1ecf00fef1ef7435fe721454423a66b56b11cf661fb7` | 無改変（同上） |

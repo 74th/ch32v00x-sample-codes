@@ -42,4 +42,11 @@ CH32V003用のヘッダやStartupを型番だけ変えて流用していない�
 | `sleep_mode_blink-wch_sdk` | `sleep_wake` | hil-verified | hil-verified |
 | `standby_mode_blink-wch_sdk` | `standby_wake` | hil-verified | hil-verified |
 
+## 書籍にない追加サンプル（種別 `additional-not-in-book`）
+上の13例は書籍との1対1の対応。次は書籍にない、このリポジトリ独自の追加で、`hil/matrix_ch32v002_wch.json` に別の種別で載る。
+
+| サンプル | 内容 | 状態（CH32V002） |
+|---|---|---|
+| [`wwdg`](wwdg/README.md) | WWDG（ウィンドウウォッチドッグ）。公式EVTの `EXAM/WWDG` が出典。`-DWWDG_MODE` の3ビルドで切り替える | hil-verified（[ログ](../okf/log/2026-11-09-0013-add-wwdg-sample.md)） |
+
 出所revision、コピー元SHA-256、利用条件、変更箇所は[PROVENANCE.md](PROVENANCE.md)。

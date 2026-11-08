@@ -227,6 +227,20 @@
         "okf/log/2026-11-08-1335-ch32v006-hil.md",
         "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
       ]
+    },
+    {
+      "class": "additional-not-in-book",
+      "peripheral": "wwdg",
+      "state": "hil-verified",
+      "sample": "wwdg",
+      "note": "\u66f8\u7c4d\u306b\u306a\u3044WWDG\uff08\u30a6\u30a3\u30f3\u30c9\u30a6\u30a6\u30a9\u30c3\u30c1\u30c9\u30c3\u30b0\uff09\u306e\u8ffd\u52a0\u30b5\u30f3\u30d7\u30eb\uff08\u6a19\u6e96ch32fun\uff08002/006\u5171\u901a\u306e\u30bd\u30fc\u30b9\uff09\u3001change add-wwdg-sample\uff09\u3002\u51fa\u5178\u306f\u516c\u5f0fEVT\u306e EXAM/WWDG\u3002CH32V006\u5b9f\u6a5f\u30673\u30d3\u30eb\u30c9\u3092\u89b3\u6e2c\u6e08\u307f\uff082026-11-09\u3001\u30ed\u30b0\u53c2\u7167\uff09\u3002-DWWDG_MODE=0/1/2 \u306e3\u30d3\u30eb\u30c9\u3067\u5207\u308a\u66ff\u3048\u308b\u3002EWI\u3001\u30c7\u30d0\u30c3\u30b0\u4e2d\u306e\u52d5\u4f5c\u3001\u30ea\u30bb\u30c3\u30c8\u6642\u9593\u306e\u7d76\u5bfe\u7cbe\u5ea6\u306f\u672a\u78ba\u8a8d",
+      "criteria": "UART(PD5, 115200): \u8d77\u52d5\u6642 cause=<\u8981\u56e0> \u3068 wait\u3002MODE 0 \u306f\u70b9\u304c\u5897\u3048\u7d9a\u3051\u30ea\u30bb\u30c3\u30c8\u3055\u308c\u306a\u3044; MODE 1 \u306f\u70b91\u500b\u3067 cause=WWDG; MODE 2 \u306f\u70b99\u500b\u3067 cause=WWDG\uff08\u7d50\u679c\u306f\u5404\u30c7\u30d0\u30a4\u30b9\u3067\u5225\u306b\u89b3\u6e2c\uff09",
+      "hil_tests": [
+        "tests/hil/test_wwdg.py::test_wwdg"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-0751-ch32v006-wwdg-hil.md"
+      ]
     }
   ]
 }

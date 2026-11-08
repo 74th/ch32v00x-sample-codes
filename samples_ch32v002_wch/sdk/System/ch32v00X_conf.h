@@ -13,4 +13,5 @@
 #include <ch32v00X_spi.h>
 #include <ch32v00X_tim.h>
 #include <ch32v00X_usart.h>
+#include <ch32v00X_wwdg.h>
 #endif

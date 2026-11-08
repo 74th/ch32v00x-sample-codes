@@ -96,7 +96,10 @@ def test_shipped_matrix_states_are_backed_by_tests_and_logs():
 
 def test_every_hil_test_is_referenced_by_matrix():
     import re
-    referenced = {ref for e in matrix.load(ROOT / "hil/matrix.json") for ref in e.get("hil_tests", []) + e.get("hil_tests_variants", [])}
+    # the CH32V003 baseline matrix, plus the additional-not-in-book rows (e.g. wwdg) that only the CH32V002/006 matrices carry
+    rows = matrix.load(ROOT / "hil/matrix.json") + [e for name in ("ch32v002", "ch32v006")
+                                                     for e in matrix.additional_rows(matrix.load(ROOT / f"hil/matrix_{name}.json"))]
+    referenced = {ref for e in rows for ref in e.get("hil_tests", []) + e.get("hil_tests_variants", [])}
     defined = {f"tests/hil/{p.name}::{name}"
                for p in (ROOT / "tests/hil").glob("test_*.py")
                for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
@@ -209,7 +212,7 @@ def _readme_rows(path):
 ])
 def test_wch_readme_table_matches_matrix(readme, matrix_file, state_col):
     """All 13 rows: README state (and, for 003, the evidence logs) equal the matrix; nothing is claimed beyond it."""
-    entries = {e["book_sample"]: e for e in matrix.load(ROOT / matrix_file)}
+    entries = {e["book_sample"]: e for e in matrix.book_rows(matrix.load(ROOT / matrix_file))}
     rows = _readme_rows(ROOT / readme)
     assert set(rows) == set(entries) and len(rows) == 13
     for book, e in entries.items():
@@ -234,8 +237,9 @@ def test_hil_verified_wch_rows_have_a_checkable_basis():
 def test_ch32v006_matrix_covers_every_ch32v002_row_without_borrowed_results():
     v002 = matrix.load(ROOT / "hil/matrix_ch32v002.json")
     v006 = matrix.load(ROOT / "hil/matrix_ch32v006.json")
-    assert [e["sample"] for e in v006] == [e["sample"] for e in v002] and len(v006) == 13
-    assert matrix.coverage_problems(matrix.load(ROOT / "hil/matrix.json"), v006) == []
+    assert [e["sample"] for e in v006] == [e["sample"] for e in v002]
+    assert len(matrix.book_rows(v006)) == 13       # the 13 book-based rows; additional-not-in-book rows are counted apart
+    assert matrix.coverage_problems(matrix.load(ROOT / "hil/matrix.json"), matrix.book_rows(v006)) == []
     assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v00x_ch32fun", root=ROOT) == []
     # CH32V002 results are never carried over: a hil-verified row needs its own evidence log naming CH32V006.
     for e in v006:
@@ -260,7 +264,8 @@ def test_ch32v006_arduino_matrix_has_ten_rows_without_borrowed_results():
 def test_ch32v006_wch_matrix_has_thirteen_rows_without_borrowed_results():
     v002 = matrix.load(ROOT / "hil/matrix_ch32v002_wch.json")
     v006 = _v006_rows("wch")
-    assert [e["sample"] for e in v006] == [e["sample"] for e in v002] and len(v006) == 13
+    assert [e["sample"] for e in v006] == [e["sample"] for e in v002]
+    assert len(matrix.book_rows(v006)) == 13       # the 13 book-based rows; additional-not-in-book rows are counted apart
     assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v006_wch", root=ROOT, framework="wch") == []
     assert all("003_state" not in e and "002_state" not in e for e in v006)
     for e in v006:
@@ -273,3 +278,25 @@ def test_ch32v006_matrix_rows_that_are_skipped_state_a_reason():
         for e in _v006_rows(name):
             if e["state"] in ("not-ported", "excluded"):
                 assert e.get("note"), (name, e["sample"])
+
+
+def test_additional_rows_are_distinguished_from_book_rows_and_need_a_basis():
+    """wwdg is not in the book: it is an additional-not-in-book row (book_sample null) with note and criteria."""
+    row = {"book_sample": None, "class": "additional-not-in-book", "peripheral": "wwdg", "state": "build-only",
+           "sample": "wwdg", "note": "n", "criteria": "c"}
+    assert matrix.problems([row]) == []
+    assert matrix.book_rows([row]) == [] and matrix.additional_rows([row]) == [row]
+    for key in ("sample", "peripheral", "note", "criteria"):
+        assert any(f"without {key}" in x for x in matrix.problems([dict(row, **{key: None})])), key
+    assert any("names a book sample" in x for x in matrix.problems([dict(row, book_sample="x-wch_sdk")]))
+    # an additional row does not count as one of the 13 book examples and does not hide a missing one
+    assert matrix.problems([row], book_dir=None, framework="wch") == []
+
+
+@pytest.mark.parametrize("name", ["ch32v002_wch", "ch32v006_wch", "ch32v002", "ch32v006"])
+def test_wwdg_is_tracked_as_an_additional_row_in_every_matrix(name):
+    rows = {e["sample"]: e for e in matrix.additional_rows(matrix.load(ROOT / f"hil/matrix_{name}.json"))}
+    assert set(rows) == {"wwdg"}
+    # no state is claimed beyond what was observed on that device (the evidence is checked by the generic row rules)
+    assert rows["wwdg"]["state"] in {"build-only", "hil-verified"}
+    assert not any(e.get("book_sample") for e in rows.values())

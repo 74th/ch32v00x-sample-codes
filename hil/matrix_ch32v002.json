@@ -228,6 +228,20 @@
     "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md",
     "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
+  },
+  {
+   "class": "additional-not-in-book",
+   "peripheral": "wwdg",
+   "state": "hil-verified",
+   "sample": "wwdg",
+   "note": "書籍にないWWDG（ウィンドウウォッチドッグ）の追加サンプル（標準ch32fun（002/006共通のソース）、change add-wwdg-sample）。出典は公式EVTの EXAM/WWDG。CH32V002実機で3ビルドを観測済み（2026-11-09、ログ参照）。-DWWDG_MODE=0/1/2 の3ビルドで切り替える。EWI、デバッグ中の動作、リセット時間の絶対精度は未確認",
+   "criteria": "UART(PD5, 115200): 起動時 cause=<要因>。MODE 0 は点が増え続けリセットされない; MODE 1 は点1個で cause=WWDG; MODE 2 は点9個で cause=WWDG（結果は各デバイスで別に観測）",
+   "hil_tests": [
+    "tests/hil/test_wwdg.py::test_wwdg"
+   ],
+   "evidence": [
+    "okf/log/2026-11-09-0013-add-wwdg-sample.md"
+   ]
   }
  ]
 }

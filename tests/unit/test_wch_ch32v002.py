@@ -17,13 +17,20 @@ def samples(root):
     return sorted(p.parent.name for p in root.glob("*/Makefile"))
 
 
+def _additional(matrix_file):
+    return {e["sample"] for e in matrix.additional_rows(matrix.load(ROOT / matrix_file))}
+
+
 def test_every_ch32v003_sample_has_a_ch32v002_port():
-    assert samples(S2) == samples(S3)
+    # samples that exist only for CH32V002/006 are tracked as additional-not-in-book rows, never silently
+    extra = _additional("hil/matrix_ch32v002_wch.json")
+    assert extra <= set(samples(S2)) and not extra & set(samples(S3))
+    assert sorted(set(samples(S2)) - extra) == samples(S3)
 
 
 def test_ch32v002_matrix_covers_ch32v003_matrix_one_to_one():
     base = matrix.load(ROOT / "hil/matrix_wch.json")
-    entries = matrix.load(ROOT / "hil/matrix_ch32v002_wch.json")
+    entries = matrix.book_rows(matrix.load(ROOT / "hil/matrix_ch32v002_wch.json"))
     assert matrix.coverage_problems(base, entries) == []
     assert sorted(e["sample"] for e in entries) == sorted(e["sample"] for e in base)
     book = ROOT / "externals/ch32v003-book-code"
@@ -34,7 +41,7 @@ def test_ch32v002_matrix_covers_ch32v003_matrix_one_to_one():
 def test_ch32v002_state_is_never_inherited_from_ch32v003():
     """A 003 hil-verified row must not make the 002 row verified: that needs 002 hardware, tests and evidence."""
     base = {e["sample"]: e for e in matrix.load(ROOT / "hil/matrix_wch.json")}
-    for e in matrix.load(ROOT / "hil/matrix_ch32v002_wch.json"):
+    for e in matrix.book_rows(matrix.load(ROOT / "hil/matrix_ch32v002_wch.json")):
         assert e["003_state"] == base[e["sample"]]["state"]
         if e["state"] == "hil-verified":
             assert e.get("hil_tests") and e.get("evidence"), e["sample"]

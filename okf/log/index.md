@@ -99,3 +99,5 @@
 - [同上の診断ソース](2026-11-08-2137-fix-ch32v00x-sample-findings-diag-sources.md)
 - [同上のCH32V006分](2026-11-08-2237-ch32v006-sample-findings.md)
 - [CH32V006で ws2812b_simple.h を簡易確認（そのままでは信号なし）](2026-11-08-2327-ch32v006-ws2812b-simple-check.md)
+- [WWDG サンプルの追加（change `add-wwdg-sample`）](2026-11-09-0013-add-wwdg-sample.md)
+- [CH32V006 での WWDG の HIL（change `add-wwdg-sample` 6.3、6.4）](2026-11-09-0751-ch32v006-wwdg-hil.md)
