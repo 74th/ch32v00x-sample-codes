@@ -50,7 +50,7 @@
       "evidence": [
         "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md"
       ],
-      "criteria": "RC充放電: High駆動>=700/Low駆動<=300（0..1023）、2チャネル独立; 10 msパルス累積3段が>=20ずつ増加; 外部基準なし"
+      "criteria": "RC充放電: 未校正12ビット（0..4095）でHigh駆動>=2800/Low駆動<=1200、2チャネル独立; 10 msパルス累積3段が>=80ずつ増加; 外部基準なし"
     },
     {
       "book_sample": "adc_dma-wch_sdk",
@@ -66,7 +66,7 @@
       "evidence": [
         "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md"
       ],
-      "criteria": "静的: ADC_DMACmd/DMA_Init/DMA_Cmdあり・ADC_GetConversionValueなし; PA1=x/PA2=yの順序と更新を再起動なしで確認; 10 msパルス累積3段が>=20増; 外部基準なし"
+      "criteria": "静的: ADC_DMACmd/DMA_Init/DMA_Cmdあり・ADC_GetConversionValueなし; PA1=x/PA2=yの順序と更新を再起動なしで確認; 未校正12ビット（0..4095）で10 msパルス累積3段が>=80増; 外部基準なし"
     },
     {
       "book_sample": "i2c_master-wch_sdk",
@@ -91,12 +91,13 @@
       "state": "hil-verified",
       "sample": "i2c_slave",
       "003_state": "hil-verified",
-      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック・I2C割り込み。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した",
+      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック・I2C割り込み。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した。2026-11-08: I2C_ClockSpeed未設定（0除算でCKCFGR=0xCFFF）を100000に修正（CKCFGR=0x00F0、実測）、002でHIL再実行しpassed",
       "hil_tests": [
         "tests/hil/wch/test_i2c_slave.py::test_wch_i2c_slave"
       ],
       "evidence": [
-        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md"
+        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md",
+        "okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md"
       ],
       "criteria": "0x10 ACK/0x11 NACK; reg0x20=00102030; write0x10 aabbccdd読み戻し; 部分読み; repeated STARTで0x20/0x10/0x22を読む"
     },
@@ -171,12 +172,13 @@
       "state": "hil-verified",
       "sample": "watchdog",
       "003_state": "hil-verified",
-      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック・IWDG。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した",
+      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック・IWDG。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した。2026-11-08: LED2（PC4→GP15）がデバッガのリセット後・IWDGのリセット後とも約500 ms点灯することを観測（HILの判定には含めていない）",
       "hil_tests": [
         "tests/hil/wch/test_watchdog.py::test_wch_watchdog"
       ],
       "evidence": [
-        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md"
+        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md",
+        "okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md"
       ],
       "criteria": "cause=otherでループ番号が増加・PC0 250/250 ms; PA1 low 1 s: リセットなし; 2 s: cause=IWDGでループ番号が0から; 時間窓は約1.6〜2.5 s"
     },
@@ -203,12 +205,13 @@
       "state": "hil-verified",
       "sample": "standby_wake",
       "003_state": "hil-verified",
-      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック（AWU+Standby）。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した。wake直後の先頭約14バイトが毎回同じ文字化け（フレーミングエラー）になり、判定は「up: N 」以降の連番で実施（原因は未特定）",
+      "note": "CH32V002専用SDKで移植・ビルド済み（Flash/RAMはREADME）。実機観測済み（CH32V002、003と同じ判定基準で再観測）。003と同一ロジック（AWU+Standby）。RCC名のみ002 SDK。003側の結果は継承せず、002で再観測した。wake直後の先頭約14バイトが毎回同じ文字化け（フレーミングエラー）になっていたため、起床後のSystemInit()の後にDelay_Ms(10)を追加（書籍との差）。追加後は1〜2バイトの化けが残る（原因は未特定）。判定は従来どおり「up: N 」以降の連番で実施。追加後に002で3回再実行し全てpassed",
       "hil_tests": [
         "tests/hil/wch/test_standby_wake.py::test_wch_standby_wake"
       ],
       "evidence": [
-        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md"
+        "okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md",
+        "okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md"
       ],
       "criteria": "wake3回のカウントが連番、間隔1.7..2.3 s、LED半周期1.6..2.4 s; 復旧: LinkE給電を入れ直しblinkを書き込み・検出・全量読み戻し"
     }

@@ -10,3 +10,6 @@ CH32V003版（[../../samples_ch32v003_wch/watchdog/README.md](../../samples_ch32
 
 ## 観測状態（CH32V002実機で観測済み）
 **hil-verified**。CH32V002（`0x1ffff704`=0x002、minichlinkが`Detected CH32V002`）に書き込み・全量読み戻しのうえ`tests/hil/wch/test_watchdog.py`が成功（`--hil-device ch32v002 --hil-framework wch`）。判定基準は003と同じ（`hil/matrix_ch32v002_wch.json`）。003の結果は継承せず002で再観測した。数値の詳細は[ログ](../../okf/log/2026-11-08-0802-wch-sdk-ch32v002-hil.md)。
+
+## LED2（PC4）の点灯（2026-11-08、実測）
+起動のたびに LED2 が約 500 ms 点くことを、Pico（GP15）で観測した（デバッガのリセット後と IWDG のリセット後、各 3 回）。HIL の自動判定には含めていない。[ログ](../../okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md)

@@ -19,7 +19,7 @@ void loop()
   Serial.print("loop ");
   Serial.println(count);
 
-  // 0~1024 が取得できる
+  // CH32V002/CH32V006 では 12 ビットなので 0~4095 が取得できる（書籍の CH32V003 では 0~1023）
   uint32_t x = analogRead(VRX_PIN);
   uint32_t y = analogRead(VRY_PIN);
 

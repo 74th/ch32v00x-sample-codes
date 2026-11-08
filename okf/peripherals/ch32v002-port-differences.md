@@ -49,7 +49,7 @@ sources:
 | --- | --- | --- | --- |
 | `TARGET_MCU` | `CH32V003` | `CH32V002`（Makefile）。生成リンカスクリプトは `generated_ch32v002.ld` | 資料確認 |
 | クロック | HSI 24 MHz、PLL ×2 → 48 MHz | HSI 24 MHz、固定 ×2 の PLL、最大 48 MHz。`funconfig.h` で `HSI_VALUE 24000000`（ch32fun の `FUNCONF_SYSTEM_CORE_CLOCK` は 48 MHz になる、ヘッダ読み） | 資料確認＋推定 |
-| GPIO MODE | 2 ビット（出力速度） | 1 ビット（1=出力）。`GPIO_Speed_10MHz`(=1) は MODE ビットを立てるので動く。`GPIO_Speed_2MHz`(=2) は予約ビットのみで入力になるため使わない | 資料確認（RM PDF p.81–82）、[cfglr-mode-field.md](gpio/cfglr-mode-field.md) |
+| GPIO MODE | 2 ビット（出力速度） | 1 ビット（1=出力）。`GPIO_Speed_10MHz`(=1) は MODE ビットを立てるので動く。`GPIO_Speed_2MHz`(=2) は予約ビットのみで入力になるため使わない | 資料確認（RM PDF p.81–82）、[cfglr-mode-field.md](gpio/cfglr-mode-field.md)。2026-11-08 に 002/006 の実機で MODE=2 は出力にならず MODE=1・3 は出力になることを確認（[ログ](../log/2026-11-08-2137-fix-ch32v00x-sample-findings.md) 7.3） |
 | フラッシュ待ち | 1 | 25 MHz 超で 2（ch32fun が設定） | ヘッダ読み |
 
 「変更不要」と判断した根拠は、サンプルごとの次の節に書く。
@@ -88,13 +88,16 @@ sources:
 - 差分 1: 分解能は **12 ビット**（V003 は 10 ビット）。結果マスクは `0x3ff` → `0xfff`（RM PDF p.100、p.103）。Pico 治具のファームウェア（`hardware/pico-tester/adc_fixture.c`）は報告値が 1023 を超えると捨てるため、サンプルは 12 ビット結果を `>> 2` した 10 ビット相当を送る。治具のファームウェアは変更していない（実測: `>> 2` なしの最初の実行は、DUT 側の問題と合わせて ADC_OBSERVE が TIMEOUT になった。治具側の 1023 上限が単独で原因かどうかは切り分けていない）。
 - 差分 2: **RSTCAL / CAL ビットがない**（CTLR2 の bit 3:2 は予約、RM PDF p.112）。ch32fun のヘッダにはマクロが残るが、キャリブレーションの手順は削除した（実機で変換は動作した）。
 - 差分 3（**実測で判明、資料からは読み取れていなかった**）: ソフトウェアトリガ（`EXTSEL=111`＋`SWSTART`）でも `CTLR2.EXTTRIG`（bit 20、`ADC_EXTTRIG`）を立てる必要がある。立てないと SWSTART を書いても変換が 1 回おきにしか完了せず、`EOC` を待つループが止まった。診断用ビルドの SWIO printf で、`EXTTRIG` なしは `STATR=0x3f10`（`EOC` なし）で 200 万回のポーリングが尽き、`EXTTRIG` ありは毎回 34 回前後で `EOC` が立つことを確認した（2026-11-07、`okf/log/2026-11-07-1926-ch32v002-hil.md`）。`ADC_LP`（CTLR3 bit 0）を 0 にしても改善しなかった。
+  - 資料での裏付け（2026-11-08）: RM の ADC_CTLR2 と「外部トリガ」の節では、`SWSTART` は `EXTSEL=111` で選ぶ外部トリガ源の 1 つで、`EXTTRIG=1` のとき有効になる。資料からも `EXTTRIG` が要ると読める。
+  - 固定 ch32fun の `funAnalogInit()`／`funAnalogRead()`（CH32V20x 以外は `EXTTRIG` を立てない）: 002/006 とも init は戻る（CTLR2=0x000E0001）が、read は `EOC` が立たずタイムアウトした（[ログ](../log/2026-11-08-2137-fix-ch32v00x-sample-findings.md) 5.1）。サンプルは helper を使わず、直接レジスタを操作する実装を維持する。
 - 差分 4: SAMPTR2 の SMP0=7 は 239.5 サイクル（V003 は 241、RM PDF p.113）。ADC 電源は低消費電力モードが既定（CTLR3.ADC_LP、RM PDF p.118）。サンプルは既定のまま使う。
-- 変更不要: ADCPRE を 0 にして HCLK/2（24 MHz）。範囲内（DS p.38、RM PDF p.34–35）。
+- 変更不要: ADCPRE を 0 にして HCLK/2（24 MHz）。範囲内（DS p.38、RM PDF p.34–35）。`RCC_CFGR0.ADC_CLK_MODE`（bit 31）はリセット値 0（分周する）のまま。サンプル時間 239.5 サイクルは 24 MHz で約 10 µs で、DS の表で外部入力インピーダンスの制限がなくなる長さ（16 MHz で 55.5 サイクル以上）を超える。WCH SDK の 6 MHz（約 40 µs）とでサンプル時間による違いは資料上見込まれない（[ログ](../log/2026-11-08-2137-fix-ch32v00x-sample-findings.md) 4.4、7.8）。
 - 実機確認: PWM デューティ 10/20/50/80/90 % で報告値 91/192/497/805/907（単調増加）。電圧と精度は主張しない。
 
 ## watchdog
 
 - コード変更なし。IWDG は PR=3（/32）、RLDR=4000、LSI 約 128 kHz（90–172 kHz の範囲、DS p.29）で約 1 s。鍵と `RCC_IWDGRSTF`（RSTSCKR bit 29）、`RCC_RMVF`（bit 24）は V003 と同じ（RM PDF p.40–45）。HIL は 3 パルス＋6 パルスの署名と間隔だけを確認し、周期の精度は測らない。LSI の範囲が広いため、周期の絶対値は主張しない。
+- 2026-11-08 の推定（Pico の時計基準、未校正）: AWU の起床間隔から LSI は約 115 kHz。WCH SDK の設定（/128、2000）での IWDG のリセットは約 2.3〜2.4 s で、PSCR/RLDR は設定どおり読み戻せた（[ログ](../log/2026-11-08-2137-fix-ch32v00x-sample-findings.md) 6.2）。
 - 実機: HIL で機能確認済み（[ログ](../log/2026-11-07-1926-ch32v002-hil.md)）。
 
 ## sleep_wake
@@ -115,4 +118,5 @@ sources:
 # 未確認
 
 - 実機確認（機能確認のみ）は 9 サンプルの HIL 成功で、`okf/log/2026-11-07-1926-ch32v002-hil.md` に記録した。個別の「実機未確認」の記述は、この記録の時点で HIL が成功したものについては機能確認済みに読み替える。電圧・波形・クロックの精度は未確認。
-- `GPIO_Speed_*` の `2MHz`/`50MHz` の挙動は推定で、サンプルでは `10MHz`(=1) だけを使う。
+- `GPIO_Speed_*` の `2MHz`/`50MHz` の挙動は、2026-11-08 に実機で確認した（2MHz=2 は出力にならない、50MHz=3 は出力になる）。サンプルでは引き続き `10MHz`(=1) だけを使う。
+- 2026-11-08 に確認した事項（プルダウン、オープンドレイン、EXTI、スタンバイの EXTI 起床、乗算命令、UART のボーレート・エラー、SPI 16 ビット、helper の挙動など）と、残る未確認事項は [未確認事項の一覧](../open-questions/ch32v00x-unverified.md) にまとめた。

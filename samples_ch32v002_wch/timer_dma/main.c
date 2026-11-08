@@ -120,6 +120,8 @@ void init(void)
     DMA_Init(DMA1_Channel6, &DMA_InitStructure);
     DMA_Cmd(DMA1_Channel6, ENABLE);
 
+    // 書籍のコードのまま、TIM_TimeBaseInit を2回呼ぶ。この1回目（48MHz / 4800 = 10kHz、Period 4）の設定は、
+    // 直後の2回目の呼び出しで PSC/ATRLR とも上書きされ、以降の動作には残らない（書籍のコードにも理由の記載はない）。
     // 48MHzで動作するため、48MHz / 4800 = 10kHz (100us) でカウント
     TIM_TimeBaseInitStructure.TIM_Prescaler = 4800 - 1;
     // 4つのLEDを点灯
@@ -129,9 +131,11 @@ void init(void)
     TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
     TIM_TimeBaseInit(TIM1, &TIM_TimeBaseInitStructure);
 
-    // 48MHzで動作するため、48MHz / 480 = 100kHz (10us) でカウント
+    // 実際に効く設定。分周比は PSC+1 なので、PSC=480 は 48MHz / 481 ≒ 99.8kHz（1カウント約10.02us）。
+    // 書籍のコードが 480−1 ではなく 480 と書いているので、その値を変えずに残す（約0.2%遅い）。
     TIM_TimeBaseInitStructure.TIM_Prescaler = 480;
-    // 10us ごとにトリガ
+    // Period=10−1 で10カウントごとに更新・DMA要求が出るので、約100us（≒100.2us）ごとに次の桁へ進む
+    // （書籍の「10us ごとにトリガ」は1カウントの長さを指しており、桁の切り替え周期ではない）。
     TIM_TimeBaseInitStructure.TIM_Period = 10 - 1;
     TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;

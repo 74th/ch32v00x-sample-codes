@@ -1,8 +1,9 @@
 /* Official-SDK port of book-code adc-wch_sdk (CH32V003): two single-shot ADC channels.
- * PA1 = ADC1 channel 1 ("x"), PA2 = ADC1 channel 0 ("y"). 10-bit result, right aligned, 241-cycle sample time,
- * calibrated at start. Every 200 ms prints "x: <0..1023>, y: <0..1023>" on USART1 TX (PD5), as the book does.
- * Differences from the book: none in the ADC setup (only the NMI/HardFault handler declarations are dropped;
- * the official startup already provides default handlers). */
+ * PA1 = ADC1 channel 1 ("x"), PA2 = ADC1 channel 0 ("y"). 12-bit result, right aligned, 239.5-cycle sample time
+ * (ADC_SampleTime_CyclesMode7), no calibration. Every 200 ms prints "x: <0..4095>, y: <0..4095>" on USART1 TX (PD5)
+ * in the book's format. Differences from the CH32V003 book code: 12-bit instead of 10-bit, 239.5 instead of 241 cycles,
+ * the calibration is dropped (this SDK has no ADC calibration API), RCC_ADCCLKConfig(RCC_PCLK2_Div8) is added as in
+ * the official examples, and the NMI/HardFault handler declarations are dropped (the official startup provides them). */
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>

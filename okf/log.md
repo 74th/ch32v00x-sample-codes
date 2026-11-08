@@ -28,3 +28,4 @@
 * **Initialization**: OKF v0.2のバンドルを作成し、[記述ルール](/conventions/knowledge-status.md) を定めた。
 * **Creation**: 5つの一次資料（[一次資料一覧](/sources/)）の版と識別情報を登録した。
 * **Creation**: [GPIO CFGLRの差分](/peripherals/gpio/cfglr-mode-field.md)、[CH32V00xのGPIOプルダウン](/peripherals/gpio/ch32v00x-pull-down.md)、[CH32V006 TSSOP20品の型番](/devices/ch32v006-tssop20-part-number.md) を、一次資料と照合して記録した（いずれも実機では未確認）。
+* **Update**（2026-11-08）: [未確認事項の一覧](/open-questions/ch32v00x-unverified.md) を作成。[GPIO CFGLRの差分](/peripherals/gpio/cfglr-mode-field.md) と [GPIOプルダウン](/peripherals/gpio/ch32v00x-pull-down.md) に CH32V002/CH32V006 の実測を追記。CH32V002/CH32V006 の差分文書に ADC・IWDG・PC4 などの調査結果を追記（[ログ](/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md)）。

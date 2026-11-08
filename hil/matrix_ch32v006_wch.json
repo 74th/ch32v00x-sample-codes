@@ -85,12 +85,13 @@
       "peripheral": "i2c",
       "state": "hil-verified",
       "sample": "i2c_slave",
-      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない。2026-11-08: I2C_ClockSpeed未設定（0除算でCKCFGR=0xCFFF）を100000に修正（CKCFGR=0x00F0、実測）、006でHIL再実行しpassed",
       "hil_tests": [
         "tests/hil/wch/test_i2c_slave.py::test_wch_i2c_slave"
       ],
       "evidence": [
-        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md",
+        "okf/log/2026-11-08-2237-ch32v006-sample-findings.md"
       ],
       "criteria": "0x10 ACK/0x11 NACK; reg0x20=00102030; write0x10 aabbccdd読み戻し; 部分読み; repeated STARTで0x20/0x10/0x22を読む"
     },
@@ -190,12 +191,13 @@
       "peripheral": "standby",
       "state": "hil-verified",
       "sample": "standby_wake",
-      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ、消費電流は未確認）。002の既知の文字化けは006へ免除せず、006では失敗しなかった。002/003の結果は継承しない",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ、消費電流は未確認）。002の既知の文字化けは006へ免除せず、006では失敗しなかった。002/003の結果は継承しない。2026-11-08: 002の文字化け対策として起床後のSystemInit()の後にDelay_Ms(10)を追加（書籍との差）。006で3回再実行し全てpassed（起床直後の化けは1〜2バイト）",
       "hil_tests": [
         "tests/hil/wch/test_standby_wake.py::test_wch_standby_wake"
       ],
       "evidence": [
-        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md"
+        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md",
+        "okf/log/2026-11-08-2237-ch32v006-sample-findings.md"
       ],
       "criteria": "wake3回のカウントが連番、間隔1.7..2.3 s、LED半周期1.6..2.4 s; 復旧: LinkE給電を入れ直しblinkを書き込み・検出・全量読み戻し"
     }

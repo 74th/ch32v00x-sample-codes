@@ -11,7 +11,7 @@
 //   （okf/log/2026-11-07-2310-arduino-neopixel-timing.md）。CPU と Flash の待ちで時間が変わるので系列ごとに異なる。
 // - 送信中は割り込みを止める（SysTick の割り込みで High が伸びるのを防ぐ）。
 #if defined(CH32VM00X)
-// CH32V002（CH32V006K8 の定義を流用）
+// CH32V002/CH32V006（CH32VM00X 系列。002 は CH32V006K8 の定義を流用。006 でも同じ機械語になり、同じ時間を実測）
 #define T0H_NOPS 7
 #define T0L_NOPS 11
 #define T1H_NOPS 24

@@ -3,7 +3,8 @@
  * advance it; reads return bytes from the pointer, advancing it. Registers 0x20..0x23 start as 00 10 20 30.
  * Handled in the official I2C1 event/error interrupts. The book's code is kept unchanged except for dropping the
  * NMI/HardFault declarations/definitions (the official startup supplies defaults) and the `stdio.h` include for
- * printf. The pointer moves on every received byte (not on STOP), so a repeated-START read uses the new pointer. */
+ * printf, and setting I2C_ClockSpeed = 100000 (the book left it 0, which made I2C_Init() divide by zero; see below).
+ * The pointer moves on every received byte (not on STOP), so a repeated-START read uses the new pointer. */
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
@@ -122,6 +123,10 @@ int main(void)
   NVIC_Init(&NVIC_InitStructure);
 
   // I2Cの設定
+  // スレーブの SCL は master が駆動するが、SDK の I2C_Init() は ClockSpeed から CKCFGR を計算する。
+  // 書籍のコードは未設定（0）で、pclk1 / (0 << 1) の0除算になり、CKCFGR が 0xCFFF（FS=1、CCR=0xFFF）になっていた（実測）。
+  // master（Pico、100 kHz）と同じ標準モードの 100 kHz を設定する（CKCFGR = 48MHz / 200kHz = 240 = 0x00F0、実測）。
+  I2C_InitTSturcture.I2C_ClockSpeed = 100000;
   I2C_InitTSturcture.I2C_Mode = I2C_Mode_I2C;
   // I2Cスレーブアドレスを指定
   I2C_InitTSturcture.I2C_OwnAddress1 = I2C_ADDRESS << 1;

@@ -6,7 +6,8 @@
  * The first 5 s ("wait") leave time to re-flash or recover before the chip first enters Standby, in which a debugger
  * may not be able to attach (see README).
  * Changes from the book: the LED is PC0 (fixture BLINK -> GP5; the book's PC1 is the fixture's I2C SDA) and the
- * NMI/HardFault declarations/handlers are dropped (official startup defaults). The rest is the book's code. */
+ * NMI/HardFault declarations/handlers are dropped (official startup defaults), and Delay_Ms(10) is added after the
+ * wake-up SystemInit() (garbled UART bytes on CH32V002; see the code). The rest is the book's code. */
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
@@ -57,8 +58,8 @@ int main(void)
 
   // LSI 128kHz
   // Prescaler 10240 -> 128kHz / 10240 = 12.5Hz = 80ms
-  // window value 31
-  // 80ms * 31 = 2000ms = 2s
+  // window value 25
+  // 80ms * 25 = 2000ms = 2s
   PWR_AWU_SetPrescaler(PWR_AWU_Prescaler_10240);
   PWR_AWU_SetWindowValue(25);
   // Prescaler 61440 -> 128kHz / 61440 = 2Hz = 500ms
@@ -85,6 +86,9 @@ int main(void)
 
     PWR_EnterSTANDBYMode(PWR_STANDBYEntry_WFE);
     SystemInit();
+    // 書籍のコードにはない待ち。CH32V002 では、起床直後に printf すると先頭の約14バイトが化けた（毎回、実測）。
+    // SystemInit() の後に 10 ms 待つと 1〜2 バイトに減った（100 ms でも同じ）。残る 1〜2 バイトの原因は未特定。
+    Delay_Ms(10);
 
 #if ENABLE_UART_PRINT
     printf("\r\nAuto wake up: %d \r\n", count);

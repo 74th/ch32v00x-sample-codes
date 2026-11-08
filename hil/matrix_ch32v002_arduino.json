@@ -70,14 +70,15 @@
       "peripheral": "i2c",
       "state": "build-only",
       "sample": "i2c_slave",
-      "note": "intermittent with official core 1.0.6 on both CH32V003 and CH32V002: the Wire slave stays inside the EV interrupt handler (Wire.write busy-waits for BYTE_TRANSMITTED after the master's NACK) and holds SCL low; a read followed closely by another transaction hangs. Earlier passes were runs that did not hang; non-strict xfail",
+      "note": "intermittent with official core 1.0.6 on both CH32V003 and CH32V002: the Wire slave stays inside the EV interrupt handler (Wire.write busy-waits for BYTE_TRANSMITTED after the master's NACK) and holds SCL low; a read followed closely by another transaction hangs. Earlier passes were runs that did not hang; non-strict xfail. 2026-11-08: on_request bounds fixed (out-of-range reads return 0xFF); on CH32V002 3 runs gave 1 XPASS and 2 XFAIL (same hang), a read from 0x2E returned 0000ffff; the hang is not fixed",
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave"
       ],
       "criteria": "Pico I2C_MASTER/I2C_PROBE: 0x10 ACK, 0x11 NACK; reg 0x20 reads 00102030; write 10 aabbccdd reads back aabbccdd; read at 0x12 gives ccdd",
       "evidence": [
         "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md",
-        "okf/log/2026-11-07-2310-arduino-neopixel-timing.md"
+        "okf/log/2026-11-07-2310-arduino-neopixel-timing.md",
+        "okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md"
       ]
     },
     {

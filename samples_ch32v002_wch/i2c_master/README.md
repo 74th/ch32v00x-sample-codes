@@ -5,7 +5,7 @@ CH32V003版（[../../samples_ch32v003_wch/i2c_master/README.md](../../samples_ch
 
 ## 003版との差分
 - 機械的な置換: `RCC_APB2Periph_*`→`RCC_PB2Periph_*`、`RCC_APB1Periph_*`→`RCC_PB1Periph_*`、`RCC_AHBPeriph_*`→`RCC_HBPeriph_*`（002 SDKのAPI名）、`GPIO_Speed_10MHz/50MHz`→`GPIO_Speed_30MHz`（002 SDKは30 MHzのみ）。インクルードは`ch32v00x.h`のまま（`../sdk/Compat`が002の`ch32v00X.h`へ橋渡し）。
-- このサンプル固有: なし（上記の置換のみ）
+- このサンプル固有: `USE_REMAP 1`（書籍の既定、PC6/PC5）の分岐は、003 の定数 `GPIO_FullRemap_I2C1` のままでは build できなかった（実測）。002/006 のリファレンスマニュアル（AFIO_PCFR1 の I2C1_RM[2:0]=010: SCL/PC5、SDA/PC6）に合わせて `GPIO_PartialRemap2_I2C1` に直した。`USE_REMAP` は `make clean; make build EXTRA_CFLAGS=-DUSE_REMAP=1` で選べる。固定治具は PC1/PC2 なので、リマップ側は **build のみ**（実機では未観測）。既定（`USE_REMAP 0`）の成果物は変わらない（[ログ](../../okf/log/2026-11-08-2137-fix-ch32v00x-sample-findings.md)）。
 - 003との行差分（`+`/`-`の行数）: `main.c` 10行。
 
 ## 観測状態（CH32V002実機で観測済み）

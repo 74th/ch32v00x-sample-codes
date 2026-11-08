@@ -70,9 +70,10 @@
       "peripheral": "i2c",
       "state": "build-only",
       "sample": "i2c_slave",
-      "note": "build OK。006でHIL 8回（flash+reset挟み）と595取引のストレスで固着を再現せず（試した条件に限る）。他機種のxfailは適用していない。通常対象の成功には数えないためbuild-only（okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md）",
+      "note": "build OK。006でHIL 8回（flash+reset挟み）と595取引のストレスで固着を再現せず（試した条件に限る）。他機種のxfailは適用していない。通常対象の成功には数えないためbuild-only（okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md）。2026-11-08: on_requestの範囲判定を修正（範囲外は0xFF）。修正後006でHIL 3回passed、末尾0x2Eから4バイト読むと0000ffff（試した条件に限る。状態はbuild-onlyのまま）",
       "observation_evidence": [
-        "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md"
+        "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md",
+        "okf/log/2026-11-08-2237-ch32v006-sample-findings.md"
       ]
     },
     {

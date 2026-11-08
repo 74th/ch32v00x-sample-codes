@@ -26,7 +26,10 @@ volatile uint8_t i2c_registers[0x30] = {0x00};
 
 static void on_write(uint8_t reg, uint8_t length)
 {
-	/* The helper reports every STOP, including after read-only transactions (then length = bytes read). */
+	/* Called from the helper's STOP handling. Observed (CH32V003, CH32V002, CH32V006; Pico master at 100 kHz): once per
+	 * transfer that ends with a write, including a pointer-only write (length 0) and an address-only probe (reg 0,
+	 * length 0; probe seen on CH32V003). NOT called after a read-only transfer, nor after a pointer write followed by a repeated-START read
+	 * (presumably because the slave sees no STOPF after the master NACKs the last read byte; not confirmed). */
 	i2c_registers[REG_WRITE_COUNT]++;
 	i2c_registers[REG_WRITE_REG] = reg;
 	i2c_registers[REG_WRITE_LEN] = length;

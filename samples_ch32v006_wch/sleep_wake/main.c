@@ -39,7 +39,8 @@ void TIM1_INT_Init(uint16_t arr, uint16_t psc)
   // 100-1 をセットすれば、上と併せて、10Hz(100ms) でリセットされる
   TIM_TimeBaseInitStructure.TIM_Period = arr;
   // リセットされて、さらにイベント発生させる周期
-  // 50 をセットすれば、上と併せて、1Hz(1s) でイベントが発生する
+  // 20-1（20回）をセットしているので、上と併せて 100ms × 20 = 2s ごとにイベントが発生する
+  // （書籍のコメントは「50 をセットすれば 1Hz(1s)」だったが、値・周期とも実際の設定と合わないため直した）
   TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 20 - 1;
 
   TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;

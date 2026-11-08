@@ -5,7 +5,7 @@
  * Each interrupt toggles the LED, so it blinks with a 500 ms half period (1 s period).
  * Changes from the book: the LED is PC0 (fixture BLINK -> GP5) instead of PC1 (the fixture's I2C SDA), and USE_TIM1 can
  * be given as -DUSE_TIM1=0 on the compiler command line. The handlers keep the book's WCH-Interrupt-fast attribute.
- * The TIM1 register dumps printed at start are the book's, except the two out-of-bounds NVIC dumps (see the code). */
+ * The TIM1 register dumps printed at start are the book's, except the two NVIC dumps (IENR[35] is out of bounds; see the code). */
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
@@ -35,7 +35,8 @@ void TIM1_INT_Init(uint16_t arr, uint16_t psc)
     // 100-1 をセットすれば、上と併せて、10Hz(100ms) でリセットされる
     TIM_TimeBaseInitStructure.TIM_Period = arr;
     // リセットされて、さらにイベント発生させる周期
-    // 50 をセットすれば、上と併せて、1Hz(1s) でイベントが発生する
+    // 5-1（5回）をセットしているので、上と併せて 100ms × 5 = 500ms ごとにイベントが発生する
+    // （書籍のコメントは「50 をセットすれば 1Hz(1s)」だったが、実際の値・周期と合わないため直した）
     TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 5 - 1;
 
     TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -66,8 +67,9 @@ void TIM1_INT_Init(uint16_t arr, uint16_t psc)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    // The book also printed NVIC->IPRIOR[TIM1_UP_IRQn] and NVIC->IENR[TIM1_UP_IRQn]; with this SDK's NVIC_Type those
-    // indices (35) exceed the array bounds (IPRIOR[8], IENR[8]), so the two dumps are omitted.
+    // The book also printed NVIC->IPRIOR[TIM1_UP_IRQn] and NVIC->IENR[TIM1_UP_IRQn]. In this SDK's NVIC_Type, IENR has
+    // 8 elements, so IENR[35] (TIM1_UP_IRQn = 35) is out of bounds; IPRIOR has 256 elements, so IPRIOR[35] would be in
+    // range. Both dumps are omitted here (the IENR one must be; the IPRIOR one is left out with it).
     // NVIC->IPRIOR[TIM1_UP_IRQn]: 40
     // NVIC->IENR[TIM1_UP_IRQn]:0
 
@@ -93,6 +95,7 @@ void TIM2_INT_Init(uint16_t arr, uint16_t psc)
 
     // カウンターをリセットする周期
     // 1000-1 をセットすれば、上と併せて、1Hz(1s) でリセットされる
+    // （このサンプルは main で 500-1 を渡すので、500ms ごとにリセット・割り込みが発生する）
     TIM_TimeBaseInitStructure.TIM_Period = arr;
     // TIM2 には RepetitionCounter はない
 

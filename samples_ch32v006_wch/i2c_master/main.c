@@ -2,7 +2,8 @@
  * Sequence: soft reset 30 A2, 300 ms, clear status 30 41, 300 ms; then every loop 24 00 (single shot), 300 ms,
  * read 6 bytes, convert (sht31.c), print "Temperature: <t>, Humidity: <h>" on USART1 TX (PD5).
  * Changes from the book, for the fixture:
- *  - USE_REMAP 0: SDA=PC1, SCL=PC2 (the fixture's I2C pair); the book default is the PC6/PC5 remap.
+ *  - USE_REMAP 0: SDA=PC1, SCL=PC2 (the fixture's I2C pair); the book default is the PC6/PC5 remap. USE_REMAP 1 uses
+ *    GPIO_PartialRemap2_I2C1 (I2C1_RM=010 on CH32V002/006); it is build-only (not observed on the fixture).
  *  - the result is printed 300 ms after the read and the final delay shortened to 4700 ms (same 5.3 s period),
  *    because the Pico runs one command at a time: the text can then be captured after it has served the read.
  *  - read_i2c_data returns 0 at its end (the book has no return statement there) and NACKs the last byte: with the
@@ -15,7 +16,9 @@
 
 #define TIMEOUT_MAX 100000
 #define SHT31_I2C_ADDR 0x44
+#ifndef USE_REMAP  /* can be given as EXTRA_CFLAGS=-DUSE_REMAP=1 (then make clean first) */
 #define USE_REMAP 0
+#endif
 
 // 送信
 int8_t send_i2c_data(uint8_t address, uint8_t *data, uint8_t length)
@@ -189,9 +192,11 @@ int main(void)
 
 #if USE_REMAP
   // I2Cのリマップ
-  // GPIO_PartialRemap_I2C1
-  // GPIO_FullRemap_I2C1
-  GPIO_PinRemapConfig(GPIO_FullRemap_I2C1, ENABLE);
+  // 書籍（CH32V003）は GPIO_FullRemap_I2C1 で PC6/PC5 に移していた。CH32V002/004/005/006 では、
+  // リファレンスマニュアル（CH32V00X RM V1.5、AFIO_PCFR1 の I2C1_RM[2:0]）の 010 が SCL/PC5・SDA/PC6 で、
+  // この SDK ではその値を書く定数が GPIO_PartialRemap2_I2C1（bits[5:3] = 010）。
+  // 固定治具は PC1/PC2 に配線しているため、この分岐は build のみ確認（実機では未観測）。
+  GPIO_PinRemapConfig(GPIO_PartialRemap2_I2C1, ENABLE);
   // PC6: SDA, PC5: SCL
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_5;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;

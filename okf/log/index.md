@@ -95,3 +95,7 @@
 - [新配置からのCH32V006 HIL（6.1のV006分）](2026-11-08-1354-ch32v006-hil-new-layout.md)
 - [CH32V003のch32fun HIL回帰（6.2）](2026-11-08-1400-ch32v003-regression.md)
 - [CH32V002 standby_wake 起床後待ちの実験（化け14→1〜2バイト）](2026-11-08-1808-ch32v002-standby-wake-delay-experiment.md)
+- [サンプルの不整合の修正と未確認事項の調査（CH32V002分・資料照合）](2026-11-08-2137-fix-ch32v00x-sample-findings.md)
+- [同上の診断ソース](2026-11-08-2137-fix-ch32v00x-sample-findings-diag-sources.md)
+- [同上のCH32V006分](2026-11-08-2237-ch32v006-sample-findings.md)
+- [CH32V006で ws2812b_simple.h を簡易確認（そのままでは信号なし）](2026-11-08-2327-ch32v006-ws2812b-simple-check.md)

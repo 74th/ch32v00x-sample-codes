@@ -32,10 +32,13 @@ void on_request() {
   int i;
 
   for (i = 0; i < 4; i++) {
-    if (position + (i - 1) < sizeof(i2c_registers)) {
-      Wire.write(i2c_registers[position + i]);
+    // 書籍のコードは position + (i - 1) で判定して position + i を読んでいたため、末尾で1バイト範囲外を読みえた。
+    // 実際に読む添字で判定し、範囲外は 0xFF を返す（書籍は 0x00）。on_receive は判定と書き込みが同じ添字で、変更なし。
+    int index = position + i;
+    if (index < (int)sizeof(i2c_registers)) {
+      Wire.write(i2c_registers[index]);
     } else {
-      Wire.write(0x00);
+      Wire.write(0xFF);
     }
   }
 

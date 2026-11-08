@@ -51,3 +51,12 @@ CNFの意味（入力時はアナログ、フローティング、プル付き�
 
 [^v003-rm]: CH32V003 Reference Manual V1.9, 7.3.1.1, PDF p.56–57（印字p.57–58）
 [^v00x-rm]: CH32V00X Reference Manual V1.5, 7.3.1.1, PDF p.81–82（印字p.75–76）
+
+# 実機での確認（2026-11-08、実測）
+
+CH32V002F4P6 と CH32V006F8P6（各 1 個体）で、PC0 を `CNFy=00b`（プッシュプル）にし、MODE の 2 ビットに 1／2／3 を書いて High と Low を出し、Pico で読んだ（[ログ](../../log/2026-11-08-2137-fix-ch32v00x-sample-findings.md) の 7.3）。
+
+- MODE=1（ch32fun の `GPIO_Speed_10MHz`）と MODE=3（`GPIO_Speed_50MHz` の値）: High・Low とも出力された。
+- MODE=2（`GPIO_Speed_2MHz` の値）: High を書いても出力されなかった（Low のまま＝入力のまま）。
+
+上位ビットが予約で、bit 0 だけが出力/入力を決める、という資料の読みと一致する（この 2 個体で確認）。
