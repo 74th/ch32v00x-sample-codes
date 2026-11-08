@@ -94,3 +94,4 @@
 - [新配置からのCH32V002 HIL（6.1のV002分）](2026-11-08-1352-ch32v002-hil-new-layout.md)
 - [新配置からのCH32V006 HIL（6.1のV006分）](2026-11-08-1354-ch32v006-hil-new-layout.md)
 - [CH32V003のch32fun HIL回帰（6.2）](2026-11-08-1400-ch32v003-regression.md)
+- [CH32V002 standby_wake 起床後待ちの実験（化け14→1〜2バイト）](2026-11-08-1808-ch32v002-standby-wake-delay-experiment.md)
