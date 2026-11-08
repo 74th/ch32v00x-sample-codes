@@ -15,6 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 V002_ID = "1ffff704: 20 06 20 00\n"   # observed on CH32V002F4P6 (okf/log/2026-11-07-1156-ch32v002-flash-measure.md)
 
 
+def _artifact(sample_dir, name, data=b"\x01"):
+    """Shared ch32fun sources keep one artifact per target: <sample>/build/<name>/main.bin."""
+    path = sample_dir / "build" / name / "main.bin"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
 def test_unknown_device_is_rejected_before_hardware(tmp_path):
     with pytest.raises(devices.DeviceError):
         devices.get("ch32v999")
@@ -46,7 +54,7 @@ def test_ch32v002_selection():
     device, path, cfg = config.select("ch32v002")
     assert path == ROOT / "hil/configs/ch32v002_gpio_blink.json"
     assert cfg["dut"]["device"] == "CH32V002F4P6"
-    assert device.sample_dir("uart") == ROOT / "samples_ch32v002_ch32fun/uart"
+    assert device.sample_dir("uart") == ROOT / "samples_ch32v00x_ch32fun/uart"
     assert device.target_mcu == "CH32V002" and device.chip_id_type == 0x002
 
 
@@ -97,7 +105,7 @@ def test_chip_id_failures(result, msg):
 
 @pytest.mark.parametrize("id_output", ["1ffff704: 30 05 30 00\n", "", None])
 def test_ch32v002_flash_stops_before_write(tmp_path, id_output):
-    (tmp_path / "main.bin").write_bytes(b"\x01")
+    _artifact(tmp_path, "ch32v002")
     calls = []
 
     def runner(argv, t):
@@ -114,7 +122,7 @@ def test_ch32v002_flash_stops_before_write(tmp_path, id_output):
 
 
 def test_ch32v002_flash_checks_id_then_writes(tmp_path):
-    (tmp_path / "main.bin").write_bytes(b"\x01")
+    _artifact(tmp_path, "ch32v002")
     calls = []
 
     def runner(argv, t):
@@ -158,7 +166,7 @@ def test_hil_skip_reason_is_reported_without_hardware(tmp_path):
                         "--hil", "--hil-device", "ch32v002", "-rs", "-q", str(test)],
                        cwd=ROOT, capture_output=True, text=True)
     assert p.returncode == 0, p.stdout + p.stderr
-    assert "ch32v002: sample samples_ch32v002_ch32fun/no_such_sample does not exist" in p.stdout
+    assert "ch32v002: sample samples_ch32v00x_ch32fun/no_such_sample does not exist" in p.stdout
     assert "1 skipped" in p.stdout
 
 
@@ -298,3 +306,159 @@ def test_wch_marked_hil_tests_follow_framework_option(tmp_path):
                             "--hil", args, outcome, str(test)], cwd=ROOT, capture_output=True, text=True)
         expected = "1 passed" if outcome == "wch" else "1 skipped"
         assert expected in p.stdout, p.stdout
+
+
+V006_ID = "1ffff704: 20 06 60 00\n"   # synthetic value for host tests only (type 0x006); real read-out is unmeasured
+
+
+def test_ch32v006_selection_shares_ch32v002_sources():
+    device, path, cfg = config.select("ch32v006")
+    assert path == ROOT / "hil/configs/ch32v006_gpio_blink.json"
+    assert cfg["dut"]["device"] == "CH32V006F8P6"
+    assert device.target_mcu == "CH32V006" and device.chip == "CH32V006" and device.chip_id_type == 0x006
+    # provisional route: the same application sources as CH32V002, but a separate artifact per target
+    assert device.sample_dir("uart") == ROOT / "samples_ch32v00x_ch32fun/uart"
+    assert devices.get("ch32v002").sample_dir("uart") == device.sample_dir("uart")
+    assert device.artifact(device.sample_dir("uart")).parts[-3:] == ("build", "ch32v006", "main.bin")
+    assert devices.get("ch32v002").artifact(device.sample_dir("uart")).parts[-3:] == ("build", "ch32v002", "main.bin")
+
+
+def test_existing_devices_keep_their_artifact_layout():
+    v003 = devices.get("ch32v003")
+    assert v003.fun_root is None and v003.artifact(v003.sample_dir("uart")) == v003.sample_dir("uart") / "main.bin"
+    for framework in ("arduino", "wch"):
+        for name in ("ch32v003", "ch32v002"):
+            dev = devices.get(name, framework)
+            assert dev.sample_root == ROOT / f"samples_{name}_{framework}"
+            assert dev.artifact(dev.sample_dir("x")) == dev.sample_dir("x") / "main.bin"
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+def test_ch32v006_rejects_unsupported_frameworks_before_hardware(framework, tmp_path):
+    with pytest.raises(devices.DeviceError, match="not available"):
+        devices.get("ch32v006", framework)
+    with pytest.raises(devices.DeviceError):
+        config.select("ch32v006", framework=framework)
+    calls = []
+    with pytest.raises(devices.DeviceError):
+        Dut(tmp_path, target="ch32v006", framework=framework, run=lambda a, t: calls.append(a)).binary
+    assert calls == []
+
+
+@pytest.mark.parametrize("device,cfg", [("ch32v006", "hil/configs/ch32v002_gpio_blink.json"),
+                                        ("ch32v002", "hil/configs/ch32v006_gpio_blink.json"),
+                                        ("ch32v006", "hil/configs/gpio_blink.json")])
+def test_ch32v006_config_mismatch_is_rejected(device, cfg):
+    with pytest.raises(config.ConfigError, match="does not match"):
+        config.select(device, cfg)
+
+
+def test_ch32v006_config_validates_physical_pins():
+    base = json.loads((ROOT / "hil/configs/ch32v006_gpio_blink.json").read_text())
+    config.validate(copy.deepcopy(base), "ch32v006")
+    for mutate in (lambda c: c["dut"].update(device="CH32V002F4P6"),
+                   lambda c: c["pins"]["BLINK"].update(dut_physical=11),
+                   lambda c: c["pins"]["UART_TX"].update(dut="PA1")):
+        c = copy.deepcopy(base)
+        mutate(c)
+        with pytest.raises(config.ConfigError):
+            config.validate(c, "ch32v006")
+
+
+def test_ch32v006_config_matches_wiring_document():
+    cfg = config.load(ROOT / "hil/configs/ch32v006_gpio_blink.json", "ch32v006")
+    assert wiring_problems(cfg, (ROOT / "hardware/wiring-proposal.md").read_text()) == []
+
+
+def test_build_passes_target_and_uses_per_target_artifact(tmp_path):
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        _artifact(tmp_path, "ch32v006")
+        return CmdResult(0, "")
+
+    dut = Dut(tmp_path, target="ch32v006", run=runner, ready_timeout=0)
+    assert dut.build() == tmp_path / "build" / "ch32v006" / "main.bin"
+    assert "TARGET_MCU=CH32V006" in calls[0] and "PREFIX=riscv64-unknown-elf" in calls[0]
+    calls.clear()
+    _artifact(tmp_path, "ch32v002")
+    assert Dut(tmp_path, target="ch32v002", run=lambda a, t: calls.append(a) or CmdResult(0, ""),
+               ready_timeout=0).build() == tmp_path / "build" / "ch32v002" / "main.bin"
+    assert "TARGET_MCU=CH32V002" in calls[-1]
+
+
+def test_other_target_artifact_is_never_flashed(tmp_path):
+    _artifact(tmp_path, "ch32v002")    # only the CH32V002 artifact exists
+    calls = []
+    dut = Dut(tmp_path, target="ch32v006", run=lambda a, t: calls.append(a), ready_timeout=0)
+    with pytest.raises(DutError, match="missing") as e:
+        dut.flash()
+    assert e.value.phase == "flash" and calls == []
+
+
+def test_ch32v003_build_has_no_target_argument(tmp_path):
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        (tmp_path / "main.bin").write_bytes(b"\x01")
+        return CmdResult(0, "")
+
+    assert Dut(tmp_path, run=runner, ready_timeout=0).build() == tmp_path / "main.bin"
+    assert not any(a.startswith("TARGET_MCU=") for a in calls[0])
+
+
+@pytest.mark.parametrize("id_output", ["1ffff704: 20 06 20 00\n", "1ffff704: 30 05 30 00\n", "", None])
+def test_ch32v006_flash_stops_before_write_on_wrong_or_unreadable_id(tmp_path, id_output):
+    _artifact(tmp_path, "ch32v006")
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        if "-r" in argv:
+            return CmdResult(0 if id_output is not None else 1, id_output or "")
+        return CmdResult(0, "Detected CH32V006\nImage written.\n")
+
+    with pytest.raises(DutError) as e:
+        Dut(tmp_path, target="ch32v006", run=runner, minichlink=tmp_path / "mc", ready_timeout=0).flash()
+    assert e.value.phase == "flash" and not any("-w" in a for a in calls)
+
+
+@pytest.mark.parametrize("detect", ["Detected CH32V002\n", "No detected chip.\n", ""])
+def test_ch32v006_selected_but_other_chip_or_none_detected(tmp_path, detect):
+    """002/006 mix-up or an unconnected DUT: stop in wait_ready, before any identifier read or write."""
+    _artifact(tmp_path, "ch32v006")
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        return CmdResult(0, "Found WCH Link\n" + detect)
+
+    dut = Dut(tmp_path, target="ch32v006", run=runner, minichlink=tmp_path / "mc", ready_timeout=1,
+              ready_interval=0, sleep=lambda s: None)
+    with pytest.raises(DutError):
+        dut.flash()
+    assert not any("-w" in a or "-r" in a for a in calls)
+
+
+def test_ch32v006_flash_checks_id_then_writes_and_requires_readback_match(tmp_path):
+    binary = _artifact(tmp_path, "ch32v006", b"\x01\x02\x03")
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        if "-w" in argv:
+            return CmdResult(0, "Detected CH32V006\nImage written.\n")
+        if "-r" in argv and "0x1ffff704" in argv:
+            return CmdResult(0, V006_ID)
+        (tmp_path / "readback.bin").write_bytes(b"\x01\x02\xff")   # false-success readback
+        return CmdResult(0, "Detected CH32V006\n")
+
+    dut = Dut(tmp_path, target="ch32v006", run=runner, minichlink=tmp_path / "mc", ready_timeout=0)
+    dut.flash()
+    assert calls[0][1:] == ["-r", "+", "0x1ffff704", "4", "-b"] and calls[1][1] == "-w"
+    assert dut.chip_id == 0x00600620
+    with pytest.raises(DutError, match="differ"):
+        dut.readback(tmp_path)
+    assert binary.read_bytes() == b"\x01\x02\x03"

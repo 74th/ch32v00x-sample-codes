@@ -1,5 +1,14 @@
 # Directory Update Log
 
+## 2026-11-08
+* **Regression**: [CH32V003のch32fun HIL回帰](log/2026-11-08-1400-ch32v003-regression.md)を記録した。14 passed、1 xfailed。
+* **Measurement**: [新配置からのCH32V006 HIL](log/2026-11-08-1354-ch32v006-hil-new-layout.md)を記録した。移動前と結果・成果物hashが一致。
+* **Measurement**: [新配置からのCH32V002 HIL](log/2026-11-08-1352-ch32v002-hil-new-layout.md)を記録した。移動前と成果物hash・結果が一致。
+* **Decision**: [CH32V002/CH32V006の共通化判定](log/2026-11-08-1340-ch32v00x-shared-source-decision.md)を記録した。両機の必須HILが同一ソースで合格し、成立。
+* **Measurement**: [CH32V006F8P6のHIL](log/2026-11-08-1335-ch32v006-hil.md)を記録した。GPIO・通信・周辺機能・helper必須3試験が合格、SSD1306 1MHzは参考(XFAIL)。
+* **Measurement**: [CH32V006F8P6の検出と識別領域の読取](log/2026-11-08-1326-ch32v006-identifier-read.md)を記録した。識別値の上位型番は0x006。
+* **Porting**: [CH32V006検証changeのホスト側基盤](log/2026-11-08-1315-ch32v006-host-foundation.md)を記録した。[差分表](peripherals/ch32v006-port-differences.md)を追加。実機は未操作。
+
 ## 2026-11-07
 * **Migration**: [サンプル配置の変更と仕様 archive](log/2026-11-07-1340-sample-layout-archive.md)を記録した。
 * **Migration**: [独立 ch32fun submodule と両デバイスの実機検証](log/2026-11-07-1330-standalone-ch32fun.md)を記録した。

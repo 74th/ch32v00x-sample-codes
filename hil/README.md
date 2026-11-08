@@ -6,12 +6,27 @@
 
 ## 対象デバイスの選択
 
-HIL の対象は `--hil-device {ch32v003,ch32v002}` で選ぶ。既定は `ch32v003` で、指定しない既存コマンドは従来どおり `configs/gpio_blink.json`、`samples_ch32v003_ch32fun/`、`Detected CH32V003` を使う。`--hil-config` を省略すると選択デバイスの既定設定（CH32V002 は `configs/ch32v002_gpio_blink.json`）を使う。設定の `dut.device` と `--hil-device` が食い違う場合や未対応のデバイス名は、実機に触れる前にエラーで止まる。デバイス固有値（型番、`TARGET_MCU`、物理ピン、サンプル・設定・マトリクスの場所）は `ch32hil/devices.py` にまとめている。
+HIL の対象は `--hil-device {ch32v003,ch32v002,ch32v006}` で選ぶ。既定は `ch32v003` で、指定しない既存コマンドは従来どおり `configs/gpio_blink.json`、`samples_ch32v003_ch32fun/`、`Detected CH32V003` を使う。`--hil-config` を省略すると選択デバイスの既定設定（CH32V002 は `configs/ch32v002_gpio_blink.json`）を使う。設定の `dut.device` と `--hil-device` が食い違う場合や未対応のデバイス名は、実機に触れる前にエラーで止まる。デバイス固有値（型番、`TARGET_MCU`、物理ピン、サンプル・設定・マトリクスの場所）は `ch32hil/devices.py` にまとめている。
 
 CH32V002 では、固定 minichlink の `Detected CH32V002` に加えて識別領域 `0x1ffff704` の上位型番 `0x002` を書き込み前に確認し、一致しない・読めない場合は書き込まずに `flash` 段階で失敗する。選択デバイスにサンプルがない、またはそのデバイスのマトリクス（CH32V002 は [matrix_ch32v002.json](matrix_ch32v002.json)）で `not-ported`／`excluded` のテストは、理由付きで skip される（成功ではない）。結果メタデータの `target` に対象デバイスを記録する。
 
 ```sh
 uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port=/dev/serial/by-id/<PicoのID>
+```
+
+### CH32V006
+
+`--hil-device ch32v006` は CH32V006F8P6 用（[設定](configs/ch32v006_gpio_blink.json)、[マトリクス](matrix_ch32v006.json)）。ch32fun のみ対応で、`--hil-framework arduino`／`wch` は実機に触れる前にエラーで止まる。アプリケーションソースは CH32V002 と共通の `samples_ch32v00x_ch32fun/`（旧 `samples_ch32v002_ch32fun/`）を使う。共通化の判定は [ログ](../okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md)。`00x` は配置名で、CH32V005/007 などの未検証デバイスへの対応表明ではない。
+
+- CH32V002/CH32V006 の成果物はサンプル内の `build/<device>/main.{elf,bin,hex}`（生成リンカスクリプトも同じ場所）に分かれ、HIL は `TARGET_MCU` を明示して build する。他ターゲットの成果物へはフォールバックしない。CH32V003 は従来どおり `samples_ch32v003_ch32fun/<sample>/main.bin`。
+- 書き込み前に `Detected CH32V006` と識別領域 `0x1ffff704` の上位型番 `0x006` を要求し、誤接続（CH32V002 等）・未接続・読取不能は書き込まずに `flash` 段階で失敗する。HIL テストは各段階で全量 readback を行う。識別値の実機読取は未取得。
+- 結果（`run.json` の `meta.dut`）に、`device`・`part`・`framework`・`build_target`・`source_dir`・`artifact`・`artifact_sha256`・`variant`（make 変数）・`chip_id` を記録する。002/006 を区別して追跡できる。
+- マトリクスは CH32V002 の全 13 行に対応する。実測前は `build-only`（`excluded` の `gpio_input` を除く）で、CH32V002 の結果は転記しない。`hil-verified` にするには CH32V006 の実機ログ（`evidence`）が必要。`gpio_input` の除外理由は CH32V002 と同じ（固定配線で PC4 を Pico から駆動しない）。
+- SSD1306 の 100 kHz（主判定）、i2c_slave_helper、WS2812 が helper の必須 3 試験。SSD1306 `helper_1mhz` は参考結果で、CH32V002 の `xfail` を CH32V006 の既知不具合として転用せず、実行結果（XPASS を含む）を別に記録する。
+- 選択例（実機接続と配線確認の後に実行する。この change の実機段階は未実施）:
+
+```sh
+uv run pytest --hil --hil-device ch32v006 --hil-framework ch32fun -m 'hil and gpio' tests/hil --hil-port=/dev/serial/by-id/<PicoのID>
 ```
 
 DUT は一度に一つだけ接続する。CH32V003 と CH32V002 の差し替えは自動化外の手作業で、電源断（WCH-LinkE の 3.3 V 出力停止を含む）、交換、電圧確認、`./scripts/ch32fun.sh flash <device>` による検出確認の順に行う。手順は [配線資料](../hardware/wiring.md) を参照する。

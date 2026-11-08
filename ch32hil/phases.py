@@ -21,8 +21,12 @@ class Run:
     meta: dict = field(default_factory=dict)
     results: list = field(default_factory=list)
     primary_failure: str | None = None
+    dut: object = None  # the Dut whose build/flash/... was run through phase(); its identity goes into the result
 
     def phase(self, name, fn, *args):
+        owner = getattr(fn, "__self__", None)
+        if hasattr(owner, "metadata") and hasattr(owner, "sample_dir"):
+            self.dut = owner
         if self.primary_failure and name != "cleanup":
             self.results.append(PhaseResult(name, "skipped", "earlier phase failed"))
             return None
@@ -39,7 +43,10 @@ class Run:
         return out
 
     def to_json(self):
-        return json.dumps({"meta": self.meta, "primary_failure": self.primary_failure,
+        meta = dict(self.meta)
+        if self.dut is not None:
+            meta["dut"] = self.dut.metadata()
+        return json.dumps({"meta": meta, "primary_failure": self.primary_failure,
                            "phases": [r.__dict__ for r in self.results],
                            "recorded_at_unix": time.time()}, indent=2)
 

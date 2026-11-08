@@ -19,6 +19,10 @@ _TSSOP20 = {"PD4": 1, "PD5": 2, "PD6": 3, "PD7": 4, "PA1": 5, "PA2": 6, "PD0": 8
             "PC0": 10, "PC1": 11, "PC2": 12, "PC3": 13, "PC4": 14, "PC5": 15,
             "PC6": 16, "PC7": 17, "PD1": 18, "PD2": 19, "PD3": 20}
 
+# ch32fun application sources shared by CH32V002 and CH32V006 (formerly samples_ch32v002_ch32fun/). "00x" names the
+# shared layout, not support for untested devices: only CH32V002F4P6 and CH32V006F8P6 are verified.
+FUN_SHARED_ROOT = "samples_ch32v00x_ch32fun"
+
 # Matrix states for which a HIL test of the sample is skipped on that device.
 SKIP_STATES = {"excluded", "not-ported"}
 
@@ -38,10 +42,24 @@ class Device:
     default_config: str
     matrix: str
     framework: str = DEFAULT_FRAMEWORK
+    # Explicit ch32fun source root (repo-relative), decoupled from the device name so that devices can share
+    # application sources. A shared root is built once per target into build/<name>/ (see samples_*/target.mk).
+    # None keeps the legacy layout samples_<name>_<framework>/ with the artifact directly in the sample directory.
+    fun_root: str | None = None
 
     @property
     def sample_root(self) -> Path:
+        if self.framework == DEFAULT_FRAMEWORK and self.fun_root:
+            return ROOT / self.fun_root
         return ROOT / f"samples_{self.name}_{self.framework}"
+
+    @property
+    def per_target_build(self) -> bool:
+        """True when artifacts live in <sample>/build/<name>/ (shared ch32fun sources)."""
+        return self.framework == DEFAULT_FRAMEWORK and self.fun_root is not None
+
+    def artifact(self, sample_dir: Path, name: str = "main.bin") -> Path:
+        return sample_dir / "build" / self.name / name if self.per_target_build else sample_dir / name
 
     def sample_dir(self, sample: str) -> Path:
         return self.sample_root / sample
@@ -64,7 +82,12 @@ DEVICES = {
     "ch32v003": Device("ch32v003", "CH32V003F4P6", "CH32V003", "CH32V003", None, _TSSOP20,
                        "hil/configs/gpio_blink.json", "hil/matrix.json"),
     "ch32v002": Device("ch32v002", "CH32V002F4P6", "CH32V002", "CH32V002", 0x002, _TSSOP20,
-                       "hil/configs/ch32v002_gpio_blink.json", "hil/matrix_ch32v002.json"),
+                       "hil/configs/ch32v002_gpio_blink.json", "hil/matrix_ch32v002.json",
+                       fun_root=FUN_SHARED_ROOT),
+    # Physical pins follow the CH32V006F8P7 TSSOP20 definition (identical to F4P6); F8P6 itself is unverified.
+    "ch32v006": Device("ch32v006", "CH32V006F8P6", "CH32V006", "CH32V006", 0x006, _TSSOP20,
+                       "hil/configs/ch32v006_gpio_blink.json", "hil/matrix_ch32v006.json",
+                       fun_root=FUN_SHARED_ROOT),
 }
 BY_PART = {d.part: d for d in DEVICES.values()}
 # Verification matrix per (device, non-default framework); the ch32fun matrix is Device.matrix.
@@ -73,7 +96,7 @@ FRAMEWORK_MATRICES = {
     ("ch32v002", "arduino"): "hil/matrix_ch32v002_arduino.json",
     ("ch32v003", "wch"): "hil/matrix_wch.json",
     ("ch32v002", "wch"): "hil/matrix_ch32v002_wch.json",
-}
+}  # CH32V006 supports only ch32fun for now; other frameworks are rejected by get() before any hardware access.
 
 
 def check_framework(framework: str) -> str:

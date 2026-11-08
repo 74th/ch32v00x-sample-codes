@@ -7,6 +7,7 @@ samples_*/**/*.hex
 samples_*/**/*.lst
 samples_*/**/*.map
 samples_*/**/generated_*.ld
+samples_*/**/build/
 # 旧サンプル配置に残ったビルド出力
 samples/**/*.elf
 samples/**/*.bin

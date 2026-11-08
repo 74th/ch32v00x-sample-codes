@@ -49,7 +49,20 @@ def test_scene_pixels_match_the_drawing_intent(expected):
 
 
 def test_v002_port_uses_the_same_scene_and_colors():
-    v3, v2 = ROOT / 'samples_ch32v003_ch32fun', ROOT / 'samples_ch32v002_ch32fun'
+    v3, v2 = ROOT / 'samples_ch32v003_ch32fun', ROOT / 'samples_ch32v00x_ch32fun'
     assert (v3 / 'ssd1306_i2c/scene.h').read_text() == (v2 / 'ssd1306_i2c/scene.h').read_text()
     from ch32hil.expected import ws2812_sample_values
     assert ws2812_sample_values(v2 / 'ws2812_spi/main.c') == ws2812_sample_values(v3 / 'ws2812_spi/main.c')
+
+
+def test_every_ch32fun_hil_device_uses_the_expected_frame_and_ws2812_sources():
+    """Expected SSD1306/WS2812 values come from the CH32V003 sample (unchanged by the shared layout); every device's
+    own sample directory, including CH32V006 on the shared CH32V002 sources, must carry the same scene and colors."""
+    from ch32hil import devices
+    from ch32hil.expected import SSD1306_SAMPLE, WS2812_SAMPLE, ws2812_sample_values
+    reference_scene = (SSD1306_SAMPLE / 'scene.h').read_text()
+    reference_colors = ws2812_sample_values(WS2812_SAMPLE / 'main.c')
+    for name in ('ch32v003', 'ch32v002', 'ch32v006'):
+        dev = devices.get(name)
+        assert (dev.sample_dir('ssd1306_i2c') / 'scene.h').read_text() == reference_scene, name
+        assert ws2812_sample_values(dev.sample_dir('ws2812_spi') / 'main.c') == reference_colors, name

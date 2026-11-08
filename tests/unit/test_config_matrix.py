@@ -229,3 +229,15 @@ def test_hil_verified_wch_rows_have_a_checkable_basis():
         for e in entries:
             if e["state"] == "hil-verified":
                 assert e.get("hil_tests") and e.get("evidence") and e.get("criteria"), e["sample"]
+
+
+def test_ch32v006_matrix_covers_every_ch32v002_row_without_borrowed_results():
+    v002 = matrix.load(ROOT / "hil/matrix_ch32v002.json")
+    v006 = matrix.load(ROOT / "hil/matrix_ch32v006.json")
+    assert [e["sample"] for e in v006] == [e["sample"] for e in v002] and len(v006) == 13
+    assert matrix.coverage_problems(matrix.load(ROOT / "hil/matrix.json"), v006) == []
+    assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v00x_ch32fun", root=ROOT) == []
+    # CH32V002 results are never carried over: a hil-verified row needs its own evidence log naming CH32V006.
+    for e in v006:
+        assert e["state"] in {"build-only", "excluded"} or all("ch32v006" in log for log in e["evidence"]), e["sample"]
+        assert "gpio_input" != e["sample"] or e["state"] == "excluded"

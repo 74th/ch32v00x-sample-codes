@@ -1,6 +1,7 @@
 """DUT build / flash / readback / reset using only the pinned externals/ch32fun."""
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import re
 import time
@@ -118,10 +119,33 @@ class Dut:
 
     @property
     def binary(self) -> Path:
-        return self.sample_dir / "main.bin"
+        return devices.get(self.target, self.framework).artifact(self.sample_dir)
+
+    def metadata(self) -> dict:
+        """What the result must record to tell devices/targets apart: device, framework, build target,
+        source placement, artifact hash, build variant and the identification word read before flashing."""
+        dev = devices.get(self.target, self.framework)
+        binary = self.binary
+
+        def rel(path):
+            try:
+                return str(path.relative_to(ROOT))
+            except ValueError:
+                return str(path)
+        return {"device": dev.name, "part": dev.part, "framework": self.framework,
+                "build_target": dev.target_mcu if dev.per_target_build or self.framework == "ch32fun" else None,
+                "source_dir": rel(self.sample_dir), "artifact": rel(binary),
+                "artifact_sha256": hashlib.sha256(binary.read_bytes()).hexdigest() if binary.is_file() else None,
+                "variant": list(self.make_args),
+                "chip_id": f"0x{self.chip_id:08x}" if self.chip_id is not None else None}
+
+    def _target_args(self) -> list:
+        """Shared ch32fun sources are selected per target; the artifact never falls back to another target's."""
+        dev = devices.get(self.target, self.framework)
+        return [f"TARGET_MCU={dev.target_mcu}"] if dev.per_target_build else []
 
     def build(self) -> Path:
-        prefix = [] if self.framework == "wch" else ["PREFIX=riscv64-unknown-elf"]
+        prefix = ([] if self.framework == "wch" else ["PREFIX=riscv64-unknown-elf"]) + self._target_args()
         if self.make_args:
             self.run(["make", "-C", str(self.sample_dir), "clean", *prefix], 300)
         r = self.run(["make", "-C", str(self.sample_dir), "build", *prefix, *self.make_args], 300)

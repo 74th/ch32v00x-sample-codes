@@ -10,7 +10,8 @@
    "note": "PC0 blink observed on GP5; mismatch detection; PA1 low-speed button input via GP12 and RC (covers GPIO input). Identifier 0x002 checked before flash",
    "evidence": [
     "okf/log/2026-11-07-1926-ch32v002-hil.md",
-    "okf/log/2026-11-07-1156-ch32v002-flash-measure.md"
+    "okf/log/2026-11-07-1156-ch32v002-flash-measure.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ],
    "hil_tests": [
     "tests/hil/test_blink_and_read.py::test_blink_and_read",
@@ -41,7 +42,8 @@
     "tests/hil/test_uart.py::test_uart_echo"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -57,7 +59,8 @@
     "tests/hil/test_i2c.py::test_i2c_roles"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -73,7 +76,8 @@
     "tests/hil/test_i2c.py::test_i2c_roles"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -89,7 +93,8 @@
     "tests/hil/test_spi.py::test_spi_master_with_pico_slave"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -105,7 +110,8 @@
     "tests/hil/test_pwm.py::test_pwm"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -121,7 +127,8 @@
     "tests/hil/test_adc.py::test_adc_functional"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -137,7 +144,8 @@
     "tests/hil/test_watchdog.py::test_watchdog_reset"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -153,7 +161,8 @@
     "tests/hil/test_watchdog.py::test_sleep_wake"
    ],
    "evidence": [
-    "okf/log/2026-11-07-1926-ch32v002-hil.md"
+    "okf/log/2026-11-07-1926-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -173,7 +182,8 @@
     "tests/hil/test_extralibs.py::test_extralibs_helper"
    ],
    "evidence": [
-    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -194,7 +204,8 @@
     "tests/hil/test_extralibs.py::test_ssd1306_helper"
    ],
    "evidence": [
-    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   },
   {
@@ -214,7 +225,8 @@
     "tests/hil/test_extralibs.py::test_ws2812_helper"
    ],
    "evidence": [
-    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md"
+    "okf/log/2026-11-07-2036-extralibs-ch32v002-hil.md",
+    "okf/log/2026-11-08-1352-ch32v002-hil-new-layout.md"
    ]
   }
  ]

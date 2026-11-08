@@ -132,6 +132,21 @@ CH32V003F4P6 の build → flash → measure をまとめた手順は [hardware/
 
 CH32V002F4P6 の差分と実機検証手順は [hardware/ch32v002-reproduction.md](hardware/ch32v002-reproduction.md) にあります。固定配線の Pico 治具で、CH32V003 と同じ HIL（機能確認のみ。既存 11 件と、下記の helper 検証 3 件＋参考の xfail 1 件）を `--hil-device ch32v002` で実行でき、2026-11-07 の実機で成功しています（状態は [hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)）。
 
+### CH32V002 / CH32V006 の共通ソース（ch32fun）
+
+CH32V002F4P6 と CH32V006F8P6 は、同じアプリケーションソース `samples_ch32v00x_ch32fun/<sample>/`（12 サンプル）を、デバイスごとに別々に build して使います。**ソースを共有する**という意味で、バイナリは別物です（Flash/RAM が異なるため、`TARGET_MCU` ごとにリンクします）。成果物は `build/<ch32v002|ch32v006>/` に分かれます。CH32V003 は従来どおり `samples_ch32v003_ch32fun/` で別配置です。
+
+| デバイス | 状態 | 状態の詳細 |
+| --- | --- | --- |
+| CH32V002F4P6 | 全必須 HIL 合格（機能確認のみ） | [hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、[再現手順](hardware/ch32v002-reproduction.md) |
+| CH32V006F8P6 | 全必須 HIL 合格（機能確認のみ） | [hil/matrix_ch32v006.json](hil/matrix_ch32v006.json)、[再現手順](hardware/ch32v006-reproduction.md)、[実測ログ](okf/log/2026-11-08-1335-ch32v006-hil.md) |
+
+- ディレクトリ名の `00x` は共通配置の名前で、CH32V005 / CH32V007 や他パッケージ（QFN など）への対応表明ではありません。実機で確認したのは上の 2 型番だけです。
+- 旧 `samples_ch32v002_ch32fun/` は `samples_ch32v00x_ch32fun/` に移動しました（過去のログとアーカイブには旧パスが残ります）。
+- 実行例: `./scripts/ch32fun.sh build ch32v006`、`make -C samples_ch32v00x_ch32fun/adc build PREFIX=riscv64-unknown-elf TARGET_MCU=CH32V006`、`uv run pytest --hil --hil-device ch32v006 --hil-framework ch32fun tests/hil --hil-port=/dev/serial/by-id/<PicoのID>`。
+- CH32V006F8P6 は、データシート V2.0 に F8P6 の記載がなく、F8P7 と同一ダイ（温度グレード違い）という**ユーザー申告に基づく仮定**で扱っています。識別領域の読取（`0x006`）と Flash 62 kB は F8P7 の記載と矛盾しませんでした（[ログ](okf/log/2026-11-08-1326-ch32v006-identifier-read.md)）。
+- 共通化の判定: [okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md](okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md)。CH32V006 では ADC の精度・時間校正・消費電流、実 OLED/LED の表示・発光は未確認です。SSD1306 の 1 MHz は両機とも参考結果（xfail）です。
+
 ## `okf/` に残す知識
 
 `okf/` は補足メモ置き場ではなく、このプロジェクトの主要な成果物の一つです。サンプルコードの移植中に得た知識をOpenKnowledgeFormatで表現し、人間が参照できるだけでなく、別の移植作業やツールからも再利用できる状態を目指します。
@@ -196,17 +211,17 @@ xprivate/
 - WCH-LinkEによる書き込みとリセットを自動化する
 - DUTの既知パターンをPicoで測定し、pytestで判定する
 - 意図的な不一致、タイムアウト、試験後の安全状態を確認する
-- CH32V006F8P6でも同じ試験を行い、差分を記録する
+- CH32V006F8P6でも同じ試験を行い、差分を記録する（2026-11-08 実施）
 
 Phase 1の完了条件は、ローカルコマンド1つでビルド、書き込み、測定、判定まで実行でき、失敗原因が区別され、失敗後も治具が安全状態へ戻ることです。
 
-**状況（2026-11-07）:** CH32V003F4P6 と CH32V002F4P6 では、この条件を満たす HIL を実機で確認済みです。CH32V006F8P6 は未着手です。
+**状況（2026-11-07）:** CH32V003F4P6 と CH32V002F4P6 では、この条件を満たす HIL を実機で確認済みです。CH32V006F8P6 も 2026-11-08 に、CH32V002 と共通のソースで同じ HIL を実機で確認しました（[共通ソースの節](#ch32v002--ch32v006-の共通ソースch32fun)）。
 
 ### Phase 2: 周辺機能の移植と試験
 
 UART → I2C Master/Slave → SPI（DUT Master）→ ADC → ADC+DMA → Timer/PWMの順を基本として追加します。その後、GPIO入力・割り込み、Watchdog、Sleep/Standby、NeoPixelなどへ広げます。
 
-**状況（2026-11-07）:** CH32V003 / CH32V002 の両方で、GPIO、UART、I2C master/slave、SPI（DUT master）、ADC、Timer/PWM、Watchdog、Sleep、および ch32fun の helper を使う I2C slave・SSD1306 OLED・WS2812 NeoPixel（下記）の HIL が成功しています（いずれも機能確認で、電圧・波形・タイミング精度の実測ではありません）。未実施: ADC+DMA、GPIO 入力・割り込み（固定配線の都合で PC4 を駆動できず、PA1 のボタン入力のみ）、Standby、SPI helper（`ch32v003_SPI.h`）、CH32V005 / CH32V006 / CH32V007。
+**状況（2026-11-07）:** CH32V003 / CH32V002 / CH32V006（CH32V006 は 2026-11-08）で、GPIO、UART、I2C master/slave、SPI（DUT master）、ADC、Timer/PWM、Watchdog、Sleep、および ch32fun の helper を使う I2C slave・SSD1306 OLED・WS2812 NeoPixel（下記）の HIL が成功しています（いずれも機能確認で、電圧・波形・タイミング精度の実測ではありません）。未実施: ADC+DMA、GPIO 入力・割り込み（固定配線の都合で PC4 を駆動できず、PA1 のボタン入力のみ）、Standby、SPI helper（`ch32v003_SPI.h`）、CH32V005 / CH32V007。
 
 ### Phase 3: デバイスとパッケージの拡張
 
@@ -246,18 +261,18 @@ xprivate/               # PDF、変換データ、非公開の調査メモ
 
 ## 現在地
 
-2026-11-07 時点で、CH32V003F4P6 と CH32V002F4P6 を対象に、ビルド、書き込み（読み戻し照合付き）、Pico による観測、判定までを `uv run pytest --hil` で実行できます（実機を書き換えるため、明示したときだけ動きます）。ホストだけで動く単体テストは `uv run pytest` です。
+2026-11-08 時点で、CH32V003F4P6、CH32V002F4P6、CH32V006F8P6 を対象に、ビルド、書き込み（読み戻し照合付き）、Pico による観測、判定までを `uv run pytest --hil` で実行できます（実機を書き換えるため、明示したときだけ動きます）。ホストだけで動く単体テストは `uv run pytest` です。
 
-- 実機で確認済み: 上記 2 デバイスでの周辺機能の HIL（詳細は [hil/matrix.json](hil/matrix.json)、[hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、実験ごとの記録は `okf/log/`）。
+- 実機で確認済み: 上記 3 デバイスでの周辺機能の HIL（詳細は [hil/matrix.json](hil/matrix.json)、[hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、[hil/matrix_ch32v006.json](hil/matrix_ch32v006.json)、実験ごとの記録は `okf/log/`）。
 - Arduino Core CH32（公式 1.0.6）のサンプル: CH32V003 で 7 本、CH32V002 で 8 本を HIL 確認済み（`i2c_slave` は両デバイスで、`i2c_oled` は CH32V003 で問題あり）（下の「Arduino Core CH32 のサンプルの検証状況」）。
-- 未着手・未確認: CH32V006 / CH32V005 / CH32V007、QFN32、ADC+DMA、Standby。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
+- 未着手・未確認: CH32V005 / CH32V007、CH32V006 の QFN32 などの他パッケージ、CH32V006 の Arduino / WCH SDK、ADC+DMA、Standby。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
 - 配線・電源の扱いは [hardware/wiring.md](hardware/wiring.md) の安全手順に従ってください。実機を使う試験は、Pico と DUT の電源・信号線を確認してから行います。
 
 進捗に応じて、このREADME、各サンプルの文書、`okf/` の知識、HIL試験結果を一緒に更新します。
 
 ## ch32fun の helper を使うサンプルの検証状況
 
-book-code の `i2c_oled`、`neopixel`、`i2c_slave`（ch32fun 版）が使う、`externals/ch32fun` 内の次の 3 種類のヘッダ（以下 helper）を、変更せずに使うサンプルを `samples_ch32v003_ch32fun/` と `samples_ch32v002_ch32fun/` に置いています。Pico が OLED や LED のふりをして、DUT が送った内容を観測します。
+book-code の `i2c_oled`、`neopixel`、`i2c_slave`（ch32fun 版）が使う、`externals/ch32fun` 内の次の 3 種類のヘッダ（以下 helper）を、変更せずに使うサンプルを `samples_ch32v003_ch32fun/` と `samples_ch32v00x_ch32fun/`（CH32V002/CH32V006 共通）に置いています。Pico が OLED や LED のふりをして、DUT が送った内容を観測します。
 
 | サンプル | 使う helper | Pico の役割 |
 |---|---|---|
@@ -265,7 +280,7 @@ book-code の `i2c_oled`、`neopixel`、`i2c_slave`（ch32fun 版）が使う、
 | `ssd1306_i2c` | `extralibs/ssd1306_i2c.h`、`extralibs/ssd1306.h` | SSD1306 の模擬（I2C 0x3C） |
 | `ws2812_spi` | `extralibs/ws2812b_dma_spi_led_driver.h` | WS2812 信号のデコード |
 
-CH32V003 と CH32V002 の両方で、Pico が観測した内容が期待どおりであることを実機で確認しています（詳細: `hil/matrix.json`、`okf/log/2026-11-07-1956-*`、`2012-*`、`2027-*`、`2036-*`）。
+CH32V003、CH32V002、CH32V006（2026-11-08、[ログ](okf/log/2026-11-08-1335-ch32v006-hil.md)）で、Pico が観測した内容が期待どおりであることを実機で確認しています（詳細: `hil/matrix.json`、`hil/matrix_ch32v006.json`、`okf/log/2026-11-07-1956-*`、`2012-*`、`2027-*`、`2036-*`）。
 
 **確認できていないこと**（「確認済み」は Pico が観測した送信内容が期待と一致した範囲に限ります）:
 

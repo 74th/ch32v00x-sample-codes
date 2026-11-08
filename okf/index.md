@@ -21,6 +21,7 @@ CH32V003向けサンプルをCH32V002 / CH32V005 / CH32V006 / CH32V007へ移植�
 # 周辺機能
 
 * [GPIO](peripherals/gpio/) - GPIOレジスタのデバイス間差分
+* [CH32V006への再利用差分](peripherals/ch32v006-port-differences.md) - CH32V002用サンプル12件の資料照合と再利用判定（実機未確認）
 
 # 作業記録
 

@@ -1,0 +1,232 @@
+{
+  "device": "CH32V006F8P6",
+  "baseline": "hil/matrix.json",
+  "entries": [
+    {
+      "sample": "blink_and_read",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_blink_and_read.py::test_blink_and_read",
+        "tests/hil/test_blink_and_read.py::test_intentional_mismatch_cleanup",
+        "tests/hil/test_blink_and_read.py::test_button_input"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "gpio_input",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "gpio-input",
+      "state": "excluded",
+      "requires": [
+        "gpio-drive"
+      ],
+      "note": "no HIL test, same reason as CH32V003: the sample expects Pico to drive PC4, but the fixed wiring uses PC4 as PWM_CH4 (DUT to Pico). GPIO input is covered by blink_and_read test_button_input on PA1. Not ported (same exclusion as CH32V002; not evaluated on CH32V006)"
+    },
+    {
+      "sample": "uart",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "uart",
+      "state": "hil-verified",
+      "requires": [
+        "uart"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_uart.py::test_uart_echo"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "i2c_master",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "requires": [
+        "i2c-slave"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_i2c.py::test_i2c_roles"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "i2c_slave",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "requires": [
+        "i2c-master"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_i2c.py::test_i2c_roles"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "spi_master",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "spi",
+      "state": "hil-verified",
+      "requires": [
+        "spi-slave"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_spi.py::test_spi_master_with_pico_slave"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "timer_pwm",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "pwm",
+      "state": "hil-verified",
+      "requires": [
+        "pulse-measure"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_pwm.py::test_pwm"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "adc",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "adc",
+      "state": "hil-verified",
+      "requires": [
+        "adc-stimulus"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_adc.py::test_adc_functional"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "watchdog",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "watchdog",
+      "state": "hil-verified",
+      "requires": [
+        "sequence-observe"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_watchdog.py::test_watchdog_reset"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "sleep_wake",
+      "class": "equivalent-standard-ch32fun",
+      "peripheral": "sleep",
+      "state": "hil-verified",
+      "requires": [
+        "gpio-sample"
+      ],
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_watchdog.py::test_sleep_wake"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "i2c_slave_helper",
+      "class": "helper-verification",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "helpers": [
+        "examples/i2c_slave/i2c_slave.h"
+      ],
+      "requires": [
+        "i2c-master"
+      ],
+      "criteria": "Pico I2C_MASTER: ACK at 0x42 / NACK at 0x43, register write and read-back, write/read callback counts and reg/length via observation registers, PC0 high on expected write callback",
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_extralibs_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "ssd1306_i2c",
+      "class": "helper-verification",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "helpers": [
+        "extralibs/ssd1306_i2c.h",
+        "extralibs/ssd1306.h"
+      ],
+      "requires": [
+        "ssd1306-emulation"
+      ],
+      "criteria": "Pico-reconstructed 128x64 frame buffer CRC equals host-generated expected CRC (100 kHz primary; 1 MHz helper default recorded separately). Real OLED display not verified",
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement). SSD1306 helper_1mhz is informational (xfail, not carried over from CH32V002 as a CH32V006 defect).",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_ssd1306_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    },
+    {
+      "sample": "ws2812_spi",
+      "class": "helper-verification",
+      "peripheral": "spi",
+      "state": "hil-verified",
+      "helpers": [
+        "extralibs/ws2812b_dma_spi_led_driver.h"
+      ],
+      "requires": [
+        "ws2812-decode"
+      ],
+      "criteria": "Pico-decoded GRB bytes equal expected bytes with zero out-of-range pulses. Real LED emission and WS2812 timing compliance not verified",
+      "note": "CH32V006F8P6 on the shared CH32V002 sources (TARGET_MCU=CH32V006), functional HIL only, 2026-11-08. Not verified: ADC accuracy, timing calibration, current, real OLED/LED output, F8P6 datasheet listing (treated as F8P7 per user statement).",
+      "hil_tests": [
+        "tests/hil/test_extralibs.py::test_ws2812_helper"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1335-ch32v006-hil.md",
+        "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"
+      ]
+    }
+  ]
+}

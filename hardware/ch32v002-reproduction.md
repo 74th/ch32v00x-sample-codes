@@ -38,3 +38,5 @@ CH32V003 からの主な変更: `TARGET_MCU=CH32V002`、16 KB Flash / 4 KB RAM�
 2026-11-07、build・write・1060バイトの読み戻し一致・リセット後の起動ログ・Pico 測定 PASS を確認した。詳細と条件は [実機記録](../okf/log/2026-11-07-1156-ch32v002-flash-measure.md) を参照。測定は約10 ms間隔であり精密な周波数検証ではない。別環境での再現は未確認。
 
 上記は旧 ch32fun での記録。新 submodule `b28d285` では成果物 1068 bytes、書き込み後 Pico PASS を確認したが読み戻しは未実施。詳細は [移行ログ](../okf/log/2026-11-07-1330-standalone-ch32fun.md)。
+
+2026-11-08: ソースを CH32V006 と共通の `samples_ch32v00x_ch32fun/`（旧 `samples_ch32v002_ch32fun/`）として扱い、成果物を `build/ch32v002/` に分けた構成で、必須 HIL が全件合格した（[判定ログ](../okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md)。この実行はディレクトリ移動の**前**の旧パスで行った。移動後の新パスからの再実行は別途記録する）。CH32V006 の手順は [ch32v006-reproduction.md](ch32v006-reproduction.md)。

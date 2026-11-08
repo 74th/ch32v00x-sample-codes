@@ -62,3 +62,29 @@ def test_each_stage_failure_preserves_primary_and_cleanup(failed):
     assert visited[:-1] == stages[:stages.index(failed) + 1]
     assert run.results[-1].status == 'pass'
     assert not run.ok
+
+
+def test_result_identifies_device_target_source_artifact_and_variant(tmp_path):
+    import hashlib, json
+    from ch32hil.dut import CmdResult, Dut
+    out = {}
+    for name in ("ch32v002", "ch32v006"):
+        art = tmp_path / "build" / name / "main.bin"
+        art.parent.mkdir(parents=True, exist_ok=True)
+        art.write_bytes(name.encode())
+        dut = Dut(tmp_path, target=name, run=lambda a, t: CmdResult(0, ""), make_args=("HELPER_CLOCK=1",))
+        run = Run(meta={"sample": "x"})
+        run.phase("dut_build", dut.build)
+        out[name] = json.loads(run.to_json())["meta"]["dut"]
+    a, b = out["ch32v002"], out["ch32v006"]
+    assert (a["device"], a["build_target"], a["part"]) == ("ch32v002", "CH32V002", "CH32V002F4P6")
+    assert (b["device"], b["build_target"], b["part"]) == ("ch32v006", "CH32V006", "CH32V006F8P6")
+    assert a["source_dir"] == b["source_dir"] and a["artifact"] != b["artifact"]
+    assert b["artifact"].endswith("build/ch32v006/main.bin") and a["framework"] == b["framework"] == "ch32fun"
+    assert b["artifact_sha256"] == hashlib.sha256(b"ch32v006").hexdigest() != a["artifact_sha256"]
+    assert b["variant"] == ["HELPER_CLOCK=1"] and b["chip_id"] is None
+
+
+def test_result_without_dut_is_unchanged():
+    import json
+    assert "dut" not in json.loads(Run(meta={"a": 1}).to_json())["meta"]

@@ -1,0 +1,145 @@
+{
+  "name": "ch32v006_gpio_blink",
+  "dut": {
+    "device": "CH32V006F8P6",
+    "sample": "blink_and_read"
+  },
+  "pico": {
+    "usb_vid": 11914,
+    "usb_pid": 10,
+    "protocol": 2,
+    "selection": "explicit_or_unique"
+  },
+  "pins": {
+    "BLINK": {
+      "dut": "PC0",
+      "dut_physical": 10,
+      "pico_gpio": 5,
+      "pico_physical": 7,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "I2C_SDA": {
+      "dut": "PC1",
+      "dut_physical": 11,
+      "pico_gpio": 10,
+      "pico_physical": 14,
+      "direction": "bidirectional",
+      "series_ohm": 220,
+      "kind": "i2c",
+      "pull_up_ohm": 4700,
+      "pull_up_to": "dut_vdd"
+    },
+    "I2C_SCL": {
+      "dut": "PC2",
+      "dut_physical": 12,
+      "pico_gpio": 11,
+      "pico_physical": 15,
+      "direction": "bidirectional",
+      "series_ohm": 220,
+      "kind": "i2c",
+      "pull_up_ohm": 4700,
+      "pull_up_to": "dut_vdd"
+    },
+    "SPI_SCK": {
+      "dut": "PC5",
+      "dut_physical": 15,
+      "pico_gpio": 6,
+      "pico_physical": 9,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "SPI_MOSI": {
+      "dut": "PC6",
+      "dut_physical": 16,
+      "pico_gpio": 7,
+      "pico_physical": 10,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "SPI_MISO": {
+      "dut": "PC7",
+      "dut_physical": 17,
+      "pico_gpio": 4,
+      "pico_physical": 6,
+      "direction": "pico_to_dut",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "UART_TX": {
+      "dut": "PD5",
+      "dut_physical": 2,
+      "pico_gpio": 9,
+      "pico_physical": 12,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "UART_RX": {
+      "dut": "PD6",
+      "dut_physical": 3,
+      "pico_gpio": 8,
+      "pico_physical": 11,
+      "direction": "pico_to_dut",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "PWM_CH1": {
+      "dut": "PD2",
+      "dut_physical": 19,
+      "pico_gpio": 14,
+      "pico_physical": 19,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "PWM_CH4": {
+      "dut": "PC4",
+      "dut_physical": 14,
+      "pico_gpio": 15,
+      "pico_physical": 20,
+      "direction": "dut_to_pico",
+      "series_ohm": 1000,
+      "kind": "digital"
+    },
+    "ADC_A1_BUTTON": {
+      "dut": "PA1",
+      "dut_physical": 5,
+      "pico_gpio": 12,
+      "pico_physical": 16,
+      "direction": "pico_to_dut",
+      "series_ohm": 10000,
+      "kind": "adc",
+      "capacitance_nf": 1000
+    },
+    "ADC_A0": {
+      "dut": "PA2",
+      "dut_physical": 6,
+      "pico_gpio": 13,
+      "pico_physical": 17,
+      "direction": "pico_to_dut",
+      "series_ohm": 10000,
+      "kind": "adc",
+      "capacitance_nf": 1000
+    }
+  },
+  "voltage": {
+    "dut_supply": 3.3,
+    "pico_io": 3.3,
+    "common_ground": true,
+    "power_pins_connected": false,
+    "source": "declared_unmeasured",
+    "dut_power": "wch_linke_3v3",
+    "pico_power": "usb"
+  },
+  "timeouts": {
+    "build": 300,
+    "flash": 60,
+    "pico_enumeration": 30,
+    "measure": 6
+  },
+  "readback": "required"
+}
