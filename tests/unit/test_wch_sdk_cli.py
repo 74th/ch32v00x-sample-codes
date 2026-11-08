@@ -95,3 +95,35 @@ def test_every_matrix_row_is_a_built_sample_for_both_devices():
     for device, matrix_file in (("ch32v003", "hil/matrix_wch.json"), ("ch32v002", "hil/matrix_ch32v002_wch.json")):
         rows = {e["sample"] for e in json.loads((ROOT / matrix_file).read_text())["entries"]}
         assert set(cli.all_samples(device)) == rows | {"blink"}, device
+
+
+def test_ch32v006_layout_is_62k_8k_and_rejects_the_ch32v002_layout():
+    ok6 = "FLASH            0x00000000         0x0000f800         xr\nRAM              0x20000000         0x00002000         xrw\n"
+    assert cli.check_layout(ok6, "ch32v006") == []
+    ok2 = ok6.replace("0x0000f800", "0x00004000").replace("0x00002000", "0x00001000")
+    assert cli.check_layout(ok2, "ch32v006") and cli.check_layout(ok6, "ch32v002") and cli.check_layout(ok6, "ch32v003")
+
+
+def test_ch32v006_selection_resolves_only_its_own_samples():
+    assert cli.resolve("ch32v006", "blink") == ROOT / "samples_ch32v006_wch/blink"
+    with pytest.raises(cli.SelectionError):
+        cli.resolve("ch32v006", "nope")
+
+
+def test_ch32v006_sources_reject_ch32v002_sdk_and_externals():
+    r = ROOT
+    good = _nm(f"{r}/samples_ch32v006_wch/blink/main.c", f"{r}/samples_ch32v006_wch/blink/../sdk/Debug/debug.c")
+    assert cli.check_sources(good, "ch32v006") == []
+    other = _nm(f"{r}/samples_ch32v002_wch/sdk/Debug/debug.c", f"{r}/samples_ch32v006_wch/blink/main.c")
+    assert any("outside" in p for p in cli.check_sources(other, "ch32v006"))
+    ext = _nm(f"{r}/samples_ch32v006_wch/sdk/Debug/debug.c",
+              f"{r}/externals/ch32v002_004_005_006_007/EVT/EXAM/SRC/Debug/debug.c")
+    assert any("externals" in p for p in cli.check_sources(ext, "ch32v006"))
+
+
+def test_ch32v006_built_samples_are_tracked_in_its_matrix():
+    import json
+    rows = {e["sample"]: e["state"] for e in json.loads((ROOT / "hil/matrix_ch32v006_wch.json").read_text())["entries"]}
+    built = set(cli.all_samples("ch32v006"))
+    assert built <= set(rows) | {"blink"}                  # blink is the reference sample, tracked in README/log
+    assert {s for s, st in rows.items() if st in ("build-only", "hil-verified")} <= built

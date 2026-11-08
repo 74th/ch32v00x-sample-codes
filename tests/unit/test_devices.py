@@ -334,14 +334,22 @@ def test_existing_devices_keep_their_artifact_layout():
 
 
 @pytest.mark.parametrize("framework", ["arduino", "wch"])
-def test_ch32v006_rejects_unsupported_frameworks_before_hardware(framework, tmp_path):
-    with pytest.raises(devices.DeviceError, match="not available"):
-        devices.get("ch32v006", framework)
-    with pytest.raises(devices.DeviceError):
-        config.select("ch32v006", framework=framework)
+def test_ch32v006_framework_selection_uses_its_own_samples_and_matrix(framework):
+    dev = devices.get("ch32v006", framework)
+    assert dev.sample_root == ROOT / f"samples_ch32v006_{framework}"
+    assert dev.matrix == f"hil/matrix_ch32v006_{framework}.json"
+    assert dev.artifact(dev.sample_dir("x")) == dev.sample_dir("x") / "main.bin"
+    assert dev.chip_id_type == 0x006 and dev.part == "CH32V006F8P6"
+    device, path, cfg = config.select("ch32v006", framework=framework)
+    assert path == ROOT / "hil/configs/ch32v006_gpio_blink.json" and device.framework == framework
+
+
+def test_unknown_framework_pair_is_rejected_before_hardware(tmp_path):
+    with pytest.raises(devices.DeviceError, match="unknown HIL framework"):
+        devices.get("ch32v006", "bogus")
     calls = []
     with pytest.raises(devices.DeviceError):
-        Dut(tmp_path, target="ch32v006", framework=framework, run=lambda a, t: calls.append(a)).binary
+        Dut(tmp_path, target="ch32v006", framework="bogus", run=lambda a, t: calls.append(a)).binary
     assert calls == []
 
 
@@ -462,3 +470,108 @@ def test_ch32v006_flash_checks_id_then_writes_and_requires_readback_match(tmp_pa
     with pytest.raises(DutError, match="differ"):
         dut.readback(tmp_path)
     assert binary.read_bytes() == b"\x01\x02\x03"
+
+
+# ---- CH32V006 Arduino/WCH: own artifact, guarded flash, full readback (no hardware) ----
+def _fw_artifact(sample_dir, data=b"\x01"):
+    (sample_dir / "main.bin").write_bytes(data)      # arduino/wch keep the artifact directly in the sample directory
+    return sample_dir / "main.bin"
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+def test_ch32v006_framework_artifact_is_the_sample_main_bin_and_never_another_devices(tmp_path, framework):
+    dut = Dut(tmp_path, target="ch32v006", framework=framework, ready_timeout=0)
+    assert dut.binary == tmp_path / "main.bin"
+    assert dut.metadata()["framework"] == framework and dut.metadata()["device"] == "ch32v006"
+    assert dut.metadata()["part"] == "CH32V006F8P6" and dut.metadata()["build_target"] is None
+    calls = []
+    _artifact(tmp_path, "ch32v006")                  # a ch32fun per-target artifact is not the framework artifact
+    with pytest.raises(DutError, match="missing"):
+        Dut(tmp_path, target="ch32v006", framework=framework, run=lambda a, t: calls.append(a), ready_timeout=0).flash()
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+def test_ch32v006_framework_build_arguments(tmp_path, framework):
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        _fw_artifact(tmp_path)
+        return CmdResult(0, "")
+
+    Dut(tmp_path, target="ch32v006", framework=framework, run=runner, ready_timeout=0).build()
+    assert not any(a.startswith("TARGET_MCU=") for a in calls[0])
+    assert ("PREFIX=riscv64-unknown-elf" in calls[0]) == (framework == "arduino")
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+@pytest.mark.parametrize("id_output", [V002_ID, "1ffff704: 30 05 30 00\n", "", None])
+def test_ch32v006_framework_flash_stops_before_write_on_wrong_or_unreadable_id(tmp_path, framework, id_output):
+    _fw_artifact(tmp_path)
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        if "-r" in argv:
+            return CmdResult(0 if id_output is not None else 1, id_output or "")
+        return CmdResult(0, "Detected CH32V006\nImage written.\n")
+
+    with pytest.raises(DutError) as e:
+        Dut(tmp_path, target="ch32v006", framework=framework, run=runner, minichlink=tmp_path / "mc",
+            ready_timeout=0).flash()
+    assert e.value.phase == "flash" and not any("-w" in a for a in calls)
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+@pytest.mark.parametrize("detect", ["Detected CH32V002\n", "No detected chip.\n", ""])
+def test_ch32v006_framework_wrong_chip_or_unconnected_never_writes(tmp_path, framework, detect):
+    _fw_artifact(tmp_path)
+    calls = []
+
+    def runner(argv, t):
+        calls.append(argv)
+        return CmdResult(0, "Found WCH Link\n" + detect)
+
+    dut = Dut(tmp_path, target="ch32v006", framework=framework, run=runner, minichlink=tmp_path / "mc",
+              ready_timeout=1, ready_interval=0, sleep=lambda s: None)
+    with pytest.raises(DutError):
+        dut.flash()
+    assert not any("-w" in a or "-r" in a for a in calls)
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+def test_ch32v006_framework_false_success_is_not_written(tmp_path, framework):
+    """minichlink exiting 0 without 'Detected CH32V006' / with a negative message must not count as flashed."""
+    _fw_artifact(tmp_path)
+
+    def runner(argv, t):
+        if "-r" in argv:
+            return CmdResult(0, V006_ID)
+        return CmdResult(0, "No detected chip.\n")
+
+    with pytest.raises(DutError):
+        Dut(tmp_path, target="ch32v006", framework=framework, run=runner, minichlink=tmp_path / "mc",
+            ready_timeout=0).flash()
+
+
+@pytest.mark.parametrize("framework", ["arduino", "wch"])
+def test_ch32v006_framework_readback_mismatch_fails_before_observation(tmp_path, framework):
+    _fw_artifact(tmp_path, b"\x01\x02\x03\x04")
+
+    def runner(argv, t):
+        (tmp_path / "readback.bin").write_bytes(b"\x01\x02\x03\xff")     # last byte differs
+        return CmdResult(0, "Detected CH32V006\n")
+
+    dut = Dut(tmp_path, target="ch32v006", framework=framework, run=runner, minichlink=tmp_path / "mc",
+              ready_timeout=0)
+    with pytest.raises(DutError, match="differ") as e:
+        dut.readback(tmp_path)
+    assert e.value.phase == "readback"
+
+
+def test_default_selection_and_existing_framework_behaviour_are_kept():
+    assert devices.get("ch32v003").framework == "ch32fun" and devices.DEFAULT == "ch32v003"
+    for name in ("ch32v003", "ch32v002"):
+        for fw in ("arduino", "wch"):
+            assert devices.get(name, fw).sample_root == ROOT / f"samples_{name}_{fw}"
+    assert devices.get("ch32v006").per_target_build            # ch32fun layout stays shared and per target

@@ -25,15 +25,27 @@ from .common import (_cleanup, _prepare, _with_client, build_flash_readback, che
 pytestmark = [pytest.mark.hil, pytest.mark.wch, pytest.mark.watchdog]
 
 SAMPLE = "watchdog"
+# CH32V006 (measured, okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md): the IWDG (reload 2000)
+# does not reset after a 2.0 s or 2.3 s hold and has reset by 2.6 s (+0..0.5 s since the last feed), so a 2 s hold is not
+# enough there. Pico's GPIO_DRIVE lasts at most 2000 ms, so longer holds are chained. The owner chose a longer hold for
+# CH32V006 (3 s requested); 3.5 s is used for margin (4/4 resets in the bracket runs). The reset cause is judged as on
+# the other devices: the reset-cause register reads IWDGRSTF after the watchdog reset on CH32V006 too.
+HOLD_RESET_MS = {"default": 2000, "ch32v006": 3500}
 BUTTON_GP, LED1_GP = 12, 5
 LOOP = re.compile(rb"loop (\d+) cause=(\w+)\r\n")
 
 
 def _hold_low(port, ms):
+    """Hold PA1 low for `ms` (GPIO_DRIVE lasts at most 2000 ms, so longer holds are chained; each call's reply is checked
+    and the gaps between calls are only the host round trip)."""
     def action(client):
-        reply = client.request("GPIO_DRIVE", BUTTON_GP, 0, ms)
-        if not reply.ok:
-            raise PicoError(f"GPIO_DRIVE failed: {reply.fields}")
+        left = ms
+        while left > 0:
+            chunk = min(left, 2000) if left - min(left, 2000) >= 10 or left <= 2000 else left - 10
+            reply = client.request("GPIO_DRIVE", BUTTON_GP, 0, chunk)
+            if not reply.ok:
+                raise PicoError(f"GPIO_DRIVE failed: {reply.fields}")
+            left -= chunk
     _with_client(port, ms / 1000 + 3, action)
 
 
@@ -48,7 +60,7 @@ def _loop_line(port, attempts=3):
     raise AssertionError(f"no 'loop N cause=...' line: {seen}")
 
 
-def test_wch_watchdog(request, hil_device, hil_config, hil_dut):
+def test_wch_watchdog(request, hil_device, hil_config, hil_dut):   # noqa: C901
     dut = hil_dut(SAMPLE)
     run = new_run(hil_device, SAMPLE, criteria="cause=other at start; blink 250/250 and counter rises; PA1 low 1 s: alive; "
                                               "PA1 low 2 s: cause=IWDG and counter restarts; timeout ~1.6..2.5 s")
@@ -85,7 +97,8 @@ def test_wch_watchdog(request, hil_device, hil_config, hil_dut):
                 raise AssertionError(f"DUT restarted or stalled after a 1 s hold: before={before} after={short}")
         run.phase("check_alive_after_1s", alive)
         # 2000 ms without feeding: the watchdog must reset the chip
-        run.phase("hold_2s", _hold_low, p, 2000)
+        hold_ms = HOLD_RESET_MS.get(hil_device.name, HOLD_RESET_MS["default"])
+        run.phase("hold_for_reset", _hold_low, p, hold_ms)
         reset = run.phase("loop_after_2s", _loop_line, p)
         out["after_2s"] = reset
 
@@ -93,7 +106,7 @@ def test_wch_watchdog(request, hil_device, hil_config, hil_dut):
             if reset is None:
                 raise AssertionError("missing loop line")
             if reset[1] != "IWDG" or reset[0] > 3:
-                raise AssertionError(f"no watchdog reset after a 2 s hold: {reset}")
+                raise AssertionError(f"no watchdog reset after a {hold_ms} ms hold: {reset}")
         run.phase("check_iwdg_reset", reset_seen)
         run.phase("dut_restore", dut.reset)
     finally:

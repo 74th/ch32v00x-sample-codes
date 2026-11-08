@@ -1,0 +1,156 @@
+{
+  "device": "CH32V006F8P6",
+  "framework": "arduino",
+  "core": "WCH:ch32v 1.0.6 (official Board Manager package)",
+  "fqbn": "WCH:ch32v:CH32VM00X_EVT:pnum=CH32V006K8,clock=48MHz_HSI",
+  "entries": [
+    {
+      "book_sample": "adc-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "adc",
+      "state": "hil-verified",
+      "sample": "adc",
+      "note": "CH32V006F8P6実機で既存の判定条件により確認（機能確認のみ。精度・校正は未確認）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/arduino/test_adc.py::test_arduino_adc"
+      ],
+      "criteria": "uncalibrated: channel whose RC was driven high (GPIO_DRIVE 500 ms) reads >= 2800, driven low <= 1200 (0..4095, 12-bit: variant ADC_RESOLUTION 12); X=PA1/GP12, Y=PA2/GP13",
+      "evidence": [
+        "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
+      ]
+    },
+    {
+      "book_sample": "blink_and_read-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "sample": "blink_and_read",
+      "note": "CH32V006F8P6 で公式core 1.0.6のCH32VM00X_EVT/CH32V006K8定義（62 KiB/8 KiB、002用上書きなし）を使用。識別0x006・flash・全量readback・PC0点滅・PA1入力・RESET_SAFEをCH32V006実機で確認（機能確認のみ）",
+      "hil_tests": [
+        "tests/hil/arduino/test_blink_and_read.py::test_arduino_blink_and_read"
+      ],
+      "criteria": "boot Serial text; PC0 500/500 ms; PA1 low pauses blink",
+      "evidence": [
+        "okf/log/2026-11-08-1549-ch32v006-arduino-hil-gpio.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_master-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_master",
+      "note": "CH32V006F8P6実機で既存の判定条件により確認（機能確認のみ。精度・校正は未確認）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master"
+      ],
+      "criteria": "Pico I2C_SLAVE as SHT31 0x44: after reset writes 30a2 then 3041; loop writes 2400 and reads 6 bytes; 0x45 receives nothing; loop period ~5.3 s",
+      "evidence": [
+        "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_oled-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_oled",
+      "note": "library 'OLED SSD1306 - SH1106' 1.0.7 pinned in sketch.yaml; CH32V006F8P6でPicoのSSD1306模擬と一致。実OLEDの表示は未確認",
+      "hil_tests": [
+        "tests/hil/arduino/test_oled.py::test_arduino_i2c_oled"
+      ],
+      "criteria": "SSD1306 model pages 0..3 and 4..7 equal the host-rendered 128x32 buffer; display on",
+      "evidence": [
+        "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_slave-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "build-only",
+      "sample": "i2c_slave",
+      "note": "build OK。006でHIL 8回（flash+reset挟み）と595取引のストレスで固着を再現せず（試した条件に限る）。他機種のxfailは適用していない。通常対象の成功には数えないためbuild-only（okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md）",
+      "observation_evidence": [
+        "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md"
+      ]
+    },
+    {
+      "book_sample": "i2c_slave-test_master_arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_slave_test_master",
+      "note": "CH32V006F8P6実機で既存の判定条件により確認（機能確認のみ。精度・校正は未確認）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave_test_master"
+      ],
+      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s",
+      "evidence": [
+        "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
+      ]
+    },
+    {
+      "book_sample": "neopixel-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "sample": "neopixel",
+      "note": "002と同一の機械語・同一の測定値（byte境界L0 1280 ns）のため002の上限1300 nsを適用（広げていない）。規格の1000 nsは超える。機能確認のみで、実発光とWS2812規格適合は未確認",
+      "hil_tests": [
+        "tests/hil/arduino/test_neopixel.py::test_arduino_neopixel"
+      ],
+      "criteria": "WS2812 decoder: 18 bytes/frame with the known colour pattern, no bad pulses; byte-boundary T0L <= 1300 ns (same as CH32V002)",
+      "evidence": [
+        "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md"
+      ]
+    },
+    {
+      "book_sample": "pwm-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "pwm",
+      "state": "hil-verified",
+      "sample": "pwm",
+      "note": "CH32V006F8P6でPD2(TIM1_CH1)+PC0(TIM2_CH3)の組を既存の判定基準で確認（ユーザー判断で必須の組を変更）。書籍相当のPD2+PC4はPC4が無信号で未成功（WCH SDKでも同症状、GPIO出力でも出ない、原因未特定。参考試験arduino_pwm_pc4としてXFAIL保存）。PATTERN 3(PC6/PC5リマップ)の参考もXFAIL",
+      "hil_tests": [
+        "tests/hil/arduino/test_pwm.py::test_arduino_pwm",
+        "tests/hil/arduino/test_pwm.py::test_arduino_pwm_remap_reference",
+        "tests/hil/arduino/test_pwm.py::test_arduino_pwm_pc4_reference"
+      ],
+      "criteria": "1 kHz (800..1200 us); duty within 15000 ppm of k/32; LED1+LED2 ~ 33/32; ramps. Pair PD2 (TIM1_CH1, GP14) + PC0 (TIM2_CH3, GP5) by the owner's decision",
+      "evidence": [
+        "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
+      ]
+    },
+    {
+      "book_sample": "spi_master-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "spi",
+      "state": "hil-verified",
+      "sample": "spi_master",
+      "note": "CH32V006F8P6実機で既存の判定条件により確認（機能確認のみ。精度・校正は未確認）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/arduino/test_spi.py::test_arduino_spi_master"
+      ],
+      "criteria": "Pico SPI_SLAVE mode 0: reset frame starts ffff; read frames 0000; valid reply -> next read ~1 s; reply 0000 -> CS low >= 400 ms (reset_adt7310) then reads resume",
+      "evidence": [
+        "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
+      ]
+    },
+    {
+      "book_sample": "uart-arduino_core_ch32",
+      "class": "direct-port",
+      "peripheral": "uart",
+      "state": "hil-verified",
+      "sample": "uart",
+      "note": "CH32V006F8P6実機で、Picoがセンサー役（1234 ppm）とSSD1306模擬を兼ね、DUTが読んだ値を描いた画面を確認（書籍のスケッチのまま、128x32）。最終ページはモデルの確定遅れで比較対象外、1235 ppmでは失敗することを確認。実センサー・実OLED未使用。通信と表示の複合試験のため機能確認のみ",
+      "hil_tests": [
+        "tests/hil/arduino/test_uart.py::test_arduino_uart_co2_to_oled"
+      ],
+      "criteria": "OLED model pages 0..2 after loop 2 equal the host-rendered 'loop: 2 / co2 : 1234 ppm' buffer (INIT-less capture, 1.5 s)",
+      "evidence": [
+        "okf/log/2026-11-08-1632-ch32v006-arduino-uart-oled-hil.md"
+      ]
+    }
+  ]
+}

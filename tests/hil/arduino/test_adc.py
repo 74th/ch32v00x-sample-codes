@@ -26,7 +26,8 @@ SAMPLE = "adc"
 X_GP, Y_GP = 12, 13              # PA1 (X), PA2 (Y)
 # (full scale, driven-high minimum, driven-low maximum) per device; full scale from the variant ADC_RESOLUTION
 # (official core 1.0.6). Coarse thresholds: 700/300 of 1023, the same ratio on 4095.
-SCALE = {"ch32v003": (1023, 700, 300), "ch32v002": (4095, 2800, 1200)}
+# CH32V006: variant_CH32V006K8.h ADC_RESOLUTION 12 (core 1.0.6), so the 4095-scale thresholds apply.
+SCALE = {"ch32v003": (1023, 700, 300), "ch32v002": (4095, 2800, 1200), "ch32v006": (4095, 2800, 1200)}
 LINE = re.compile(r"X: (\d+), Y: (\d+)\r\n")
 
 

@@ -24,7 +24,8 @@ SAMPLE = "adc"
 X_GP, Y_GP = 12, 13              # PA1 (x), PA2 (y)
 # (full scale, driven-high minimum, driven-low maximum, minimum step between charge pulses) per device:
 # CH32V003 10 bit, CH32V002 12 bit (same ratios, values x4; the 002 numbers are unexercised, no CH32V002 attached yet)
-SCALE = {"ch32v003": (1023, 700, 300, 20), "ch32v002": (4095, 2800, 1200, 80)}
+SCALE = {"ch32v003": (1023, 700, 300, 20), "ch32v002": (4095, 2800, 1200, 80),
+         "ch32v006": (4095, 2800, 1200, 80)}   # 006: same 12-bit ADC and SDK as 002 (same ratios, not tuned to results)
 LINE = re.compile(r"x: (\d+), y: (\d+)\r\n")
 
 

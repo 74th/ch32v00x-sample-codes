@@ -2,7 +2,7 @@
 
 CH32V003向けに作成したサンプルコードを、CH32V002 / CH32V005 / CH32V006 / CH32V007へ移植し、実機で再現可能な形に整備するプロジェクトです。
 
-WCH公式SDKのGUI不要なCLIビルド例は [samples_ch32v003_wch](samples_ch32v003_wch/README.md) にあります。CH32V003でビルド・書き込み・読み戻し照合・PicoによるGPIO点滅観測を確認済みです（CH32V002は未対応）。
+WCH公式SDKのGUI不要なCLIビルド例は [samples_ch32v003_wch](samples_ch32v003_wch/README.md) にあります。CH32V003でビルド・書き込み・読み戻し照合・PicoによるGPIO点滅観測を確認済みです。CH32V002 と CH32V006 の対応状況は後述の「WCH 公式 SDK のサンプルの検証状況」を参照してください。
 
 このリポジトリでは、単にビルドできるコードを増やすことを目的にしません。デバイスごとの差分を調査し、実機試験で動作を確かめ、その過程で必要になった知識を再利用可能な形で残すことを重視します。
 
@@ -265,7 +265,7 @@ xprivate/               # PDF、変換データ、非公開の調査メモ
 
 - 実機で確認済み: 上記 3 デバイスでの周辺機能の HIL（詳細は [hil/matrix.json](hil/matrix.json)、[hil/matrix_ch32v002.json](hil/matrix_ch32v002.json)、[hil/matrix_ch32v006.json](hil/matrix_ch32v006.json)、実験ごとの記録は `okf/log/`）。
 - Arduino Core CH32（公式 1.0.6）のサンプル: CH32V003 で 7 本、CH32V002 で 8 本を HIL 確認済み（`i2c_slave` は両デバイスで、`i2c_oled` は CH32V003 で問題あり）（下の「Arduino Core CH32 のサンプルの検証状況」）。
-- 未着手・未確認: CH32V005 / CH32V007、CH32V006 の QFN32 などの他パッケージ、CH32V006 の Arduino / WCH SDK、ADC+DMA、Standby。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
+- 未着手・未確認: CH32V005 / CH32V007、CH32V006 の QFN32 などの他パッケージ、電流（Sleep/Standby の消費電流）。電圧・波形・タイミング精度の実測は、ほとんど行っていません。
 - 配線・電源の扱いは [hardware/wiring.md](hardware/wiring.md) の安全手順に従ってください。実機を使う試験は、Pico と DUT の電源・信号線を確認してから行います。
 
 進捗に応じて、このREADME、各サンプルの文書、`okf/` の知識、HIL試験結果を一緒に更新します。
@@ -295,7 +295,7 @@ CH32V003、CH32V002、CH32V006（2026-11-08、[ログ](okf/log/2026-11-08-1335-c
 
 ## Arduino Core CH32 のサンプルの検証状況
 
-書籍第2章の Arduino IDE の手順を arduino-cli で再現し、book-code の Arduino Core CH32 用スケッチ（10 本）を `samples_ch32v003_arduino/` と `samples_ch32v002_arduino/` に置いています。書き込みは core 同梱の OpenOCD ではなく、固定 submodule の minichlink で行います。
+書籍第2章の Arduino IDE の手順を arduino-cli で再現し、book-code の Arduino Core CH32 用スケッチ（10 本）を `samples_ch32v003_arduino/`、`samples_ch32v002_arduino/`、`samples_ch32v006_arduino/` に置いています（`uart` は CH32V006 のみ移植）。書き込みは core 同梱の OpenOCD ではなく、固定 submodule の minichlink で行います。
 
 ```sh
 ./scripts/arduino.sh setup                    # arduino-cli 1.5.1 を .arduino/ に取得（チェックサム照合）
@@ -310,6 +310,9 @@ uv run pytest --hil --hil-framework arduino -m 'hil and arduino' tests/hil/ardui
 - **CH32V003 + 公式 1.0.6 で見つかった問題**: `i2c_oled` は RAM が足りず描画バッファ（512 B）を確保できないため、正しく表示されません（ヒープ 504 B。GCC 15 の newlib の stdio 用構造体などが RAM を使う）。`i2c_slave` は、Wire の slave がときどき SCL を Low のまま固定し、バスが止まります。core の slave 処理が、割り込みの中で送信完了を待ち続けるためで、**CH32V002 でも起きます**（読み出しの直後に次の転送があると起きやすい）。`i2c_oled` の問題は CH32V002 では起きていません。HIL の対象外は `uart` だけです。
 - **CH32V002F4P6: 流用で動作**。公式 1.0.6 には CH32V002 のボード定義がありません。CH32VM00X（CH32V006K8）の定義に、Flash/RAM サイズとスタック・ヒープの位置（`_eusrstack`、`_heap_end`）の上書きを加えて（`samples_ch32v002_arduino/arduino.mk`）、`blink_and_read`、`adc`、`pwm`、`i2c_master`、`spi_master`、`i2c_slave-test_master`、`i2c_oled`、`neopixel`（タイミングを CH32V002 用に調整）が動作しました（`i2c_slave` は上記の問題あり）（ADC は 12 ビット）。サイズの上書きだけでは、スタックが RAM の外になって動きません（[調査](okf/log/2026-11-07-2125-arduino-ch32v002-survey.md)、[実機](okf/log/2026-11-07-2156-arduino-ch32v002-hil.md)、[移植](okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md)、[hil/matrix_ch32v002_arduino.json](hil/matrix_ch32v002_arduino.json)）。
 
+- **CH32V006F8P6: 公式 1.0.6 の `CH32VM00X_EVT`（`pnum=CH32V006K8`、62 KiB / 8 KiB、48 MHz HSI）をそのまま使用**（CH32V002 用の上書きなし、[hil/matrix_ch32v006_arduino.json](hil/matrix_ch32v006_arduino.json)）。全 10 スケッチが build でき、`blink_and_read`、`adc`、`pwm`、`i2c_master`、`spi_master`、`i2c_slave-test_master`、`i2c_oled`、`neopixel`、`uart` を実機で確認（機能のみ）。注意点: (1) `pwm` は **PC4（TIM1_CH4）が信号を出さない**（WCH SDK でも同じ、GPIO 出力でも出ず、原因未特定）ため、ユーザー判断で必須の組を **PD2＋PC0（TIM2_CH3）** にした。書籍相当の PD2＋PC4 は未確認（参考試験は XFAIL）。(2) `neopixel` は 002 と同一の機械語・同一の測定値（バイト境界 L0 1280 ns）で、002 の上限 1300 ns を適用。(3) `i2c_slave` は 8 回の HIL と 595 取引で固着を再現せず（試した条件に限る。通常対象の成功には数えない）。(4) `uart` は書籍のスケッチをそのまま使い、Pico がセンサー役と OLED 模擬を兼ねて、DUT が読んだ 1234 ppm の画面を確認（最終ページは比較対象外）。[ログ](okf/log/2026-11-08-1632-ch32v006-arduino-uart-oled-hil.md)
+- **CH32V003 の `i2c_oled` / `uart` の試行**: 96×16 宣言の変種（`i2c_oled_96x16`、`uart_96x16`）なら 003 でも動く（書籍からの逸脱、表示は小さい。[ログ](okf/log/2026-11-08-1616-ch32v003-oled-96x16.md)）。
+
 **確認できていないこと**:
 
 - 書籍の IDE の「Verified OK」表示など、Arduino IDE と WCH 版 OpenOCD に固有の挙動。
@@ -317,8 +320,23 @@ uv run pytest --hil --hil-framework arduino -m 'hil and arduino' tests/hil/ardui
 - ADC の電圧・精度、PWM の周波数・デューティの校正値。`pwm` の PATTERN 3（PC6/PC5 のリマップ）は出力が出ません（書籍の記述と同じ）。
 - サードパーティ版と公式リポジトリ版の実機での動作（ビルドの比較のみ。実機で確かめるのは公式配布だけとしました）。
 - `neopixel` の実 LED での発光と色。CH32V003 ではバイトの切れ目の T0L が規格の上限を約 100 ns 超えます。CH32V002 では切れ目の T0L が 1280 ns です。
-- `i2c_oled` の実物の OLED での表示（Pico の模擬で受けた内容のみ）、`uart`、別 core（arduino-wch32v003）の 3 本。
+- `i2c_oled`・`uart` の実物の OLED・センサーでの表示（Pico の模擬のみ）、別 core（arduino-wch32v003）の 3 本。
 - CH32V002 用の専用ボード定義（流用と上書きで動かしています）。CH32V002 での Arduino HIL は各 3 回の実行です。
+
+
+## WCH 公式 SDK のサンプルの検証状況
+
+書籍の `*-wch_sdk` 13 例と基準 `blink` を、デバイスごとに維持した公式 SDK で build / 書き込み / 実機観測します。SDK のコピー元と変更は各 `PROVENANCE.md`、build は `uv run python scripts/wch-sdk.py build --all`（メモリ配置と ELF の参照元の検査つき）、書き込みは `scripts/wch-sdk.py flash --device <dev> --sample <名前>`（型番の識別領域を確認してから書き込み、読み戻しを照合）、HIL は `uv run pytest --hil --hil-device <dev> --hil-framework wch`。
+
+| デバイス | 状況 | 正本 |
+| --- | --- | --- |
+| CH32V003F4P6 | 13 例が実機で確認済み | [samples_ch32v003_wch](samples_ch32v003_wch/README.md)、[hil/matrix_wch.json](hil/matrix_wch.json) |
+| CH32V002F4P6 | 13 例が実機で確認済み | [samples_ch32v002_wch](samples_ch32v002_wch/README.md)、[hil/matrix_ch32v002_wch.json](hil/matrix_ch32v002_wch.json) |
+| CH32V006F8P6 | 基準 blink と 13 例が実機で確認済み（機能のみ）。下記の例外あり | [samples_ch32v006_wch](samples_ch32v006_wch/README.md)、[hil/matrix_ch32v006_wch.json](hil/matrix_ch32v006_wch.json) |
+
+- CH32V006 は公式 `Link.ld`（62K/8K、無改変）と `-DCH32V006`、48 MHz HSI。002/003 の結果は継承せず 006 で観測しました。
+- **CH32V006 の例外（ユーザー判断あり）**: (1) `pwm` は PC4（TIM1_CH4）が 006 の DUT で無信号（原因未特定、GPIO 出力でも出ない）のため、第 2 チャネルを **TIM2_CH3 on PC0** にした（書籍からの逸脱、`USE_PC0=1`）。PC4 版は参考試験で XFAIL。(2) `timer_dma` は PC4（SA）を記録のみで判定しない（他の 7 ピンは判定）。(3) `watchdog` は、IWDG（reload 2000）が 006 では約 2.3〜3.1 s でリセットされ 2 s 保持では起きないため、PA1 の保持を 3.5 s にした（要因フラグ IWDGRSTF は判定）。[ログ](okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md)
+- 未確認: ADC の精度・校正、時間の精度、Sleep/Standby の消費電流、実センサー、PC4 の原因、F8P6 の資料上の位置付け（F8P7 と同一ダイは前 change のユーザー判断に基づく仮定）。
 
 ## 関連資料
 

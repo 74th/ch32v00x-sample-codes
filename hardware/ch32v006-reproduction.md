@@ -37,3 +37,37 @@ make -C samples_ch32v00x_ch32fun/<sample> build PREFIX=riscv64-unknown-elf TARGE
 ```
 
 成果物は `samples_ch32v00x_ch32fun/<sample>/build/ch32v006/`。全 12 サンプルが CH32V002/CH32V006 の両方で build でき、リンクメモリは CH32V002 が Flash 16 KB／RAM 4 KB、CH32V006 が Flash 62 KB／RAM 8 KB と表示された（[作業ログ](../okf/log/)の 2026-11-08 の記録を参照）。ツール側の設定値であり、実機の容量を測ったものではない。
+
+## Arduino Core CH32（2026-11-08）
+
+配線・給電は上記と同じ固定治具。型番確認（識別領域 `0x006`）は flash ガードが書き込み前に行う。build・flash・観測は別段階。
+
+```sh
+make -C samples_ch32v006_arduino/<sample> build          # 公式 core 1.0.6、FQBN WCH:ch32v:CH32VM00X_EVT:pnum=CH32V006K8,clock=48MHz_HSI
+uv run pytest --hil --hil-device ch32v006 --hil-framework arduino -m 'hil and arduino' \
+  tests/hil/arduino --hil-port=/dev/serial/by-id/<PicoのID> --hil-run-dir=<run用ディレクトリ>
+```
+
+- 全 10 スケッチが build でき、`blink_and_read`・`adc`・`pwm`・`i2c_master`・`spi_master`・`i2c_slave_test_master`・`i2c_oled`・`neopixel`・`uart` が実機で確認済み（機能のみ）。`i2c_slave` は 006 で固着を再現せず（8 回の HIL と 595 取引、試した条件に限る）、通常対象の成功には数えない。進捗の正本は [hil/matrix_ch32v006_arduino.json](../hil/matrix_ch32v006_arduino.json)。
+- 注意点: `pwm` は PC4 が無信号のため PD2＋PC0 の組（ユーザー判断）。`uart` は Pico がセンサーと OLED 模擬を兼ねる（判定の仕組みはテスト冒頭）。`neopixel` は 002 と同一の機械語・同一の測定値（バイト境界 L0 1280 ns、上限 1300 ns）。実 OLED・実 LED・実センサーは未使用。
+- 結果の保存先は `<run>/ch32v006/arduino/<sample>/<variant>/`（[hil/README.md](../hil/README.md)）。
+
+## WCH 公式 SDK（2026-11-08）
+
+```sh
+uv run python scripts/wch-sdk.py build --all                                     # 006 の 14 例を含むメモリ・SDK 参照元の検査
+uv run python scripts/wch-sdk.py build   --device ch32v006 --sample blink        # 以下 3 つは別段階
+uv run python scripts/wch-sdk.py flash   --device ch32v006 --sample blink        # 型番 0x006 を確認、全量 readback を照合
+uv run python scripts/wch-sdk.py observe --device ch32v006 --sample blink --output <run>/blink-observe.json
+uv run pytest --hil --hil-device ch32v006 --hil-framework wch -m 'hil and wch' \
+  tests/hil/wch --hil-port=/dev/serial/by-id/<PicoのID> --hil-run-dir=<run用ディレクトリ>
+```
+
+- 基準 blink と書籍 13 例が実機で確認済み（機能のみ。[hil/matrix_ch32v006_wch.json](../hil/matrix_ch32v006_wch.json)、[samples_ch32v006_wch/README.md](../samples_ch32v006_wch/README.md)）。
+- 006 だけの例外（ユーザー判断）: `pwm` は第 2 チャネルを TIM2_CH3 on PC0 に変更、`timer_dma` は PC4 SA を記録のみ、`watchdog` は PA1 保持を 3.5 s に延長（`GPIO_DRIVE` は 1 回 2000 ms が上限なので連鎖）。いずれも PC4 の無信号と IWDG のタイムアウトが長いという 006 の DUT での観測による（原因未特定）。
+- 保存先は `<run>/ch32v006/wch/<sample>/<variant>/`。結果の `meta` に `sdk`・`compiler`・`memory`・`source_revision`・成果物 SHA-256 を含む。
+
+## 未確認・範囲外（Arduino / WCH 共通）
+- ADC の精度・校正、時間の精度、Sleep/Standby の消費電流、実 OLED・実 LED・実センサー、WS2812 規格適合。
+- **PC4 の無信号の原因**（接触・DUT 個体・F8P6 のピン配置・Pico GP15 側のいずれかは未切り分け）。
+- F8P6 の資料上の位置付け（F8P7 と同一ダイは前 change のユーザー判断に基づく仮定）、PC5/PD7 の RST 設定・オプションバイト。

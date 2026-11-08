@@ -12,7 +12,7 @@ Expected values from the sketch: every ~300 ms one frame of 6 LEDs x 3 bytes; LE
 Judgement uses the decoder's measured width ranges (h0/h1/l0/l1, about +-16 ns), not its fixed 0/1 windows
 (830 ns lower bound for a 1 was set for the ch32fun SPI helper and is above a centred 0.8 us T1H).
 The Low after the last bit of a byte includes loading the next byte; it is allowed up to 1200 ns (CH32V003) or
-1300 ns (CH32V002) and recorded.
+1300 ns (CH32V002, CH32V006) and recorded.
 """
 import pytest
 
@@ -32,7 +32,10 @@ PATTERNS = [(0x20, 0, 0), (0x20, 0x20, 0), (0, 0x20, 0), (0, 0x20, 0x20), (0, 0,
 SPEC = {"h0": (250, 550), "h1": (650, 950), "l0": (700, 1000), "l1": (300, 600)}
 # Low after the last bit of a byte also covers loading the next byte (about 12 cycles on CH32V003, more on the
 # CH32V002 build): allowed above the datasheet 1000 ns and recorded (okf/log/2026-11-07-2310-arduino-neopixel-timing.md).
-L0_BYTE_BOUNDARY_MAX = {"ch32v003": 1200, "ch32v002": 1300}
+L0_BYTE_BOUNDARY_MAX = {"ch32v003": 1200, "ch32v002": 1300, "ch32v006": 1300}
+# CH32V006 uses the CH32VM00X branch of the sketch and its send function compiles to the same machine code as the
+# CH32V002 build (compared by disassembly), and the measured byte-boundary Low is the same 1280 ns, so the CH32V002
+# limit is applied unchanged (not widened): okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md
 
 
 def frame_for(count):

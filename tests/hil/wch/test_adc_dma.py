@@ -30,7 +30,8 @@ SAMPLE = "adc_dma"
 X_GP, Y_GP = 12, 13              # PA1 (x), PA2 (y)
 # (full scale, driven-high minimum, driven-low maximum, minimum step between charge pulses) per device:
 # CH32V003 10 bit, CH32V002 12 bit (same ratios, values x4; the 002 numbers are unexercised, no CH32V002 attached yet)
-SCALE = {"ch32v003": (1023, 700, 300, 20), "ch32v002": (4095, 2800, 1200, 80)}
+SCALE = {"ch32v003": (1023, 700, 300, 20), "ch32v002": (4095, 2800, 1200, 80),
+         "ch32v006": (4095, 2800, 1200, 80)}   # 006: same 12-bit ADC and SDK as 002 (same ratios, not tuned to results)
 LINE = re.compile(r"x: (\d+), y: (\d+)\r\n")
 
 
@@ -79,16 +80,21 @@ def _monotonic(port, scale, pin, index):
     return values
 
 
-def _loop_has_no_cpu_conversion():
-    """Static evidence: the ADC polling helpers are not linked into the DMA sample."""
-    elf = ROOT / "samples_ch32v003_wch/adc_dma/main.elf"
+def _loop_has_no_cpu_conversion(elf):
+    """Static evidence on the ELF just built for this device (it used to be the CH32V003 sample's ELF for every
+    device): the ADC polling helpers are not linked into the DMA sample, and the code programs DMA1 channel 1
+    (base 0x40020008), the channel whose hardware request is ADC1 in the reference manual's DMA request table."""
     nm = Path(devices_nm()).resolve()
     out = subprocess.run([str(nm), str(elf)], capture_output=True, text=True, check=True).stdout
     present = [n for n in ("ADC_DMACmd", "DMA_Init", "DMA_Cmd") if n not in out]
     absent = [n for n in ("ADC_GetConversionValue",) if n in out]
     if present or absent:
         raise AssertionError(f"missing DMA setup {present}, unexpected CPU read {absent}")
-    return "ADC_DMACmd/DMA_Init/DMA_Cmd linked; ADC_GetConversionValue not linked"
+    dis = subprocess.run([str(nm).replace("-nm", "-objdump"), "-d", str(elf)], capture_output=True, text=True,
+                         check=True).stdout
+    if "0x40020" not in dis:
+        raise AssertionError("no reference to the DMA1 register block (0x40020xxx) in the code")
+    return "ADC_DMACmd/DMA_Init/DMA_Cmd linked; ADC_GetConversionValue not linked; DMA1 block (0x40020xxx) referenced"
 
 
 def devices_nm():
@@ -106,7 +112,7 @@ def test_wch_adc_dma(request, hil_device, hil_config, hil_dut):
         run.phase("pico_prepare", lambda: port.setdefault("p", find_port(request, hil_config)))
         run.phase("fixture_setup", _prepare, port.get("p"), 6)
         build_flash_readback(run, dut)
-        run.meta["static"] = run.phase("static_dma_check", _loop_has_no_cpu_conversion)
+        run.meta["static"] = run.phase("static_dma_check", _loop_has_no_cpu_conversion, dut.sample_dir / "main.elf")
         run.phase("dut_reset", dut.reset)
         run.meta["x_high_y_low"] = run.phase("x_high_y_low", _coarse, port.get("p"), scale, 1, 0)
         run.meta["x_low_y_high"] = run.phase("x_low_y_high", _coarse, port.get("p"), scale, 0, 1)

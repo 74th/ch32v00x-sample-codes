@@ -96,7 +96,7 @@ def test_shipped_matrix_states_are_backed_by_tests_and_logs():
 
 def test_every_hil_test_is_referenced_by_matrix():
     import re
-    referenced = {ref for e in matrix.load(ROOT / "hil/matrix.json") for ref in e.get("hil_tests", [])}
+    referenced = {ref for e in matrix.load(ROOT / "hil/matrix.json") for ref in e.get("hil_tests", []) + e.get("hil_tests_variants", [])}
     defined = {f"tests/hil/{p.name}::{name}"
                for p in (ROOT / "tests/hil").glob("test_*.py")
                for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
@@ -165,7 +165,7 @@ def test_arduino_matrix_detects_unaccounted_sketch(tmp_path):
 
 def test_every_arduino_hil_test_is_referenced_by_matrix():
     import re
-    referenced = {ref for path in ARDUINO_MATRICES for e in matrix.load(ROOT / path) for ref in e.get("hil_tests", [])}
+    referenced = {ref for path in ARDUINO_MATRICES + ["hil/matrix_ch32v006_arduino.json"] for e in matrix.load(ROOT / path) for ref in e.get("hil_tests", []) + e.get("hil_tests_variants", [])}
     defined = {f"tests/hil/arduino/{p.name}::{name}"
                for p in (ROOT / "tests/hil/arduino").glob("test_*.py")
                for name in re.findall(r"(?m)^def (test_\w+)\(", p.read_text())}
@@ -241,3 +241,35 @@ def test_ch32v006_matrix_covers_every_ch32v002_row_without_borrowed_results():
     for e in v006:
         assert e["state"] in {"build-only", "excluded"} or all("ch32v006" in log for log in e["evidence"]), e["sample"]
         assert "gpio_input" != e["sample"] or e["state"] == "excluded"
+
+
+def _v006_rows(name):
+    return matrix.load(ROOT / f"hil/matrix_ch32v006_{name}.json")
+
+
+def test_ch32v006_arduino_matrix_has_ten_rows_without_borrowed_results():
+    v002 = matrix.load(ROOT / "hil/matrix_ch32v002_arduino.json")
+    v006 = _v006_rows("arduino")
+    assert [e["sample"] for e in v006] == [e["sample"] for e in v002] and len(v006) == 10
+    assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v006_arduino", root=ROOT, framework="arduino") == []
+    for e in v006:
+        assert e["state"] in {"not-ported", "build-only", "excluded"} or \
+            (e.get("hil_tests") and e.get("evidence") and all("ch32v006" in log for log in e["evidence"])), e["sample"]
+
+
+def test_ch32v006_wch_matrix_has_thirteen_rows_without_borrowed_results():
+    v002 = matrix.load(ROOT / "hil/matrix_ch32v002_wch.json")
+    v006 = _v006_rows("wch")
+    assert [e["sample"] for e in v006] == [e["sample"] for e in v002] and len(v006) == 13
+    assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v006_wch", root=ROOT, framework="wch") == []
+    assert all("003_state" not in e and "002_state" not in e for e in v006)
+    for e in v006:
+        assert e["state"] in {"not-ported", "build-only", "excluded"} or \
+            (e.get("hil_tests") and e.get("evidence") and all("ch32v006" in log for log in e["evidence"])), e["sample"]
+
+
+def test_ch32v006_matrix_rows_that_are_skipped_state_a_reason():
+    for name in ("arduino", "wch"):
+        for e in _v006_rows(name):
+            if e["state"] in ("not-ported", "excluded"):
+                assert e.get("note"), (name, e["sample"])

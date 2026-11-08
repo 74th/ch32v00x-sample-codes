@@ -28,6 +28,9 @@ TOLERANCE = 0.10
 # incommensurate with the 100.2/200.4/400.8 us periods, so the phase advances ~0.08..0.92 of a cycle per sample.
 INTERVAL_US = 1170
 # (DUT pin, Pico GPIO, expected fraction High)
+# CH32V006: PC4 shows no signal on this DUT (cause not identified, see the PWM logs), so by the owner's decision PC4 SA is
+# recorded but not judged there; the other seven pins are judged as before. Other devices judge all eight.
+UNJUDGED = {"ch32v006": {"PC4 SA"}}
 PINS = [("PD6 SEL1", 8, 0.75), ("PD5 SEL2", 9, 0.75), ("PC0 SEL4", 5, 0.75), ("PC4 SA", 15, 0.75),
         ("PD2 SD", 14, 0.75), ("PC7 SE", 4, 0.5), ("PC5 SF", 6, 0.25), ("PC6 SG", 7, 0.5)]
 
@@ -41,14 +44,16 @@ def _static_setup(elf):
     return "DMA_Init/DMA_Cmd/TIM_DMACmd/TIM_OC1Init linked"
 
 
-def _fractions(port):
+def _fractions(port, unjudged=frozenset()):
     out = {}
     for name, gp, want in PINS:
         runs = sample_gpio(port, gp, 300, INTERVAL_US)
         high = sum(n for v, n in runs if v == "1")
         frac = high / 300
         out[name] = {"gp": gp, "high_fraction": round(frac, 3), "expected": want, "runs": len(runs)}
-        if abs(frac - want) > TOLERANCE or not 0.1 < frac < 0.9:
+        if name in unjudged:
+            out[name]["judged"] = False
+        elif abs(frac - want) > TOLERANCE or not 0.1 < frac < 0.9:
             out[name]["fail"] = True
     bad = [k for k, v in out.items() if v.get("fail")]
     if bad:
@@ -71,7 +76,7 @@ def test_wch_timer_dma(request, hil_device, hil_config, hil_dut):
         # The scan starts ~100 ms after reset; sampling PD6 at once after reset read it low for the pre-init part
         # (High fraction 0.56-0.73 in 4 of 6 early attempts, 0.75 afterwards with the same code).
         run.phase("settle", time.sleep, 1.0)
-        run.meta["fractions"] = run.phase("measure_fractions", _fractions, port.get("p"))
+        run.meta["fractions"] = run.phase("measure_fractions", _fractions, port.get("p"), UNJUDGED.get(hil_device.name, frozenset()))
     finally:
         run.phase("cleanup", _cleanup, port.get("p"), 6)
         save(request, run, "wch_timer_dma")

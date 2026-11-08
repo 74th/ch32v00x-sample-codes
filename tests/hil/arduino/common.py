@@ -10,6 +10,7 @@ from pathlib import Path
 
 from serial.tools import list_ports
 
+from ch32hil import evidence
 from ch32hil.dut import ROOT, MINICHLINK
 from ch32hil.phases import Run
 from ch32hil.pico import PicoError, discover
@@ -30,6 +31,7 @@ def new_run(hil_device, sample, **extra):
     meta = {"sample": sample, "target": hil_device.target_mcu, "device": hil_device.name,
             "framework": hil_device.framework, "core": CORE, "arduino_cli": _arduino_cli_version(),
             "minichlink": str(MINICHLINK), "readback_policy": "required"}
+    meta.update(evidence.toolchain_meta(hil_device, sample))
     meta.update(extra)
     return Run(meta=meta)
 
@@ -37,8 +39,9 @@ def new_run(hil_device, sample, **extra):
 def save(request, run, name):
     out = request.config.getoption("--hil-run-dir")
     if out:
-        Path(out).mkdir(parents=True, exist_ok=True)
-        (Path(out) / f"{name}.json").write_text(run.to_json())
+        path = evidence.result_path(out, run.meta, name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(run.to_json())
 
 
 def find_port(request, cfg):

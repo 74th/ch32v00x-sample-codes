@@ -1,0 +1,10 @@
+# CH32V006F8P6 用。公式配布 core 1.0.6 の CH32VM00X_EVT / pnum=CH32V006K8（62 KiB / 8 KiB、48 MHz HSI）をそのまま使う。
+profiles:
+  ch32v006:
+    fqbn: WCH:ch32v:CH32VM00X_EVT:pnum=CH32V006K8,clock=48MHz_HSI
+    platforms:
+      - platform: WCH:ch32v (1.0.6)
+        platform_index_url: https://github.com/openwch/board_manager_files/raw/main/package_ch32v_index.json
+    libraries:
+      - OLED SSD1306 - SH1106 (1.0.7)
+default_profile: ch32v006

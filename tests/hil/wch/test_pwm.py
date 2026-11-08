@@ -10,6 +10,7 @@ properties are judged: period 9..12 us (the Pico quantises 10.67 us to 10 or 11)
 spread over at least 35 %, (readings whose High pulse is under 2 us or Low pulse under 3 us, or duty outside 15..95 %, are counted as unresolved, not judged), and CH4 showing both high-constant (timeout) and ramping readings. One capture lasts
 longer than one ramp cycle (~2.1 s) so that both directions occur.
 """
+import dataclasses
 import time
 
 import pytest
@@ -20,7 +21,11 @@ pytestmark = [pytest.mark.hil, pytest.mark.wch, pytest.mark.pwm]
 
 SAMPLE = "pwm"
 PD2_GP, PC4_GP = 14, 15
+# CH32V006: PC4 (TIM1_CH4) shows no signal on this DUT (cause not identified); by the owner's decision the sample's
+# default second channel is TIM2_CH3 on PC0 (Pico GP5). The PC4 build is kept as a reference test below.
+SECOND_GP = {"default": PC4_GP, "ch32v006": 5}
 PERIOD_US = (9, 12)
+NOMINAL_PERIOD_US = 10.67
 PAIRS, PAIR_GAP_S = 36, 0.04   # ~2.2 s: longer than one ~2.1 s ramp cycle
 SATURATED_PPM = 950_000
 UNRESOLVED_LOW_PPM = 150_000   # High pulse under ~1.6 us: edges are lost
@@ -35,12 +40,12 @@ def _pulse(client, pin):
             "duty_ppm": int(fields["duty_ppm"])}
 
 
-def _capture(port):
+def _capture(port, second_gp=PC4_GP):
     def action(client):
         client.negotiate(["GPIO_PULSE"])
         out, t0 = [], time.monotonic()
         for _ in range(PAIRS):
-            out.append((_pulse(client, PD2_GP), _pulse(client, PC4_GP), round(time.monotonic() - t0, 3)))
+            out.append((_pulse(client, PD2_GP), _pulse(client, second_gp), round(time.monotonic() - t0, 3)))
             time.sleep(PAIR_GAP_S)
         return out
     return _with_client(port, PAIRS * 0.4 + 5, action)
@@ -53,9 +58,16 @@ def _check(pairs):
     # The Pico sees 1 us steps: a High pulse under 2 us or a Low pulse under 3 us (duty near 0 % or 100 %, e.g. k=1 is 0.33 us) can
     # lose edges and yields meaningless periods (seen: 33, 43, 86, 22, 235 us). Such readings are counted as out of
     # resolution instead of judged; they only occur at the extreme duties of the ramp.
+    def lost_edge(m):
+        """A reading near a whole multiple (2x..4x) of the nominal period is a missed edge of the Pico's ~1 us software
+        sampling (seen on CH32V006 as 20/21 us at 20 % duty, in 2 of ~14 runs), not a property of the DUT. It is
+        recorded as unresolved; a genuinely wrong period (not a multiple) still fails, and >= 10 good PD2 readings are
+        still required."""
+        return any(abs(m["period_us"] - k * NOMINAL_PERIOD_US) <= 1.5 for k in (2, 3, 4))
+
     def resolvable(m):
         return (m["high_us"] >= 2 and m["period_us"] - m["high_us"] >= 3
-                and UNRESOLVED_LOW_PPM <= m["duty_ppm"] <= SATURATED_PPM)
+                and UNRESOLVED_LOW_PPM <= m["duty_ppm"] <= SATURATED_PPM and not lost_edge(m))
     unresolved = [m for m in pd2 + pc4 if not resolvable(m)]
     pd2 = [m for m in pd2 if resolvable(m)]
     pc4 = [m for m in pc4 if resolvable(m)]
@@ -77,22 +89,42 @@ def _check(pairs):
             "pc4_duty_ppm": [m["duty_ppm"] for m in pc4]}
 
 
-def test_wch_pwm(request, hil_device, hil_config, hil_dut):
-    dut = hil_dut(SAMPLE)
+def _run(request, hil_device, hil_config, dut, second_gp, name, **meta):
     run = new_run(hil_device, SAMPLE, criteria="period 9..12 us (10.67 us nominal); PD2 several duty levels over >=35 %; "
-                                              "PC4 high-constant and ramping readings; coarse, uncalibrated")
+                                              "second channel (PC4; PC0 on CH32V006) high-constant and ramping readings; "
+                                              "coarse, uncalibrated", second_gp=second_gp, **meta)
     port = {}
     try:
         run.phase("pico_prepare", lambda: port.setdefault("p", find_port(request, hil_config)))
         run.phase("fixture_setup", _prepare, port.get("p"), 6)
         build_flash_readback(run, dut)
         run.phase("dut_reset", dut.reset)
-        pairs = run.phase("capture", _capture, port.get("p"))
+        pairs = run.phase("capture", _capture, port.get("p"), second_gp)
         if pairs is not None:
             run.meta["pairs"] = [[a, b, t] for a, b, t in pairs]
             run.meta["summary"] = run.phase("check", _check, pairs)
     finally:
         run.phase("cleanup", _cleanup, port.get("p"), 6)
-        save(request, run, "wch_pwm")
+        save(request, run, name)
     print(run.to_json())
+    return run
+
+
+def test_wch_pwm(request, hil_device, hil_config, hil_dut):
+    # A non-empty make_args makes Dut.build() clean first: make does not notice a changed EXTRA_CFLAGS, so a build left
+    # over from the PC4 reference test could otherwise be flashed here.
+    dut = dataclasses.replace(hil_dut(SAMPLE), make_args=("EXTRA_CFLAGS=",))
+    run = _run(request, hil_device, hil_config, dut, SECOND_GP.get(hil_device.name, PC4_GP), "wch_pwm")
+    assert run.ok, run.to_json()
+
+
+@pytest.mark.xfail(reason="reference (CH32V006): PC4 (TIM1_CH4) shows no signal on this DUT; cause not identified",
+                   strict=False)
+def test_wch_pwm_pc4_reference(request, hil_device, hil_config, hil_dut):
+    """The original PD2 + PC4 build (USE_PC0=0) on CH32V006, kept as a separate reference result."""
+    if hil_device.name != "ch32v006":
+        pytest.skip("only CH32V006 defaults to PC0; the others run PD2 + PC4 in test_wch_pwm")
+    dut = dataclasses.replace(hil_dut(SAMPLE), make_args=("EXTRA_CFLAGS=-DUSE_PC0=0",))
+    run = _run(request, hil_device, hil_config, dut, PC4_GP, "wch_pwm_pc4", variant="pc4", reference=True)
+    dataclasses.replace(dut, make_args=("EXTRA_CFLAGS=",)).build()   # back to the default (PC0) build (cleans first)
     assert run.ok, run.to_json()

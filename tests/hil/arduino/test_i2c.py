@@ -189,15 +189,26 @@ def _test_master_sequence(run, port):
     take the preceding 20 + read (then the Pico reports ERR I2C for the extra bytes); its received bytes must
     still end with the write. The following captures are aligned and judged strictly."""
     out = {}
-    sync = run.phase("measure_sync_write", _slave, port, DUT_SLAVE, 5, "-", 3000)
-    out["sync_write"] = sync
-    if sync is None:
-        return out
+    # The sync capture stops after 5 received bytes. Armed right after the preceding "20" it can end one byte before the
+    # write completes (seen on CH32V006 in 2 of ~13 runs: rx=20 10 02 03 04), which says nothing about the DUT: such an
+    # attempt is inconclusive and repeated (at most 3 times). The judged captures below stay strict.
+    count, attempts = None, []
+    for attempt in range(3):
+        sync = run.phase("measure_sync_write", _slave, port, DUT_SLAVE, 5, "-", 3000)
+        attempts.append(sync)
+        if sync is None:
+            out["sync_write"], out["sync_attempts"] = None, attempts
+            return out
+        count = _write_tail(sync) if sync else None
+        if count is not None:
+            break                             # every attempt stays in the staged results and in out["sync_attempts"]
+    out["sync_write"], out["sync_attempts"] = sync, attempts
 
     def check_sync(result):
         c = _write_tail(result)
         if c is None:
-            raise AssertionError(f"received bytes do not end with 10 c c+1 c+2 c+3: {result}")
+            raise AssertionError(f"received bytes do not end with 10 c c+1 c+2 c+3 after {len(attempts)} attempts: "
+                                 f"{[a and a.get('rx') for a in attempts]}")
         return c
     count = run.phase("check_sync_write", check_sync, sync)
     read = run.phase("measure_read", _slave, port, DUT_SLAVE, 1, TEST_MASTER_REPLY, 1000)

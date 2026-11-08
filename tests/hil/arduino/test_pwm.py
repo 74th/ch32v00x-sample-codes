@@ -97,9 +97,16 @@ def _run(request, hil_device, hil_config, dut, led1, led2, name, **meta):
     return run
 
 
+# (LED1 GP, LED2 GP, sample PATTERN) per device. CH32V006: PC4 (TIM1_CH4) shows no signal on this DUT (cause not
+# identified), so by the owner's decision the required pair is PD2 (TIM1_CH1) + PC0 (TIM2_CH3, Pico GP5); the PC4 pair
+# stays as a reference test below.
+REQUIRED_PAIR = {"default": (14, 15, 2, "PD2 -> GP14, PC4 -> GP15"), "ch32v006": (14, 5, 4, "PD2 -> GP14, PC0 -> GP5")}
+
+
 def test_arduino_pwm(request, hil_device, hil_config, hil_dut):
-    print("HIL ARDUINO PWM: PATTERN 2, PD2 -> GP14, PC4 -> GP15")
-    run = _run(request, hil_device, hil_config, hil_dut(SAMPLE), 14, 15, "arduino_pwm", pattern=2,
+    led1, led2, pattern, wiring = REQUIRED_PAIR.get(hil_device.name, REQUIRED_PAIR["default"])
+    print(f"HIL ARDUINO PWM: PATTERN {pattern}, {wiring}")
+    run = _run(request, hil_device, hil_config, hil_dut(SAMPLE), led1, led2, "arduino_pwm", pattern=pattern,
                criteria="1 kHz (800..1200 us); duty within 15000 ppm of k/32; LED1+LED2 ~ 33/32; ramps")
     assert run.ok, run.to_json()
 
@@ -111,5 +118,20 @@ def test_arduino_pwm_remap_reference(request, hil_device, hil_config, hil_dut):
                               make_args=("ARDUINO_FLAGS=--build-property compiler.cpp.extra_flags=-DPATTERN=3",))
     run = _run(request, hil_device, hil_config, dut, 7, 6, "arduino_pwm_remap", pattern=3, reference=True)
     # leave the default (PATTERN 2) build in place: a non-empty make_args makes Dut.build() clean first
+    dataclasses.replace(dut, make_args=("ARDUINO_FLAGS=",)).build()
+    assert run.ok, run.to_json()
+
+
+@pytest.mark.xfail(reason="reference (CH32V006): PC4 (TIM1_CH4) shows no signal on this DUT; cause not identified",
+                   strict=False)
+def test_arduino_pwm_pc4_reference(request, hil_device, hil_config, hil_dut):
+    """The PATTERN 2 pair (PD2 + PC4) on CH32V006, kept as a separate reference result (XFAIL or XPASS is saved)."""
+    if hil_device.name != "ch32v006":
+        pytest.skip("only CH32V006 uses PD2+PC0 as the required pair; the others run PATTERN 2 in test_arduino_pwm")
+    print("HIL ARDUINO PWM (reference): PATTERN 2, PD2 -> GP14, PC4 -> GP15")
+    dut = dataclasses.replace(hil_dut(SAMPLE),
+                              make_args=("ARDUINO_FLAGS=--build-property compiler.cpp.extra_flags=-DPATTERN=2",))
+    run = _run(request, hil_device, hil_config, dut, 14, 15, "arduino_pwm_pc4", pattern=2, reference=True,
+               criteria="same criteria as the required pair, on PC4")
     dataclasses.replace(dut, make_args=("ARDUINO_FLAGS=",)).build()
     assert run.ok, run.to_json()

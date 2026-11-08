@@ -96,7 +96,9 @@ FRAMEWORK_MATRICES = {
     ("ch32v002", "arduino"): "hil/matrix_ch32v002_arduino.json",
     ("ch32v003", "wch"): "hil/matrix_wch.json",
     ("ch32v002", "wch"): "hil/matrix_ch32v002_wch.json",
-}  # CH32V006 supports only ch32fun for now; other frameworks are rejected by get() before any hardware access.
+    ("ch32v006", "arduino"): "hil/matrix_ch32v006_arduino.json",
+    ("ch32v006", "wch"): "hil/matrix_ch32v006_wch.json",
+}  # A (device, framework) pair missing here is rejected by get() before any hardware access.
 
 
 def check_framework(framework: str) -> str:

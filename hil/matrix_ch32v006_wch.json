@@ -1,0 +1,203 @@
+{
+  "device": "CH32V006F8P6",
+  "framework": "wch",
+  "baseline": "hil/matrix_wch.json",
+  "sdk": "openwch/ch32v002_004_005_006_007 a835ede9ff3e2dca2c6aa652809b85c9775475d2",
+  "entries": [
+    {
+      "book_sample": "blink_and_read-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "gpio",
+      "state": "hil-verified",
+      "sample": "blink_and_read",
+      "note": "CH32V006用に維持した公式SDK（-DCH32V006、公式LD 62K/8K）で移植。識別0x006・flash・全量readback・PC0点滅・PA1入力をCH32V006実機で確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_blink_and_read.py::test_wch_blink_and_read"
+      ],
+      "criteria": "PD5 UART 115200: init/start/loop 0/loop 1と連番; PC0 500/500 ms(±100 ms); PA1 low(GP12)で3 s停止、解放後に再開",
+      "evidence": [
+        "okf/log/2026-11-08-1549-ch32v006-wch-blink-hil.md"
+      ]
+    },
+    {
+      "book_sample": "uart-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "uart",
+      "state": "hil-verified",
+      "sample": "uart",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_uart.py::test_wch_uart_co2"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "Pico(9600 8N1)がセンサー役: 自己校正cmd一致→start; 読み出しcmd一致→既知フレームでCO2:  1234 ppm; checksum不正でinvalid checksum; 無応答でread timeout; uart_errors 0"
+    },
+    {
+      "book_sample": "adc-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "adc",
+      "state": "hil-verified",
+      "sample": "adc",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_adc.py::test_wch_adc"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "uncalibrated 12-bit: driven-high >= 2800, driven-low <= 1200 (0..4095), steps rise; PA1/PA2 with GP12/GP13"
+    },
+    {
+      "book_sample": "adc_dma-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "adc-dma",
+      "state": "hil-verified",
+      "sample": "adc_dma",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。DMA割当（ADC1=DMA1 ch1）・ベクタ/ハンドラはELFと資料で確認。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_adc_dma.py::test_wch_adc_dma"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1655-ch32v006-wch-batch2-dma-timer.md"
+      ],
+      "criteria": "uncalibrated 12-bit coarse levels and charge steps; static ELF: ADC_DMACmd/DMA_Init/DMA_Cmd linked, no ADC_GetConversionValue, DMA1 block referenced"
+    },
+    {
+      "book_sample": "i2c_master-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_master",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_i2c_master.py::test_wch_i2c_master"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "Pico=SHT31(0x44): 30a2,3041,2400+6B read(sent=6); 出力'Temperature: 24, Humidity: 50'一致; 0x45無反応; 周期4.8..6.0 s"
+    },
+    {
+      "book_sample": "i2c_slave-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "i2c",
+      "state": "hil-verified",
+      "sample": "i2c_slave",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_i2c_slave.py::test_wch_i2c_slave"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "0x10 ACK/0x11 NACK; reg0x20=00102030; write0x10 aabbccdd読み戻し; 部分読み; repeated STARTで0x20/0x10/0x22を読む"
+    },
+    {
+      "book_sample": "spi_master-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "spi",
+      "state": "hil-verified",
+      "sample": "spi_master",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_spi_master.py::test_wch_spi_master"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "Pico SPI slave mode0: reset frame先頭2Bがffff、CS lowが約400 ms後にhigh、read frame 0000が約1 s間隔; 返答f380/0c80に対しUARTがraw_int -400/400とtempを出力"
+    },
+    {
+      "book_sample": "pwm-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "pwm",
+      "state": "hil-verified",
+      "sample": "pwm",
+      "note": "CH32V006ではPD2(TIM1_CH1)+PC0(TIM2_CH3)の組でユーザー判断により確認（書籍SDKからの逸脱: USE_PC0=1）。書籍相当のPD2+PC4はPC4が無信号で未成功（参考試験test_wch_pwm_pc4_referenceはXFAIL、原因未特定）。機能確認のみ",
+      "hil_tests": [
+        "tests/hil/wch/test_pwm.py::test_wch_pwm"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
+      ],
+      "criteria": "周期9..12 us（nominal 10.67 us）、PD2のdutyが>=35 %にわたり3段階以上、second channelにランプ読みと常時High、分解不能読みは除外; 粗い・未校正; second channel = TIM2_CH3 on PC0 (GP5) on CH32V006"
+    },
+    {
+      "book_sample": "timer_blink-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "timer",
+      "state": "hil-verified",
+      "sample": "timer_blink",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ）。DMA割当（ADC1=DMA1 ch1）・ベクタ/ハンドラはELFと資料で確認。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_timer_blink.py::test_wch_timer_blink"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1655-ch32v006-wch-batch2-dma-timer.md"
+      ],
+      "criteria": "tim1/tim2両構成をmake clean後に書き込み: PC0 500/500 ms(±100 ms); UARTイベント文言(1sec event/500ms event)×2以上; ELFでTIM1_UP=35/TIM2=38がベクタに入りmret"
+    },
+    {
+      "book_sample": "timer_dma-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "timer-dma",
+      "state": "hil-verified",
+      "sample": "timer_dma",
+      "note": "CH32V006F8P6実機で、8ピン中7ピンを003/002と同じ基準で確認。PC4 SAはPC4問題（原因未特定）のため記録のみで判定しない（ユーザー判断）。DMA要求割当は資料・ELFと一致。機能確認のみ",
+      "hil_tests": [
+        "tests/hil/wch/test_timer_dma.py::test_wch_timer_dma"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md"
+      ],
+      "criteria": "各ピンのHigh比率(300点,1.17 ms間隔): SEL1/SEL2/SEL4/SA/SD=0.75, SE/SG=0.5, SF=0.25 (±0.10)、静的ならず; 未観測: SB,SC,SEL3,SDP,表示器; on CH32V006 PC4 SA is recorded but not judged (owner's decision, no signal on this DUT)"
+    },
+    {
+      "book_sample": "watchdogtimer-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "watchdog",
+      "state": "hil-verified",
+      "sample": "watchdog",
+      "note": "CH32V006F8P6実機で確認（機能確認のみ）。IWDGのリセットはreload 2000でも約2.3〜3.1 s後で、2 s保持では起きないため保持を3.5 sに延長（ユーザー判断で延長、cause=IWDGの判定は維持、原因未特定）。リセット要因フラグはIWDGRSTFを返す。タイムアウト精度は未確認",
+      "hil_tests": [
+        "tests/hil/wch/test_watchdog.py::test_wch_watchdog"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md"
+      ],
+      "criteria": "cause=otherでループ番号が増加・PC0 250/250 ms; PA1 low 1 s: リセットなし; 2 s: cause=IWDGでループ番号が0から; 時間窓は約1.6〜2.5 s; CH32V006: PA1 held 3.5 s (chained GPIO_DRIVE) because the IWDG resets after about 2.3-3.1 s, not 2 s"
+    },
+    {
+      "book_sample": "sleep_mode_blink-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "sleep",
+      "state": "hil-verified",
+      "sample": "sleep_wake",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ、消費電流は未確認）。002の既知の文字化けは006へ免除せず、006では失敗しなかった。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_sleep_wake.py::test_wch_sleep_wake"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md"
+      ],
+      "criteria": "ELFにwfi; UART行がtim→awake→sleepの循環で32 Bに>=1.8 s; PC0半周期1.6..2.4 s; 消費電力は未測定"
+    },
+    {
+      "book_sample": "standby_mode_blink-wch_sdk",
+      "class": "direct-port",
+      "peripheral": "standby",
+      "state": "hil-verified",
+      "sample": "standby_wake",
+      "note": "CH32V006F8P6実機で003/002と同じ判定基準により確認（機能確認のみ、消費電流は未確認）。002の既知の文字化けは006へ免除せず、006では失敗しなかった。002/003の結果は継承しない",
+      "hil_tests": [
+        "tests/hil/wch/test_standby_wake.py::test_wch_standby_wake"
+      ],
+      "evidence": [
+        "okf/log/2026-11-08-1656-ch32v006-wch-batch3-timer-dma-sleep-watchdog.md"
+      ],
+      "criteria": "wake3回のカウントが連番、間隔1.7..2.3 s、LED半周期1.6..2.4 s; 復旧: LinkE給電を入れ直しblinkを書き込み・検出・全量読み戻し"
+    }
+  ]
+}

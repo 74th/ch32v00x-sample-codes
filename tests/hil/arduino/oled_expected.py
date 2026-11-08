@@ -29,3 +29,18 @@ def expected_pages(sketch: Path, workdir: Path) -> list[bytes]:
                     str(lib / "oled.cpp"), f'-DSKETCH="{sketch}"', "-o", str(exe)], check=True)
     out = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout.split()
     return [bytes.fromhex(line) for line in out]
+
+
+def expected_uart_screens(sketch: Path, workdir: Path, answers: list[str]) -> list[list[bytes]]:
+    """Frame buffer (pages of 128 bytes) after each loop() of the uart sketch; `answers[i]` is the hex the sensor
+    sends before loop i ("-" = none). Rendered by the pinned library on the host."""
+    lib = library_dir()
+    if lib is None:
+        raise FileNotFoundError(f"OLED library not installed ({LIBRARY_GLOB}); build the i2c_oled sample first")
+    exe = workdir / "uart_harness"
+    subprocess.run(["g++", "-std=gnu++17", "-w", f"-I{HARNESS}", f"-I{lib}", str(HARNESS / "uart_harness.cpp"),
+                    str(lib / "oled.cpp"), f'-DSKETCH="{sketch}"', "-o", str(exe)], check=True)
+    out = subprocess.run([str(exe), *answers], check=True, capture_output=True, text=True).stdout.split()
+    pages = [bytes.fromhex(line) for line in out]
+    per = len(pages) // len(answers)
+    return [pages[i * per:(i + 1) * per] for i in range(len(answers))]

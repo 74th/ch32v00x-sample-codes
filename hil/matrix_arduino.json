@@ -67,6 +67,20 @@
       "evidence": [
         "okf/log/2026-11-07-2232-ch32v003-after-swap-uart-fault.md",
         "okf/log/2026-11-07-2310-arduino-neopixel-timing.md"
+      ],
+      "variant_96x16": {
+        "sample": "i2c_oled_96x16",
+        "state": "hil-verified",
+        "note": "CH32V003専用の試行（書籍からの逸脱: 96x16宣言でバッファ192 B）。003実機でSSD1306模擬に対し合格（ページ0..1=beginの空白、2..7=ホスト生成の期待バッファ）。実OLED未使用、表示は書籍より小さい。元の128x32版は従来どおりxfail",
+        "hil_tests": [
+          "tests/hil/arduino/test_oled.py::test_arduino_i2c_oled_small_buffer"
+        ],
+        "evidence": [
+          "okf/log/2026-11-08-1616-ch32v003-oled-96x16.md"
+        ]
+      },
+      "hil_tests_variants": [
+        "tests/hil/arduino/test_oled.py::test_arduino_i2c_oled_small_buffer"
       ]
     },
     {
@@ -170,7 +184,18 @@
         "all suppliers fail without library: oled.h missing",
         "with 'OLED SSD1306 - SH1106@1.0.7': thirdparty/official/official-git ok (official-git Flash 98%)"
       ],
-      "compile_evidence": "okf/log/2026-11-07-2102-arduino-core-supplier-compare.md"
+      "compile_evidence": "okf/log/2026-11-07-2102-arduino-core-supplier-compare.md",
+      "variant_96x16": {
+        "sample": "uart_96x16",
+        "state": "hil-verified",
+        "note": "CH32V003専用の試行（書籍からの逸脱: 96x16宣言、状態行y=20→0）。Pico がセンサー応答とSSD1306模擬を兼ね、DUTが読んだ1234 ppmを描いた画面を確認（最終ページはモデルの確定遅れで比較対象外）。1235 ppmでは失敗することを確認。実センサー・実OLED未使用",
+        "hil_tests": [
+          "tests/hil/arduino/test_uart.py::test_arduino_uart_co2_to_oled"
+        ],
+        "evidence": [
+          "okf/log/2026-11-08-1629-ch32v003-arduino-uart-oled.md"
+        ]
+      }
     }
   ]
 }

@@ -16,7 +16,9 @@ uv run pytest --hil --hil-device ch32v002 -m 'hil and gpio' tests/hil --hil-port
 
 ### CH32V006
 
-`--hil-device ch32v006` は CH32V006F8P6 用（[設定](configs/ch32v006_gpio_blink.json)、[マトリクス](matrix_ch32v006.json)）。ch32fun のみ対応で、`--hil-framework arduino`／`wch` は実機に触れる前にエラーで止まる。アプリケーションソースは CH32V002 と共通の `samples_ch32v00x_ch32fun/`（旧 `samples_ch32v002_ch32fun/`）を使う。共通化の判定は [ログ](../okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md)。`00x` は配置名で、CH32V005/007 などの未検証デバイスへの対応表明ではない。
+`--hil-device ch32v006` は CH32V006F8P6 用（[設定](configs/ch32v006_gpio_blink.json)、[マトリクス](matrix_ch32v006.json)）。`--hil-framework ch32fun`（既定）に加えて `arduino`／`wch` を選べる。Arduino は `samples_ch32v006_arduino/` と [matrix_ch32v006_arduino.json](matrix_ch32v006_arduino.json)（10 行）、WCH は `samples_ch32v006_wch/` と [matrix_ch32v006_wch.json](matrix_ch32v006_wch.json)（書籍 13 行。基準 blink は README と実測ログで追跡）を使う。両マトリクスは他デバイスの結果を転記せず、未移植（`not-ported`、HIL は理由付き skip）と build のみ（`build-only`）を区別する。ch32fun のアプリケーションソースは CH32V002 と共通の `samples_ch32v00x_ch32fun/`（旧 `samples_ch32v002_ch32fun/`）を使う。共通化の判定は [ログ](../okf/log/2026-11-08-1340-ch32v00x-shared-source-decision.md)。`00x` は配置名で、CH32V005/007 などの未検証デバイスへの対応表明ではない。
+
+CH32V006 の Arduino/WCH の結果は `--hil-run-dir=<dir>` の下に `<dir>/ch32v006/<framework>/<sample>/<variant>/<name>.json` として保存する（variant 未指定は `default`）。同名サンプルでもフレームワーク・variant は別ファイルになり、run は `<dir>` で区別する（例: `--hil-run-dir=xprivate/runs/2026-11-08-1600-ch32v006-arduino`。実行ごとに別ディレクトリを使う）。結果の `meta` には `source_revision`（git HEAD、未コミット変更は `+dirty`）、`compiler`、Arduino は `fqbn`・`core`・`arduino_cli`（OLED はライブラリ版も）、WCH は `sdk`（リポジトリ・revision）・`memory`（`main.map` の FLASH/RAM）、さらに `dut` に成果物 SHA-256 と識別値を記録する。CH32V003/002 の保存先は従来どおりフラットな `<dir>/<name>.json`。実装は `ch32hil/evidence.py`。
 
 - CH32V002/CH32V006 の成果物はサンプル内の `build/<device>/main.{elf,bin,hex}`（生成リンカスクリプトも同じ場所）に分かれ、HIL は `TARGET_MCU` を明示して build する。他ターゲットの成果物へはフォールバックしない。CH32V003 は従来どおり `samples_ch32v003_ch32fun/<sample>/main.bin`。
 - 書き込み前に `Detected CH32V006` と識別領域 `0x1ffff704` の上位型番 `0x006` を要求し、誤接続（CH32V002 等）・未接続・読取不能は書き込まずに `flash` 段階で失敗する。HIL テストは各段階で全量 readback を行う。識別値の実機読取は未取得。

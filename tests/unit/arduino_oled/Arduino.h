@@ -23,3 +23,18 @@ static inline void delay(uint32_t) {}
 static inline void delayMicroseconds(uint32_t) {}
 static inline void yield(void) {}
 static inline uint32_t millis(void) { return 0; }  /* used only by scroll_up(), which the sketch does not call */
+
+/* Scripted Serial for the uart sketch: bytes queued by the harness are what readBytes() returns; an empty queue
+ * behaves like the real 1 s timeout (returns the bytes read so far). */
+#include <deque>
+struct HostSerial {
+    std::deque<uint8_t> rx;
+    void begin(uint32_t) {}
+    size_t write(const uint8_t *, size_t n) { return n; }
+    size_t readBytes(uint8_t *buf, size_t n) {
+        size_t got = 0;
+        while (got < n && !rx.empty()) { buf[got++] = rx.front(); rx.pop_front(); }
+        return got;
+    }
+};
+static HostSerial Serial;

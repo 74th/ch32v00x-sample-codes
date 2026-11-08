@@ -44,11 +44,11 @@ def resolve(device: str = DEFAULT_DEVICE, sample: str = DEFAULT_SAMPLE) -> Path:
 
 
 TOOLS = ROOT / ".arduino/official/data/packages/WCH/tools/riscv-wch-gcc/15.2.0/bin/riscv32-wch-elf-"
-LAYOUT = {"ch32v003": (0x4000, 0x800), "ch32v002": (0x4000, 0x1000)}   # (FLASH, RAM) bytes
+LAYOUT = {"ch32v003": (0x4000, 0x800), "ch32v002": (0x4000, 0x1000), "ch32v006": (0xF800, 0x2000)}   # (FLASH, RAM) bytes
 
 
 def check_layout(map_text: str, device: str) -> list:
-    """The linker map must show the device's memory (CH32V003 16K/2K, CH32V002 16K/4K)."""
+    """The linker map must show the device's memory (CH32V003 16K/2K, CH32V002 16K/4K, CH32V006 62K/8K)."""
     m = re.search(r"(?m)^FLASH\s+0x0*\s+(0x[0-9a-f]+)\s.*\n^RAM\s+0x20000000\s+(0x[0-9a-f]+)", map_text)
     got = (int(m.group(1), 16), int(m.group(2), 16)) if m else None
     return [] if got == LAYOUT[device] else [f"memory layout {got} is not FLASH/RAM {LAYOUT[device]}"]

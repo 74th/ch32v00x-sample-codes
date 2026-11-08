@@ -1,0 +1,10 @@
+# 固定する core（公式 Board Manager 配布）とボード設定。書籍 2.1 節の CH32V00x / 48MHz Internal に相当。
+profiles:
+  ch32v003:
+    fqbn: WCH:ch32v:CH32V00x_EVT:pnum=CH32V003F4,clock=48MHz_HSI
+    platforms:
+      - platform: WCH:ch32v (1.0.6)
+        platform_index_url: https://github.com/openwch/board_manager_files/raw/main/package_ch32v_index.json
+    libraries:
+      - OLED SSD1306 - SH1106 (1.0.7)
+default_profile: ch32v003
