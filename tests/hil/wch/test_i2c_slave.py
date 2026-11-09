@@ -12,6 +12,9 @@ import time
 
 import pytest
 
+from capture_helpers import captured
+from ch32hil import judge
+
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, fields_of, find_port, new_run, save)
 
 pytestmark = [pytest.mark.hil, pytest.mark.wch, pytest.mark.i2c]
@@ -51,7 +54,11 @@ def _slave_sequence(port):
             if not r.ok or f.get("rx") != want or f.get("read_rc") != str(n):
                 raise AssertionError(f"I2C_MASTER {name}: expected rx={want} read_rc={n}: {r.fields}")
         return log
-    return _with_client(port, 8, action)
+    # The DUT's printf log (PD5 -> GP9) is captured across the whole sequence: the Pico runs one command at a time, so the
+    # capture is armed first and read afterwards. The sample prints from its main loop shortly after each transfer.
+    log, cap, _ = captured(port, "UART", 9, 115200, action, settle_s=0.6, timeout=8)
+    log["_capture"] = cap
+    return log
 
 
 
@@ -68,7 +75,11 @@ def test_wch_i2c_slave(request, hil_device, hil_config, hil_dut):
         build_flash_readback(run, dut)
         run.phase("dut_reset", dut.reset)
         run.phase("settle", time.sleep, 0.5)
-        run.meta["transfers"] = run.phase("measure", _slave_sequence, port.get("p"))
+        transfers = run.phase("measure", _slave_sequence, port.get("p"))
+        cap = transfers and transfers.pop("_capture", None)
+        run.meta["transfers"] = transfers
+        if cap is not None:
+            run.meta["log"] = run.phase("check_log", judge.judge_log, cap, list(judge.wch_i2c_slave_reg_lines()), "i2c_slave_log")
     finally:
         run.phase("cleanup", _cleanup, port.get("p"), 6)
         save(request, run, "wch_i2c_slave")

@@ -136,6 +136,9 @@
       "hil_tests": [
         "tests/hil/test_i2c.py::test_i2c_roles"
       ],
+      "hil_tests_variants": [
+        "tests/hil/test_i2c.py::test_i2c_master_bus_error_observation"
+      ],
       "evidence": [
         "okf/log/2026-11-07-1709-i2c-loopback-and-hil.md"
       ],

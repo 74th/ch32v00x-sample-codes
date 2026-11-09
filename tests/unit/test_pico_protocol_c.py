@@ -142,3 +142,28 @@ def test_ws2812_selftest_modes(parser_binary):
     assert ok.startswith('1 OK mode=OK ') and _fields(ok)['rx'] == _fields(ok)['tx'] == 'a55aa55aa55a'
     assert bad.startswith('2 OK mode=BADWIDTH ') and _fields(bad)['bad_pulses'] == '1'
     assert timeout.startswith('3 OK mode=TIMEOUT ') and _fields(timeout)['words'] == '0' and _fields(timeout)['tx'] == '-'
+
+
+def test_caps_lists_capture_commands_and_limits(parser_binary):
+    caps = _run(parser_binary, '1 CAPS')[0]
+    cmds = caps.split('cmds=')[1].split()[0].split(',')
+    for name in ('EDGE_MEASURE', 'EDGE_SELFTEST', 'CAPTURE_START', 'CAPTURE_READ', 'CAPTURE_STOP', 'I2C_HOLD'):
+        assert name in cmds
+    for key in ('cap_edge=1', 'edge_res_ps=16000', 'capture_uart_baud_max=921600', 'capture_uart_pins=5,6,7,9,10,11,14,15,17,18,20,21,22',
+                'i2c_hold_pins=10,11', 'uart_baud_max=921600'):
+        assert key in caps
+
+
+def test_capture_commands_are_dispatched(parser_binary):
+    out = _run(parser_binary, '1 EDGE_MEASURE 5 10 100', '2 EDGE_SELFTEST 17 18 100000 50', '3 CAPTURE_START EDGE 5',
+               '4 CAPTURE_READ 0 10', '5 CAPTURE_STOP', '6 I2C_HOLD SDA 100')
+    assert [line.split('stub=')[1] for line in out] == ['EDGE_MEASURE', 'EDGE_SELFTEST', 'CAPTURE_START', 'CAPTURE_READ',
+                                                        'CAPTURE_STOP', 'I2C_HOLD']
+
+
+def test_ws2812_commands_conflict_while_a_capture_owns_pio1(parser_binary):
+    out = _run(parser_binary, '1 CAPTURE_START EDGE 5', '2 WS2812_CAPTURE 7 3 100', '3 WS2812_SELFTEST OK', '4 RESET_SAFE',
+               '5 WS2812_SELFTEST BAD')
+    assert out[1] == '2 ERR CONFLICT capture_active' and out[2] == '3 ERR CONFLICT capture_active'
+    assert out[3] == '4 OK safe=1'
+    assert not out[4].startswith('5 ERR CONFLICT')

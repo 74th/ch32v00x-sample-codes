@@ -4,7 +4,9 @@ import tempfile
 import pytest
 from serial.tools import list_ports
 from ch32hil.phases import Run
+from ch32hil import judge
 from ch32hil.pico import discover
+from capture_helpers import captured, edge_record
 from test_blink_and_read import _prepare, _with_client, _cleanup
 
 pytestmark = [pytest.mark.hil, pytest.mark.spi]
@@ -26,6 +28,21 @@ def _spi_slave(port):
     return _with_client(port, 5, action)
 
 
+SCK_GP = 6
+SCK_HZ = 750_000    # ch32fun spi_master: BR = /64 of 48 MHz
+
+
+def _sck_period(port):
+    """SCK period during a transaction: arm the edge capture on GP6, run one SPI_SLAVE frame, judge the median."""
+    def action(client):
+        result = client.request('SPI_SLAVE', '3cc3', 'MODE0')
+        if not result.ok:
+            raise AssertionError(f'SPI frame during the SCK measurement failed: {result.fields}')
+    _, cap, start = captured(port, 'EDGE', SCK_GP, None, action)
+    summary = edge_record(cap, start)
+    return judge.judge_period(summary, SCK_HZ, label='spi_sck')
+
+
 def test_spi_master_with_pico_slave(request, hil_device, hil_dut):
     run = Run(meta={'sample': 'spi_master', 'target': hil_device.target_mcu})
     dut = hil_dut('spi_master')
@@ -40,6 +57,8 @@ def test_spi_master_with_pico_slave(request, hil_device, hil_dut):
             run.phase('dut_readback', dut.readback, Path(tmp))
         run.phase('dut_reset', dut.reset)
         run.phase('measure', _spi_slave, holder.get('port'))
+        run.meta['sck'] = run.phase('measure_sck', _sck_period, holder.get('port'))
+        print('SCK record:', run.meta['sck'])
     finally:
         run.phase('cleanup', _cleanup, holder.get('port'), 6)
     assert run.ok, run.to_json()

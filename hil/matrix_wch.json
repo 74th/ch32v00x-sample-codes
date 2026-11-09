@@ -73,6 +73,9 @@
    "hil_tests": [
     "tests/hil/wch/test_i2c_master.py::test_wch_i2c_master"
    ],
+   "hil_tests_variants": [
+     "tests/hil/wch/test_i2c_master.py::test_wch_i2c_master_bus_error_observation"
+   ],
    "evidence": [
     "okf/log/2026-11-08-0102-wch-sdk-i2c_master.md"
    ],

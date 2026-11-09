@@ -17,6 +17,9 @@ import time
 
 import pytest
 
+from capture_helpers import edge_record, i2c_slave_captured, observe_i2c_bus_error
+from ch32hil import judge
+
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, fields_of, find_port, new_run,
                      reset_during, save)
 
@@ -50,6 +53,34 @@ def _slave(port, addr, expect, reply, timeout_ms):
     return _with_client(port, timeout_ms / 1000 + 3, action)
 
 
+SCL_GP, UART_GP = 11, 9
+SCL_HZ = 100_000    # Wire's default clock (core 1.0.6 Wire.cpp:92)
+
+
+def _slave_scl(port, addr, expect, reply, timeout_ms, hz_pin=SCL_GP):
+    """I2C_SLAVE with the SCL edge capture armed around it; the summary is judged by _check_scl."""
+    result, cap, start = i2c_slave_captured(port, addr, expect, reply, timeout_ms, "EDGE", hz_pin)
+    result["scl_summary"] = edge_record(cap, start)
+    return result
+
+
+def _check_scl(result, expected_hz=SCL_HZ):
+    return judge.judge_period(result["scl_summary"], expected_hz, judge.I2C_SCL_TOL_PCT, label="i2c_scl")
+
+
+def _slave_log(port, addr, expect, reply, timeout_ms):
+    """I2C_SLAVE with the DUT's Serial output (PD5 -> GP9) captured across it and 0.4 s after it."""
+    result, cap, _ = i2c_slave_captured(port, addr, expect, reply, timeout_ms, "UART", UART_GP, 115200, settle_s=0.4)
+    result["log_capture"] = cap
+    return result
+
+
+def _check_log(result, expected, label="log"):
+    cap = result.pop("log_capture")
+    record = judge.judge_log(cap, expected, label)
+    return record
+
+
 def _expect_write(result, rx, sent="0"):
     if not (result["ok"] and result.get("rx") == rx and result.get("sent") == sent):
         raise AssertionError(f"expected DUT write {rx} (sent {sent}) to 0x{SHT31:02x}: {result}")
@@ -65,8 +96,11 @@ def _master_sequence(run, dut, port):
     out["soft_reset"] = run.phase("check_soft_reset", _expect_write, boot, "30a2")
     clear = run.phase("measure_clear_status", _slave, port, SHT31, 2, "-", 1500)
     out["clear_status"] = clear and run.phase("check_clear_status", _expect_write, clear, "3041")
-    first = run.phase("measure_loop0", _slave, port, SHT31, 2, SHT31_REPLY, 2000)
+    first = run.phase("measure_loop0", _slave_scl, port, SHT31, 2, SHT31_REPLY, 2000)
     out["loop0"] = first and run.phase("check_loop0", _expect_write, first, "2400", "6")
+    out["scl"] = first and run.phase("check_scl", _check_scl, first)
+    if first:
+        first.pop("scl_summary", None)
     wrong = run.phase("measure_wrong_address", _slave, port, SHT31 + 1, 2, "-", 3000)
     if wrong is not None:
         out["wrong_address"] = wrong
@@ -75,7 +109,9 @@ def _master_sequence(run, dut, port):
             if wrong["ok"] or wrong.get("received") != "0":
                 raise AssertionError(f"0x{SHT31 + 1:02x} received a transfer: {wrong}")
         run.phase("check_wrong_address", untouched)
-    second = run.phase("measure_loop1", _slave, port, SHT31, 2, SHT31_REPLY, 5000)
+    second = run.phase("measure_loop1", _slave_log, port, SHT31, 2, SHT31_REPLY, 5000)
+    if second is not None:
+        out["log"] = run.phase("check_log", _check_log, second, judge.arduino_i2c_master_text(T_RAW, H_RAW), "i2c_master_log")
     if second is not None and first is not None:
         out["loop1"] = run.phase("check_loop1", _expect_write, second, "2400", "6")
         out["loop_period_s"] = round(second["t"] - first["t"], 3)
@@ -211,8 +247,11 @@ def _test_master_sequence(run, port):
                                  f"{[a and a.get('rx') for a in attempts]}")
         return c
     count = run.phase("check_sync_write", check_sync, sync)
-    read = run.phase("measure_read", _slave, port, DUT_SLAVE, 1, TEST_MASTER_REPLY, 1000)
+    read = run.phase("measure_read", _slave_log, port, DUT_SLAVE, 1, TEST_MASTER_REPLY, 1000)
     out["read"] = read and run.phase("check_read", _expect_slave_read, read)
+    if read is not None:
+        out["read_log"] = run.phase("check_read_log", _check_log, read, judge.arduino_test_master_read_text(TEST_MASTER_REPLY),
+                                    "test_master_read_log")
     second = run.phase("measure_next_write", _slave, port, DUT_SLAVE, 5, "-", 3000)
     out["next_write"] = second
     if second is not None and count is not None:
@@ -257,4 +296,23 @@ def test_arduino_i2c_slave_test_master(request, hil_device, hil_config, hil_dut)
         run.phase("cleanup", _cleanup, port.get("p"), 6)
         save(request, run, "arduino_i2c_slave_test_master")
     print(run.to_json())
+    assert run.ok, run.to_json()
+
+
+def test_arduino_i2c_master_bus_error_observation(request, hil_device, hil_config, hil_dut):
+    """Observation only: hold SDA, then SCL, Low while the DUT master is mid-sequence, and record the DUT's log and
+    whether its transactions resume. Only a fixture fault (the Pico not releasing a line) fails this test."""
+    dut = hil_dut("i2c_master")
+    run = new_run(hil_device, "i2c_master", observation="i2c_bus_error")
+    port = {}
+    try:
+        run.phase("pico_prepare", lambda: port.setdefault("p", find_port(request, hil_config)))
+        run.phase("fixture_setup", _prepare, port.get("p"), 6)
+        build_flash_readback(run, dut)
+        run.phase("dut_reset", dut.reset)
+        run.meta["observation_result"] = run.phase("observe", observe_i2c_bus_error, port.get("p"), SHT31, "-", SHT31_REPLY)
+        print("BUS ERROR observation:", run.meta["observation_result"])
+    finally:
+        run.phase("cleanup", _cleanup, port.get("p"), 6)
+        save(request, run, "arduino_i2c_master_bus_error")
     assert run.ok, run.to_json()

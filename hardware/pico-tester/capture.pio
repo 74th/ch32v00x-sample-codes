@@ -1,0 +1,43 @@
+; Background capture programs (PIO1). Only one of them is loaded at a time.
+;
+; edge_len: after the first rising edge, measures how long the pin stays High and Low, alternately, and pushes one
+; word per phase (High width, Low width, High width, ...). The word is the number of 2-cycle loop iterations
+; (so 1 count = 2 PIO cycles = 16 ns at 125 MHz). The pin is both the IN pin and the JMP pin. push blocks: when the RX
+; FIFO is full the state machine stalls (FDEBUG RXSTALL), which the CPU reports as overflow.
+.program edge_len
+    wait 0 pin 0
+    wait 1 pin 0
+.wrap_target
+    mov x, ~null
+hi:
+    jmp pin, hi_dec
+    jmp hi_done
+hi_dec:
+    jmp x-- hi
+hi_done:
+    mov isr, ~x
+    push block
+    mov x, ~null
+lo:
+    jmp pin, lo_done
+    jmp x-- lo
+lo_done:
+    mov isr, ~x
+    push block
+.wrap
+
+; uart_rx: 8N1 receiver, 8 PIO cycles per bit (clock divider = clk_sys / (8 * baud)). The data byte lands in bits 31:24
+; of the pushed word. A bad stop bit sets IRQ 4 (sticky) and the byte is dropped. Adapted from the pico-examples uart_rx.
+.program uart_rx
+start:
+    wait 0 pin 0
+    set x, 7 [10]
+bitloop:
+    in pins, 1
+    jmp x-- bitloop [6]
+    jmp pin, good_stop
+    irq 4 rel
+    wait 1 pin 0
+    jmp start
+good_stop:
+    push block

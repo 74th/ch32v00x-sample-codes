@@ -14,7 +14,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_adc.py::test_arduino_adc"
       ],
-      "criteria": "uncalibrated: channel whose RC was driven high (GPIO_DRIVE 500 ms) reads >= 2800, driven low <= 1200 (0..4095, 12-bit: variant ADC_RESOLUTION 12); X=PA1/GP12, Y=PA2/GP13",
+      "criteria": "uncalibrated: channel whose RC was driven high (GPIO_DRIVE 500 ms) reads >= 2800, driven low <= 1200 (0..4095, 12-bit: variant ADC_RESOLUTION 12); X=PA1/GP12, Y=PA2/GP13; 追加(2026-11-09): SCL 周期を判定（期待値の−25〜+3 %、実測は−1.3〜−5.0 %）。Arduino/WCH は Serial/printf のログ値も判定（WCH i2c_master は従来どおり）。バスエラーは観測のみ（hil_tests_variants、確認済みに数えない）",
       "evidence": [
         "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
       ]
@@ -44,6 +44,9 @@
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master"
       ],
+      "hil_tests_variants": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master_bus_error_observation"
+      ],
       "criteria": "Pico I2C_SLAVE as SHT31 0x44: after reset writes 30a2 then 3041; loop writes 2400 and reads 6 bytes; 0x45 receives nothing; loop period ~5.3 s",
       "evidence": [
         "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
@@ -59,7 +62,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_oled.py::test_arduino_i2c_oled"
       ],
-      "criteria": "SSD1306 model pages 0..3 and 4..7 equal the host-rendered 128x32 buffer; display on",
+      "criteria": "SSD1306 model pages 0..3 and 4..7 equal the host-rendered 128x32 buffer; display on; 追加(2026-11-09): 読み出し後の Serial（receive available/read :A1 B2 C3 D4）を取り込んで判定",
       "evidence": [
         "okf/log/2026-11-08-1636-ch32v006-arduino-batch2.md"
       ]
@@ -86,7 +89,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave_test_master"
       ],
-      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s",
+      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s; 追加(2026-11-09): 周期を PIO 測定で判定（±3 %、duty は k/32 または固定値）。GPIO_PULSE の判定も維持",
       "evidence": [
         "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
       ]
@@ -118,7 +121,7 @@
         "tests/hil/arduino/test_pwm.py::test_arduino_pwm_remap_reference",
         "tests/hil/arduino/test_pwm.py::test_arduino_pwm_pc4_reference"
       ],
-      "criteria": "1 kHz (800..1200 us); duty within 15000 ppm of k/32; LED1+LED2 ~ 33/32; ramps. Pair PD2 (TIM1_CH1, GP14) + PC0 (TIM2_CH3, GP5) by the owner's decision",
+      "criteria": "1 kHz (800..1200 us); duty within 15000 ppm of k/32; LED1+LED2 ~ 33/32; ramps. Pair PD2 (TIM1_CH1, GP14) + PC0 (TIM2_CH3, GP5) by the owner's decision; 追加(2026-11-09): SCK 周期を Pico の PIO 測定で判定（期待値±3 %、Pico の時計は未校正。根拠: 分周比とHSI±2 %）",
       "evidence": [
         "okf/log/2026-11-08-1550-ch32v006-arduino-hil-batch1-pwm-pc4.md"
       ]

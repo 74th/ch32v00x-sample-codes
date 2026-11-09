@@ -43,6 +43,9 @@
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master"
       ],
+      "hil_tests_variants": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master_bus_error_observation"
+      ],
       "criteria": "Pico I2C_SLAVE as SHT31 0x44: after reset writes 30a2 then 3041; loop writes 2400 and reads 6 bytes; 0x45 receives nothing; loop period ~5.3 s",
       "evidence": [
         "okf/log/2026-11-07-2120-arduino-i2c-spi-hil.md"

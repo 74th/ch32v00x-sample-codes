@@ -2,6 +2,7 @@
 #include "pico/stdio_usb.h"
 #include "fixture.h"
 #include "protocol.h"
+#include "capture_fixture.h"
 #define LINE_MAX 128
 #define LINE_TIMEOUT_US 1000000
 
@@ -12,7 +13,7 @@ int main(void) {
     for (;;) {
         bool now = stdio_usb_connected();
         if (!now) {
-            if (connected || len || overflow) fixture_safe();
+            if (connected || len || overflow) { capture_fixture_halt(); fixture_safe(); }
             connected = false; len = 0; overflow = false;
             sleep_ms(10); continue;
         }

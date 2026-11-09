@@ -16,7 +16,9 @@ import time
 
 import pytest
 
+from ch32hil import judge
 from ch32hil.pico import PicoError
+from capture_helpers import pwm_edge_survey
 
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, find_port, new_run, save,
                      uart_receive)
@@ -68,6 +70,12 @@ def _check(pairs):
     return {"sums_ppm": sums, "duty_range_ppm": [min(duties), max(duties)], "measurements": len(ok)}
 
 
+def _edge_judge(port, pin):
+    """EDGE_MEASURE of LED1: 1 kHz +-3 %; duty near a k/32 step (the ramp moves every 31 ms, so a few readings may mix two steps)."""
+    rows, timeouts = pwm_edge_survey(port, pin, count=16, periods=6)
+    return judge.judge_pwm_survey(rows, timeouts, 1000, duty_grid=32, duty_tol_ppm=15_000, label="arduino_pwm")
+
+
 def _uart_reference(port):
     rx, fields = uart_receive(port, 12, 2500)
     return {"rx": rx.decode("ascii", "replace"), "uart_errors": fields.get("uart_errors")}
@@ -85,6 +93,7 @@ def _run(request, hil_device, hil_config, dut, led1, led2, name, **meta):
         run.meta["pairs"] = pairs
         if pairs is not None:
             run.meta["summary"] = run.phase("check", _check, pairs)
+        run.meta["edge"] = run.phase("measure_edge", _edge_judge, port.get("p"), led1)
         # printf("up"/"down") via USART_Printf_Init on PD5: reference only (book notes it may not work)
         try:
             run.meta["uart_reference"] = _uart_reference(port.get("p"))

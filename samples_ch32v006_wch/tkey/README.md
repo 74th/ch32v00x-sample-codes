@@ -1,0 +1,14 @@
+# tkey（公式WCH SDK、CH32V006のみ）
+
+タッチキー（TKEY、RM 第10章）のサンプル。**書籍にない内容**。CH32V002 にはない周辺機能。種別は `additional-not-in-book`。
+
+出典: 公式 EVT `EXAM/TOUCHKEY/TKEY`（調査用）。
+
+## 動作
+ADC の TKEY で、PD4（ADC_IN7、未配線）と PA2（ADC_IN0、固定配線で 10 kΩ と 1 µF）の値を読み、USART1（PD5、115200）に `tkey pd4=<n> pa2=<n>` を 500 ms ごとに出す。充電時間 `IDATAR1 = 0x20`、放電時間 `RDATAR = 0x8` は EVT の値。
+
+## EVT からの変更点
+- チャネルを PC4 から PD4 と PA2 に変更（手元の CH32V006 は PC4 の経路が通らないため）。2 チャネルを読み、1 行のログにした。
+
+## 観測状態
+参考の観測のみ（CH32V006 実機）。PD4（未配線）≈4087、PA2（10 kΩ＋1 µF）≈51。値の合否は付けず、タッチは未確認（`test_wch_tkey`、同ログ）。

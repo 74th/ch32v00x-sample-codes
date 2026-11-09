@@ -4,6 +4,7 @@
 #include "protocol.h"
 #include "ssd1306_fixture.h"
 #include "ws2812_fixture.h"
+#include "capture_fixture.h"
 void fixture_safe(void) {}
 void gpio_fixture_command(unsigned long id, const char *cmd, char *args) {(void)id;(void)cmd;(void)args;}
 #define STUB(name) void name(unsigned long id, char *args) {(void)id;(void)args;}
@@ -16,6 +17,17 @@ STUB(i2c_fixture_master)
 STUB(i2c_fixture_slave)
 STUB(spi_fixture_selftest)
 STUB(spi_fixture_slave)
+/* Capture stubs: only the dispatch is real. CAPTURE_START marks the PIO as owned until CAPTURE_STOP or RESET_SAFE. */
+static bool capture_on;
+bool capture_fixture_active(void) { return capture_on; }
+void capture_fixture_halt(void) { capture_on = false; }
+#define CAPTURE_STUB(name, tag, on) void name(unsigned long id, char *args) {(void)args; capture_on = on; printf("%lu OK stub=" tag "\n", id);}
+CAPTURE_STUB(capture_fixture_edge_measure, "EDGE_MEASURE", capture_on)
+CAPTURE_STUB(capture_fixture_edge_selftest, "EDGE_SELFTEST", capture_on)
+CAPTURE_STUB(capture_fixture_start, "CAPTURE_START", true)
+CAPTURE_STUB(capture_fixture_read, "CAPTURE_READ", capture_on)
+CAPTURE_STUB(capture_fixture_stop, "CAPTURE_STOP", false)
+CAPTURE_STUB(capture_fixture_i2c_hold, "I2C_HOLD", capture_on)
 /* Stub hardware hook: timeout_ms==77 simulates silence; otherwise feed `frames` full frames of a known pattern. */
 bool ssd1306_hw_capture(ssd1306_model_t *m, unsigned frames, unsigned timeout_ms, bool wait_init, unsigned *overflow) {
     ssd1306_model_init(m); *overflow = 0; (void)wait_init;

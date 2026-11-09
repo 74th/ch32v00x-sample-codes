@@ -50,3 +50,5 @@ CH32V003用（`../samples_ch32v003_wch/PROVENANCE.md`）とは別のSDK（`../sa
 | `sdk/Peripheral/src/ch32v00X_misc.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_misc.c` | `5bedd3080cdea6c52a789c6ece760f8ca933d8a12aa2b75fd62cdef75170096b` |  |
 | `sdk/Peripheral/inc/ch32v00X_wwdg.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00X_wwdg.h` | `1784101ecb86cce5705d4f8d60819797cf44546e08215ac240e51cdabbe1fed3` | 無改変（change `add-wwdg-sample` で追加。`sdk/System/ch32v00X_conf.h` の集約にも追加） |
 | `sdk/Peripheral/src/ch32v00X_wwdg.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_wwdg.c` | `d68fd78e4373d36a4bdd1ecf00fef1ef7435fe721454423a66b56b11cf661fb7` | 無改変（同上） |
+| `sdk/Peripheral/inc/ch32v00X_opa.h` | `EVT/EXAM/SRC/Peripheral/inc/ch32v00X_opa.h` | `96f297b42ca19aa2f79d095ac658bc85a6276aec335be30addfbc45cb07aa10a` | 無改変（change `add-ch32v006-only-feature-samples` で追加。`sdk/System/ch32v00X_conf.h` の集約にも追加） |
+| `sdk/Peripheral/src/ch32v00X_opa.c` | `EVT/EXAM/SRC/Peripheral/src/ch32v00X_opa.c` | `78bedd24b12e959f8ee95aa64ba55fa628e989373ba241c94ce9f1a46b524c51` | 無改変（同上） |

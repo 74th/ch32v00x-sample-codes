@@ -47,7 +47,7 @@
       "evidence": [
         "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
       ],
-      "criteria": "uncalibrated 12-bit: driven-high >= 2800, driven-low <= 1200 (0..4095), steps rise; PA1/PA2 with GP12/GP13"
+      "criteria": "uncalibrated 12-bit: driven-high >= 2800, driven-low <= 1200 (0..4095), steps rise; PA1/PA2 with GP12/GP13; 追加(2026-11-09): SCL 周期を判定（期待値の−25〜+3 %、実測は−1.3〜−5.0 %）。Arduino/WCH は Serial/printf のログ値も判定（WCH i2c_master は従来どおり）。バスエラーは観測のみ（hil_tests_variants、確認済みに数えない）"
     },
     {
       "book_sample": "adc_dma-wch_sdk",
@@ -62,7 +62,7 @@
       "evidence": [
         "okf/log/2026-11-08-1655-ch32v006-wch-batch2-dma-timer.md"
       ],
-      "criteria": "uncalibrated 12-bit coarse levels and charge steps; static ELF: ADC_DMACmd/DMA_Init/DMA_Cmd linked, no ADC_GetConversionValue, DMA1 block referenced"
+      "criteria": "uncalibrated 12-bit coarse levels and charge steps; static ELF: ADC_DMACmd/DMA_Init/DMA_Cmd linked, no ADC_GetConversionValue, DMA1 block referenced; 追加(2026-11-09): WCH は printf のレジスタ表示（reg[0x20]/reg[0x10]）を取引と同時に取り込んで判定"
     },
     {
       "book_sample": "i2c_master-wch_sdk",
@@ -74,10 +74,13 @@
       "hil_tests": [
         "tests/hil/wch/test_i2c_master.py::test_wch_i2c_master"
       ],
+      "hil_tests_variants": [
+        "tests/hil/wch/test_i2c_master.py::test_wch_i2c_master_bus_error_observation"
+      ],
       "evidence": [
         "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md"
       ],
-      "criteria": "Pico=SHT31(0x44): 30a2,3041,2400+6B read(sent=6); 出力'Temperature: 24, Humidity: 50'一致; 0x45無反応; 周期4.8..6.0 s"
+      "criteria": "Pico=SHT31(0x44): 30a2,3041,2400+6B read(sent=6); 出力'Temperature: 24, Humidity: 50'一致; 0x45無反応; 周期4.8..6.0 s; 追加(2026-11-09): SCK 周期を Pico の PIO 測定で判定（期待値±3 %、Pico の時計は未校正。根拠: 分周比とHSI±2 %）"
     },
     {
       "book_sample": "i2c_slave-wch_sdk",
@@ -93,7 +96,7 @@
         "okf/log/2026-11-08-1651-ch32v006-wch-batch1.md",
         "okf/log/2026-11-08-2237-ch32v006-sample-findings.md"
       ],
-      "criteria": "0x10 ACK/0x11 NACK; reg0x20=00102030; write0x10 aabbccdd読み戻し; 部分読み; repeated STARTで0x20/0x10/0x22を読む"
+      "criteria": "0x10 ACK/0x11 NACK; reg0x20=00102030; write0x10 aabbccdd読み戻し; 部分読み; repeated STARTで0x20/0x10/0x22を読む; 追加(2026-11-09): 周期を PIO 測定で判定（±3 %、duty は k/32 または固定値）。GPIO_PULSE の判定も維持"
     },
     {
       "book_sample": "spi_master-wch_sdk",
@@ -214,6 +217,66 @@
       ],
       "evidence": [
         "okf/log/2026-11-09-0751-ch32v006-wwdg-hil.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "usart2",
+      "state": "hil-verified",
+      "sample": "usart2",
+      "note": "書籍にないCH32V006だけのUSART2（TXをリマップ3でPD2）。公式EVT EXAM/USARTを元にした自作の初期化（change add-ch32v006-only-feature-samples）。RXは未配線のため対象外。実機（CH32V006）でPD2→GP14の固定文字列を6回受信（1.2 sの取り込み）",
+      "criteria": "PD2→GP14を治具のPIO UART受信（115200 8N1）で受け、固定文字列 'usart2 0123456789' が1.2 sで2回以上届く",
+      "hil_tests": [
+        "tests/hil/wch/test_v006_only.py::test_wch_usart2"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-0854-ch32v006-only-feature-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "opa",
+      "state": "hil-verified",
+      "sample": "opa",
+      "note": "書籍にないCH32V006だけのOPA（PGA 4倍・8倍、PA2→OPA→PD4）。公式EVT EXAM/OPA/OPA_PGA を単端にした版。オフセット・ノイズ・帯域・差動・CMPは対象外",
+      "criteria": "PicoのPWM（RC経由）でPA2に低い入力を与え、DUTのADCで読む out/in の中央値が利得の±10 %に入る（実測: 利得4で3.92〜3.99、利得8で7.81。窓の根拠は実測値の約5倍の余裕。電圧は未校正）。高入力（利得4でduty 60 %、利得8でduty 40 %）の出力は飽和（4095）して記録のみ",
+      "hil_tests": [
+        "tests/hil/wch/test_v006_only.py::test_wch_opa"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-0854-ch32v006-only-feature-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "tim3",
+      "state": "hil-verified",
+      "sample": "tim3",
+      "note": "書籍にないCH32V006だけの簡易タイマーTIM3。CC3のDMA要求（DMA1 ch1）でPC0を反転（公式EVT EXAM/TIM/SLTIM_DMAを元にした）。実機（CH32V006）でPC0が496.6 Hz（期待500 Hz、−0.68 %）、duty 50 %",
+      "criteria": "PC0→GP5の周期を治具のエッジ時刻測定で判定（500 Hz ±3 %、duty 50 %）",
+      "hil_tests": [
+        "tests/hil/wch/test_v006_only.py::test_wch_tim3"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-0854-ch32v006-only-feature-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "tkey",
+      "state": "build-only",
+      "sample": "tkey",
+      "note": "書籍にないCH32V006だけのTKEY。PD4（未配線）とPA2（10 kΩ＋1 µF）の値を読む参考の観測。タッチの判定ではない（公式EVT EXAM/TOUCHKEY/TKEYを元にした）。実機（CH32V006）の参考値: PD4（未配線）≈4087、PA2（10 kΩ＋1 µF）≈51。値の合否は付けないので hil-verified にしない（観測の記録）",
+      "criteria": "負荷の違う2チャネルの値を記録する（値の合否は付けない）。ログが取れなければ失敗",
+      "hil_tests": [
+        "tests/hil/wch/test_v006_only.py::test_wch_tkey"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-0854-ch32v006-only-feature-samples.md"
       ]
     }
   ]

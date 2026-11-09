@@ -14,12 +14,14 @@ from ch32hil.pico import PicoError
 
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, fields_of, find_port, new_run, save,
                      uart_receive)
-from arduino.test_i2c import SHT31, SHT31_REPLY, _expect_write, _slave
+from arduino.test_i2c import SHT31, SHT31_REPLY, _check_scl, _expect_write, _slave, _slave_scl
+from capture_helpers import observe_i2c_bus_error
 
 pytestmark = [pytest.mark.hil, pytest.mark.wch, pytest.mark.i2c]
 
 SAMPLE = "i2c_master"
 TEXT = b"Temperature: 24, Humidity: 50\r\n"
+SCL_HZ = 400_000    # I2C_ClockSpeed = 400000
 
 
 def _sequence(run, dut, port):
@@ -30,8 +32,11 @@ def _sequence(run, dut, port):
     out["soft_reset"] = boot and run.phase("check_soft_reset", _expect_write, boot, "30a2")
     clear = run.phase("measure_clear_status", _slave, port, SHT31, 2, "-", 1500)
     out["clear_status"] = clear and run.phase("check_clear_status", _expect_write, clear, "3041")
-    first = run.phase("measure_loop0", _slave, port, SHT31, 2, SHT31_REPLY, 2000)
+    first = run.phase("measure_loop0", _slave_scl, port, SHT31, 2, SHT31_REPLY, 2000)
     out["loop0"] = first and run.phase("check_loop0", _expect_write, first, "2400", "6")
+    out["scl"] = first and run.phase("check_scl", _check_scl, first, SCL_HZ)
+    if first:
+        first.pop("scl_summary", None)
 
     def text():
         rx, fields = uart_receive(port, len(TEXT), 2000)
@@ -73,4 +78,23 @@ def test_wch_i2c_master(request, hil_device, hil_config, hil_dut):
         run.phase("cleanup", _cleanup, port.get("p"), 6)
         save(request, run, "wch_i2c_master")
     print(run.to_json())
+    assert run.ok, run.to_json()
+
+
+def test_wch_i2c_master_bus_error_observation(request, hil_device, hil_config, hil_dut):
+    """Observation only (see arduino/test_i2c.py): hold SDA, then SCL, Low during the DUT's sequence and record the
+    DUT's printf log and whether the transactions resume. Only a fixture fault fails this test."""
+    dut = hil_dut(SAMPLE)
+    run = new_run(hil_device, SAMPLE, observation="i2c_bus_error")
+    port = {}
+    try:
+        run.phase("pico_prepare", lambda: port.setdefault("p", find_port(request, hil_config)))
+        run.phase("fixture_setup", _prepare, port.get("p"), 6)
+        build_flash_readback(run, dut)
+        run.phase("dut_reset", dut.reset)
+        run.meta["observation_result"] = run.phase("observe", observe_i2c_bus_error, port.get("p"), SHT31, "-", SHT31_REPLY)
+        print("BUS ERROR observation:", run.meta["observation_result"])
+    finally:
+        run.phase("cleanup", _cleanup, port.get("p"), 6)
+        save(request, run, "wch_i2c_master_bus_error")
     assert run.ok, run.to_json()

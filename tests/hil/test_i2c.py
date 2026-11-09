@@ -4,7 +4,9 @@ import tempfile
 import pytest
 from serial.tools import list_ports
 from ch32hil.phases import Run
+from ch32hil import judge
 from ch32hil.pico import PicoError, discover
+from capture_helpers import captured, edge_record, observe_i2c_bus_error
 from test_blink_and_read import _prepare, _with_client, _cleanup
 
 pytestmark = [pytest.mark.hil, pytest.mark.i2c]
@@ -47,6 +49,20 @@ def _i2c_slave(port):
     return _with_client(port, 6, action)
 
 
+SCL_GP = 11
+SCL_HZ = 100_000    # ch32fun i2c_master: CKCFGR = 48 MHz / (2 * 100 kHz)
+
+
+def _scl_period(port):
+    """SCL period during a DUT-master transaction (the Pico answers as slave 0x42): median of the clock periods."""
+    def action(client):
+        result = client.request('I2C_SLAVE', 66, 2, '1234', 4000)
+        if not result.ok:
+            raise AssertionError(f'I2C transaction during the SCL measurement failed: {result.fields}')
+    _, cap, start = captured(port, 'EDGE', SCL_GP, None, action, timeout=10)
+    return judge.judge_period(edge_record(cap, start), SCL_HZ, judge.I2C_SCL_TOL_PCT, label='i2c_scl')
+
+
 @pytest.mark.parametrize(('sample', 'operation'), [('i2c_slave', _i2c_master), ('i2c_master', _i2c_slave)])
 def test_i2c_roles(request, sample, operation, hil_device, hil_dut):
     run = Run(meta={'sample': sample, 'target': hil_device.target_mcu, 'readback_policy': 'required'})
@@ -62,6 +78,32 @@ def test_i2c_roles(request, sample, operation, hil_device, hil_dut):
             run.phase('dut_readback', dut.readback, Path(tmp))
         run.phase('dut_reset', dut.reset)
         run.phase('measure', operation, holder.get('port'))
+        if sample == 'i2c_master':
+            run.meta['scl'] = run.phase('measure_scl', _scl_period, holder.get('port'))
+            print('SCL record:', run.meta['scl'])
+    finally:
+        run.phase('cleanup', _cleanup, holder.get('port'), 6)
+    assert run.ok, run.to_json()
+
+
+def test_i2c_master_bus_error_observation(request, hil_device, hil_dut):
+    """Observation only: hold SDA, then SCL, Low while the DUT master retries, and record whether it recovers.
+    The book's sample has no bus recovery; only a fixture fault (the Pico not releasing the line) fails this test."""
+    run = Run(meta={'sample': 'i2c_master', 'target': hil_device.target_mcu, 'observation': 'i2c_bus_error'})
+    dut = hil_dut('i2c_master')
+    holder = {}
+    print('HIL I2C bus error (observation): DUT master; Pico holds GP10/GP11 Low')
+    try:
+        run.phase('pico_prepare', lambda: holder.setdefault('port', discover(list_ports.comports, request.config.getoption('--hil-port'), 30)))
+        run.phase('fixture_setup', _prepare, holder.get('port'), 6)
+        run.phase('dut_build', dut.build)
+        run.phase('dut_flash', dut.flash)
+        with tempfile.TemporaryDirectory() as tmp:
+            run.phase('dut_readback', dut.readback, Path(tmp))
+        run.phase('dut_reset', dut.reset)
+        run.meta['observation_result'] = run.phase(
+            'observe', observe_i2c_bus_error, holder.get('port'), 66, '1234', '1234', 1000, None)
+        print('BUS ERROR observation:', run.meta['observation_result'])
     finally:
         run.phase('cleanup', _cleanup, holder.get('port'), 6)
     assert run.ok, run.to_json()

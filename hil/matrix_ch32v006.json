@@ -57,6 +57,9 @@
       "hil_tests": [
         "tests/hil/test_i2c.py::test_i2c_roles"
       ],
+      "hil_tests_variants": [
+        "tests/hil/test_i2c.py::test_i2c_master_bus_error_observation"
+      ],
       "evidence": [
         "okf/log/2026-11-08-1335-ch32v006-hil.md",
         "okf/log/2026-11-08-1354-ch32v006-hil-new-layout.md"

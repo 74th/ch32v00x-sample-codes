@@ -8,6 +8,7 @@
 #include <ch32v00X_i2c.h>
 #include <ch32v00X_iwdg.h>
 #include <ch32v00X_misc.h>
+#include <ch32v00X_opa.h>
 #include <ch32v00X_pwr.h>
 #include <ch32v00X_rcc.h>
 #include <ch32v00X_spi.h>

@@ -15,6 +15,9 @@ import time
 
 import pytest
 
+from capture_helpers import pwm_edge_survey
+from ch32hil import judge
+
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, find_port, new_run, save)
 
 pytestmark = [pytest.mark.hil, pytest.mark.wch, pytest.mark.pwm]
@@ -89,6 +92,15 @@ def _check(pairs):
             "pc4_duty_ppm": [m["duty_ppm"] for m in pc4]}
 
 
+PWM_HZ = 48_000_000 / 2 / 256     # TIM1 256 counts at 48 MHz / 2 = 93.75 kHz (10.67 us)
+
+
+def _edge_judge(port):
+    """EDGE_MEASURE of PD2 (GP14): 93.75 kHz +-3 %; duty near a k/32 step (the Pico quantises High to 8 ns)."""
+    rows, timeouts = pwm_edge_survey(port, PD2_GP, count=16, periods=6)
+    return judge.judge_pwm_survey(rows, timeouts, PWM_HZ, duty_grid=32, duty_tol_ppm=20_000, label="wch_pwm")
+
+
 def _run(request, hil_device, hil_config, dut, second_gp, name, **meta):
     run = new_run(hil_device, SAMPLE, criteria="period 9..12 us (10.67 us nominal); PD2 several duty levels over >=35 %; "
                                               "second channel (PC4; PC0 on CH32V006) high-constant and ramping readings; "
@@ -103,6 +115,7 @@ def _run(request, hil_device, hil_config, dut, second_gp, name, **meta):
         if pairs is not None:
             run.meta["pairs"] = [[a, b, t] for a, b, t in pairs]
             run.meta["summary"] = run.phase("check", _check, pairs)
+        run.meta["edge"] = run.phase("measure_edge", _edge_judge, port.get("p"))
     finally:
         run.phase("cleanup", _cleanup, port.get("p"), 6)
         save(request, run, name)

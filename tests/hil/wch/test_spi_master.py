@@ -13,6 +13,9 @@ import time
 
 import pytest
 
+from capture_helpers import captured, edge_record
+from ch32hil import judge
+
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, fields_of, find_port, new_run, save,
                      sample_gpio, uart_receive)
 
@@ -25,11 +28,24 @@ TEXT_VALID = b"raw: 0c80\r\nraw_int: 400\r\ntemp:"       # first 32 bytes of the
 TEXT_NEGATIVE = b"raw: f380\r\nraw_int: -400\r\ntemp:-"
 
 
-def _spi(port, reply):
+SCK_GP = 6
+SCK_HZ = 187_500    # WCH SDK spi_master: SPI_BaudRatePrescaler_256 of 48 MHz
+
+
+def _spi(port, reply, edge_pin=None):
     def action(client):
         r = client.request("SPI_SLAVE", reply, "MODE0")
         return {"ok": r.ok, "fields": r.fields, "t": time.monotonic(), **fields_of(r)}
-    return _with_client(port, 6, action)
+    if edge_pin is None:
+        return _with_client(port, 6, action)
+    # same transaction, with the SCK edge capture armed around it (one client session)
+    result, cap, start = captured(port, "EDGE", edge_pin, None, action)
+    result["sck_summary"] = edge_record(cap, start)
+    return result
+
+
+def _check_sck(result):
+    return judge.judge_period(result["sck_summary"], SCK_HZ, label="spi_sck")
 
 
 def _expect(result, rx, reply):
@@ -78,8 +94,11 @@ def test_wch_spi_master(request, hil_device, hil_config, hil_dut):
         b = run.phase("measure_read_negative", _spi, p, NEGATIVE)
         out["read_negative"] = b and run.phase("check_read_negative", _expect, b, "0000", NEGATIVE)
         out["text_negative"] = run.phase("check_text_negative", _text, p, TEXT_NEGATIVE)
-        c = run.phase("measure_read_valid", _spi, p, VALID)
+        c = run.phase("measure_read_valid", _spi, p, VALID, SCK_GP)
         out["read_valid"] = c and run.phase("check_read_valid", _expect, c, "0000", VALID)
+        out["sck"] = c and run.phase("check_sck", _check_sck, c)
+        if c:
+            c.pop("sck_summary", None)
         out["text_valid"] = run.phase("check_text_valid", _text, p, TEXT_VALID)
         if b and c:
             gap = round(c["t"] - b["t"], 3)

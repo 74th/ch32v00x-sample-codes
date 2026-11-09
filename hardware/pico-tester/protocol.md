@@ -28,7 +28,7 @@ id を復元できない不正フレーム、長すぎるフレーム、途中�
 
 ## UART loopback 試作
 
-`UART_XFER <mode> <baud> <bits> <parity> <stop> <tx_hex> <rx_count> <timeout_ms>` は、`LOOPBACK` の場合 Pico UART0 の GP16 TX、GP17 RX を、`DUT` の場合 Pico UART1 の GP8 TX、GP9 RX を使用する。`LOOPBACK` は事前に GP16–1 kΩ–GP17 を接続する。`DUT` は PD6 RX / PD5 TX の接続と双方の電圧・方向を確認してから使用する。指定 baud 1200〜115200、データ 7/8 bit、parity `N`/`E`/`O`、stop 1/2、送受信各最大32バイト、期限 10〜5000 ms。`tx_hex` は偶数桁の16進、送信なしは `-`。7 bit の場合は 0x80 以上の送信値を拒否する。`rx_count` は期待受信数で 0〜32。送受信数がともに0の場合は拒否する。呼出は排他的・同期的で、完了、タイムアウト、エラー、CDC 切断で UART を停止し GPIO を入力・pull 無効に戻す。
+`UART_XFER <mode> <baud> <bits> <parity> <stop> <tx_hex> <rx_count> <timeout_ms>` は、`LOOPBACK` の場合 Pico UART0 の GP16 TX、GP17 RX を、`DUT` の場合 Pico UART1 の GP8 TX、GP9 RX を使用する。`LOOPBACK` は事前に GP16–1 kΩ–GP17 を接続する。`DUT` は PD6 RX / PD5 TX の接続と双方の電圧・方向を確認してから使用する。指定 baud 1200〜921600（2026-11-09 に 115200 から引き上げ。Pico 単体の GP16→GP17 ループバックで 921600 まで確認。DUT との上限は別。`CAPS` の `uart_baud_max`）、データ 7/8 bit、parity `N`/`E`/`O`、stop 1/2、送受信各最大32バイト、期限 10〜5000 ms。`tx_hex` は偶数桁の16進、送信なしは `-`。7 bit の場合は 0x80 以上の送信値を拒否する。`rx_count` は期待受信数で 0〜32。送受信数がともに0の場合は拒否する。呼出は排他的・同期的で、完了、タイムアウト、エラー、CDC 切断で UART を停止し GPIO を入力・pull 無効に戻す。
 
 成功応答は実際の baud、送信・受信数、受信データを含む。`uart_errors` の bit 0/1/2/3 はそれぞれ framing/parity/break/overrun、bit 4 は受信バッファ超過。エラーがあれば `ERR UART`、期限切れなら `ERR TIMEOUT` とし、どちらも部分受信データとエラービットを返す。実際の baud はハードウェア設定値で、独立した実測値ではない。エラー検出経路への意図的な framing/parity 不一致注入は未検証。DUT 用 GP8/GP9 の UART は実装済みだが実機未検証。初期化時に約27 ms をかけてアイドルを確立し、その間の受信データは破棄する。初期化完了前に届く起動メッセージの受信には使えない。期限はこの初期化後から数える。
 
@@ -91,6 +91,30 @@ GP10 SDA・GP11 SCL、外付け pull-up、100 kHz を使用する。`I2C_MASTER 
 `SPI_SLAVE <4桁hex応答> [MODE0]` は PIO slave（GP4 MISO、GP5 CS、GP6 SCK、GP7 MOSI、固定配線で DUT の PC7/PC0/PC5/PC6 と接続）として、CS 1回あたり2バイトを受信し、指定した2バイトを返す。mode 0・MSB first のみ対応し、他の mode は `ERR UNSUPPORTED spi_mode`、応答が4桁 hex でなければ `ERR INVALID`、3秒以内に2バイトを受信しなければ `ERR TIMEOUT`。成功時は `OK mode=0 bit_order=msb received=2 rx=<hex> tx=<hex> safe=1`。DUT の SPI master（`samples_ch32v003_ch32fun/spi_master`）で実機確認済み。
 
 `SPI_SELFTEST MODE0` は Pico SPI0 master（GP16 MISO、GP17 CS、GP18 SCK、GP19 MOSI、約100 kHz）と PIO slave（GP20 MOSI、GP21 SCK、GP22 CS、GP26 MISO）の間で `a5` を送り `3c` を返す自己検証。各線は 1 kΩ で GP19→GP20、GP18→GP21、GP17→GP22、GP26→GP16 と接続する（I2C loopback 配線とは共存できない）。成功時は `OK mode=0 bit_order=msb baud=<実効> master_tx=a5 master_rx=3c slave_rx=a5 safe=1`。Pico の master 役はこの自己検証のみで確認しており、独立した外部 slave での検証はしていない。mode 0 以外、複数バイト、100 kHz 以外の速度は未対応・未確認。`SPI_MASTER` は独立した相手がないため firmware から削除した。実行は `uv run python hardware/pico-tester/spi_loopback.py`。
+
+## エッジ時刻の測定とバックグラウンド取り込み（2026-11-09 追加。`CAPS` の `cap_edge=1`）
+
+PIO1 の 1 ステートマシンと DMA 1 チャネルを使い、`fixture_safe()`（全コマンドの先頭で呼ばれる）の影響を受けない。時間は Pico のシステムクロック（125 MHz、8 ns/サイクル）基準で**未校正**。`WS2812_CAPTURE`/`WS2812_SELFTEST` は PIO1 を共有するため、取り込み中は `ERR CONFLICT capture_active`。
+
+- `EDGE_MEASURE <pin> <periods 1-255> <timeout_ms 10-5000>` → `OK pin=6 periods=10 res_ps=16000 period_ps_min= period_ps_max= period_ps_avg= high_ps_min= high_ps_max= high_ps_avg= duty_ppm= safe=1`。最初の立上りで開始し、`periods + 1` 組の High/Low の幅を測って先頭の 1 組を捨て、残りを集計する（値は ps）。分解能 `res_ps`=16000（2 サイクル）、周期の値は 8 ns 刻み、High 幅は ±1 サイクルの量子化がある。エッジが揃わなければ `ERR TIMEOUT edge_words=<受信数> of=<要求数>`。範囲外のピン・回数・時間は `ERR INVALID edge_arguments`、背景の取り込み中は `ERR CONFLICT capture_active`、PIO/DMA の空きなしは `ERR BUSY pio_unavailable`。周期 = 2×(High カウント+Low カウント)+9 サイクル、High 幅 = 2×High カウント+4 サイクル（`capture.pio` の命令数。`EDGE_SELFTEST` で確認）。
+- `EDGE_SELFTEST <out 16|17> <in> <hz 2000-2000000> <duty 10-90>` は Pico のハードウェア PWM（clkdiv 1、周期は 125 MHz の整数サイクル）を出力し、入力で `EDGE_MEASURE` 相当の 100 周期を測る自己検証。応答は `target_period_ps`、`target_high_ps` と上の集計値。出力と入力に GP16/17 から 1 kΩ の配線が必要。
+- `CAPTURE_START EDGE <pin>` → `OK kind=EDGE pin= capacity=4096 res_ps=16000 k_period=9 k_high=4 active=1`。以後、High/Low の幅（ループカウント、1 カウント = `res_ps`）を交互に最大 4096 ワードためる。1 ワード目が最初の High。
+- `CAPTURE_START UART <pin> <baud 1200-921600>` → `OK kind=UART pin= capacity=4096 baud= active=1`。8N1 を PIO（8 サイクル/ビット）で受け、最大 4096 バイトためる。受信ピンは `CAPS` の `capture_uart_pins`（固定配線の DUT 出力 GP5/6/7/9/14/15、I2C の GP10/11、自己検証用の GP17/18/20/21/22）に限り、それ以外は `ERR INVALID capture_arguments`。入力は内部 pull-up 有効。パリティ・7 ビットは未対応。
+- `CAPTURE_READ <offset> <count 0-256>` → `OK kind= pin= active= received= capacity= full= overflow= [frame_errors=] offset= count= data=`。UART の `data` は 16 進、EDGE の `data` はカンマ区切りの 10 進（カウント）。データがなければ `-`。`received` までの `offset` を指定する。取り込み中も停止後も読める（次の `CAPTURE_START` まで保持）。
+- `CAPTURE_STOP` → `OK was_active= valid= received= overflow= active=0`。停止して PIO/DMA を解放する（データは残る）。取り込みがなくても `OK`。`RESET_SAFE` と USB 切断でも停止する。
+- 満杯（`full=1`）でバッファの先頭を保持して以降を捨てる（リングではない）。`overflow=1` は PIO の RX FIFO が詰まり実際にデータを失ったことを示す（満杯のあとにデータが続いた場合）。`frame_errors=1` は UART のストップビット不正（そのバイトは捨てる）。
+- 取り込み中に実行できるコマンドは、他の PIO0/I2C/UART/GPIO を使うコマンド（`I2C_SLAVE`、`SPI_SLAVE`、`UART_XFER` など）。同じ PIO1 の `WS2812_*`、`EDGE_MEASURE`、`EDGE_SELFTEST`、2 つ目の `CAPTURE_START` は拒否。
+
+自己検証（実機を駆動する明示操作。GP17→GP18 または GP16→GP18 の配線、UART は GP16→GP17）:
+
+```sh
+uv run python hardware/pico-tester/edge_selftest.py      # PWM 1 MHz〜2 kHz の周期と High 幅、範囲外・タイムアウト・競合
+uv run python hardware/pico-tester/capture_selftest.py   # UART 1200〜921600 baud、あふれ、EDGE 取り込み
+```
+
+## I2C のバスを Low に保つ
+
+`I2C_HOLD <SDA|SCL|BOTH> <ms 10-2000>` → `OK line=SDA hold_ms=100 during_sda=0 during_scl=1 after_sda=1 after_scl=1 safe=1`。固定配線の GP10（SDA）/ GP11（SCL）を、出力ラッチを 0 にしたまま方向を出力にして Low に保ち、指定時間の後に入力へ戻す。High には駆動しない（プルアップは DUT の VDD 側の 4.7 kΩ）。`during_*` は解放直前、`after_*` は解放の 200 µs 後のレベル。不正な線名・時間は `ERR INVALID hold_arguments`。自己検証は `uv run python hardware/pico-tester/i2c_hold_selftest.py`（DUT の I2C を使わないとき）。
 
 ## 安全状態と限界
 

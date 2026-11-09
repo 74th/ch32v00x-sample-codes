@@ -24,7 +24,7 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-08T13:30:00Z }
 | C1 | 3, 4 | `zmmul` の指定の根拠と、乗算命令の生成 | 002/006 | 資料 | 確認済み | 4.1。データシートの「RV32EmC」と注記。WCH SDK・ch32fun は `mul` 系を生成、Arduino（`rv32ecxw`）は `__mulsi3` |
 | C2 | 3, 4 | 乗算命令が実機で正しく実行されるか | 002/006 | 治具 | 確認済み | 7.2。002/006 とも mul/mulh/mulhu/mulhsu の 144 組×4 が期待値と一致（ch32fun と WCH SDK の `-march`） |
 | C3 | 1 | コアの表記の揺れ（V2A／V2C） | 002/006 | 資料 | 保留 | 4.1。データシートの見出しは V2A、本文と図は V2C。資料からは決められない（WCH への確認が要る） |
-| C4 | 1 | 006 だけにある機能（USART2、OPA、TKEY など） | 006 | サンプルなし | 一部（提案） | 7.9。Pico で測れるもの（USART2 の送信、OPA の PGA、TIM3、TKEY の参考観測）を change `add-ch32v006-only-feature-samples` で提案。CMP は RM では V007/M007 のみで DS と食い違う（対象外）。2 線の SDI・PB ポートは TSSOP20 にピンがない |
+| C4 | 1 | 006 だけにある機能（USART2、OPA、TKEY など） | 006 | サンプルなし | 一部（実機で確認） | 7.9。Pico で測れるもの（USART2 の送信、OPA の PGA、TIM3、TKEY の参考観測）を change `add-ch32v006-only-feature-samples` で提案。CMP は RM では V007/M007 のみで DS と食い違う（対象外）。2 線の SDI・PB ポートは TSSOP20 にピンがない → 2026-11-09: USART2 の送信（PD2 リマップ3→GP14）、OPA の PGA（4倍・8倍）、TIM3 の DMA 反転（PC0 500 Hz）を CH32V006 の実機で確認。TKEY は PD4≈4087／PA2≈51 の参考値の記録のみ（タッチは未確認）。未確認・対象外: CMP（RM は V007/M007 のみ、DS の機能一覧と食い違い）、USART2 の受信（PD3 未配線）、OPA のオフセット・ノイズ・帯域・差動、TKEY のタッチ（実物のパッドが必要）、2 線の SDI・PB ポート（TSSOP20 にピンなし）。ログ: 2026-11-09-0854-ch32v006-only-feature-samples.md |
 | C5 | 1 | CH32V006F8P6 を F8P7 と同じものとして扱う仮定 | 006 | 資料 | 保留 | [型番の件](../devices/ch32v006-tssop20-part-number.md)。WCH の資料の更新か問い合わせが要る |
 | C6 | 1 | 最小回路のコンデンサの値 | 002/006 | 資料 | 未着手 | 7.8 |
 | C7 | 1 | 入手先と価格 | − | 資料 | 保留 | 書籍の範囲外として扱う |
@@ -75,24 +75,24 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-08T13:30:00Z }
 
 | # | 事項 | デバイス | 分類 | 状態 | 対応・根拠 |
 | --- | --- | --- | --- | --- | --- |
-| U1 | 115200・9600 以外のボーレート | 002/006 | 治具 | 一部 | 7.4。002/006 とも 57600／38400／19200／2400 でエコー一致。230400 は Pico の上限（115200）で不可 |
+| U1 | 115200・9600 以外のボーレート | 002/006 | 治具 | 一部 | 7.4。002/006 とも 57600／38400／19200／2400 でエコー一致。230400 は Pico の上限（115200）で不可 → 2026-11-09: Pico 単体のループバックでは 460800・921600 まで一致（`UART_XFER`、PIO 受信とも）。DUT との 230400 以上は未実施（DUT の USART 設定を変える試験がまだない）。 |
 | U2 | パリティ・フレーミングのエラー処理 | 002/006 | 治具 | 確認済み | 7.4。002/006 とも PE・FE を検出 |
 | U3 | ボーレートの誤差、HSI の精度 | 002/006 | 測定器等 | 保留 | 7.10 |
 | U4 | リマップしたピン（UART、I2C、SPI） | 002/006 | 治具追加 | 保留 | 7.10。WCH `i2c_master` の `USE_REMAP 1` は build のみ（3.1） |
-| U5 | CH32V006 の USART2 | 006 | サンプルなし | 一部（提案） | 7.9。TX を PD2（リマップ3）→GP14 で観測する案を `add-ch32v006-only-feature-samples` で提案（治具の UART 受信のピン選択が要る）。RX の PD3 は未配線 |
+| U5 | CH32V006 の USART2 | 006 | サンプルなし | 一部（TX のみ確認） | 7.9。TX を PD2（リマップ3）→GP14 で観測する案を `add-ch32v006-only-feature-samples` で提案（治具の UART 受信のピン選択が要る）。RX の PD3 は未配線 → 2026-11-09: TX を PD2（リマップ3）→GP14 の PIO UART 受信で 115200 8N1 の固定文字列を確認（006）。RX（PD3）は未配線で未確認 |
 | U6 | 実物の CO2 センサー・OLED・SHT31・ADT7310 | 002/006 | 測定器等 | 保留 | 7.10 |
-| I1 | SCL の実際の周波数・波形・立ち上がり時間、400 kHz の電気的な余裕 | 002/006 | 治具追加／測定器等 | 保留 | 7.4。Pico の `GPIO_PULSE` は 1 µs 単位で、100 kHz で 1 回 10 µs を得たのみ。治具の改善を change `extend-pico-fixture-measurement` で提案 |
-| I2 | バスエラーからの復旧 | 002/006 | 治具追加 | 保留 | 7.4。DUT のバスを Low に保持する Pico の機能がない。治具の改善を change `extend-pico-fixture-measurement` で提案 |
+| I1 | SCL の実際の周波数・波形・立ち上がり時間、400 kHz の電気的な余裕 | 002/006 | 治具追加／測定器等 | 一部 | 7.4。Pico の `GPIO_PULSE` は 1 µs 単位で、100 kHz で 1 回 10 µs を得たのみ。治具の改善を change `extend-pico-fixture-measurement` で提案 → 2026-11-09: Pico の PIO 測定（16 ns 単位）で SCL 周期を測定。006: ch32fun/Arduino 100 kHz 設定で 98.19 kHz（−1.81 %）、WCH 400 kHz 設定で 379.9 kHz（−5.02 %）。002 の Arduino は 98.66 kHz（−1.34 %）、WCH は 382.3 kHz（−4.43 %）。波形・立ち上がり時間・400 kHz の電気的な余裕は未測定。Pico の時計は未校正。ログ: 2026-11-09-0805-extend-pico-fixture-measurement.md |
+| I2 | バスエラーからの復旧 | 002/006 | 治具追加 | 観測済み | 7.4。DUT のバスを Low に保持する Pico の機能がない。治具の改善を change `extend-pico-fixture-measurement` で提案 → 2026-11-09: SDA を 1 秒 Low に保った後は ch32fun・Arduino・WCH の `i2c_master` とも取引が戻る（002/006）。SCL を 1 秒 Low に保った後は 3 つとも Pico の `I2C_SLAVE` が 10 秒間取引を見なかった（Arduino は 0xFF を読んだ値を表示し続け、WCH は `i2c bus busy` を表示）。DUT 固着か Pico スレーブ側かは未切り分け。書籍に回復処理はない |
 | I3 | 100 kHz 以外の master との通信、Pico 以外の master、複数スレーブ | 002/006 | 治具追加 | 保留 | 7.10 |
-| I4 | Arduino `i2c_master`／`i2c_slave_test_master` の Serial の値、WCH `i2c_slave` の `printf()` | 002/006 | 治具追加 | 保留 | 7.5。取引と同時に UART を取り込めない。治具の改善を change `extend-pico-fixture-measurement` で提案 |
+| I4 | Arduino `i2c_master`／`i2c_slave_test_master` の Serial の値、WCH `i2c_slave` の `printf()` | 002/006 | 治具追加 | 確認済み | 7.5。取引と同時に UART を取り込めない。治具の改善を change `extend-pico-fixture-measurement` で提案 → 2026-11-09: 取引と同時に UART を取り込み、Arduino `i2c_master`（temperature: 24 humidity: 50）、`i2c_slave_test_master`（read :A1 B2 C3 D4）、WCH `i2c_slave` の `printf()`（reg[0x20]/reg[0x10]）が期待値と一致（006、Arduino は 002 も） |
 | I5 | Arduino `i2c_slave` の固着（core の修正） | 002/006 | − | 保留 | 3.3 で範囲外読み出しは修正。固着は未解決 |
 | I6 | WCH `i2c_slave` の `I2C_ClockSpeed` | 002/006 | 治具 | 確認済み | 3.2。100000 に修正、002/006 とも CKCFGR 0xCFFF→0x00F0、HIL passed |
 | S1 | SPI のモード 0 以外 | 002/006 | 治具追加 | 保留 | Pico の slave がモード 0 のみ |
-| S2 | SCK の実際の周波数と波形 | 002/006 | 治具追加 | 保留 | 5.4、7.4。見込みは 750 kHz（4.3）。Pico で測れない。治具の改善を change `extend-pico-fixture-measurement` で提案 |
+| S2 | SCK の実際の周波数と波形 | 002/006 | 治具追加 | 一部 | 5.4、7.4。見込みは 750 kHz（4.3）。Pico で測れない。治具の改善を change `extend-pico-fixture-measurement` で提案 → 2026-11-09: SCK 周期を測定。006: ch32fun/Arduino 744.05 kHz（−0.79 %、設定 750 kHz）、WCH 186.29 kHz（−0.65 %、187.5 kHz）。002: Arduino 748.5 kHz（−0.2 %）、WCH 187.4 kHz（−0.05 %）。波形・立ち上がりは未測定。Pico の時計は未校正 |
 | S3 | SPI の 16 ビット転送 | 002/006 | 治具 | 確認済み | 7.4。002/006 とも DFF=1 で 0xA55A を送信、0x3CC3 を受信 |
 | S4 | SPI スレーブとしての動作、ハードウェアの NSS | 002/006 | サンプルなし | 未着手 | 7.9 |
 | S5 | `ch32v003_SPI.h` | 002/006 | サンプルなし | 対象外 | 7.9。CH32V003 向けのヘルパーで、レジスタ直接の書き方を原稿で解説済みのため追加しない（ユーザー判断）。原稿の 12 章から記述を削除（作業ツリー、未コミット） |
-| S6 | Arduino `spi_master` の Serial の出力 | 002/006 | 治具追加 | 保留 | 7.5。治具の改善を change `extend-pico-fixture-measurement` で提案 |
+| S6 | Arduino `spi_master` の Serial の出力 | 002/006 | 治具追加 | 確認済み | 7.5。治具の改善を change `extend-pico-fixture-measurement` で提案 → 2026-11-09: Arduino `spi_master` の Serial（raw: 0C80 / raw_int:400 / temp: 25.0000）を取引の直後に取り込んで期待値と一致（006、002） |
 
 # Watchdog・省電力（13、14 章）
 

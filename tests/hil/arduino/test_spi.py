@@ -17,6 +17,9 @@ import time
 
 import pytest
 
+from capture_helpers import captured, edge_record
+from ch32hil import judge
+
 from .common import (_cleanup, _prepare, _with_client, build_flash_readback, fields_of, find_port, new_run, save,
                      sample_gpio)
 
@@ -27,11 +30,31 @@ VALID = "0c80"      # ADT7310 13-bit 25.0 degC
 INVALID = "0000"    # triggers reset_adt7310()
 
 
-def _spi(port, reply):
+SCK_GP = 6
+SCK_HZ = 750_000    # SPISettings(1 MHz): the core picks the /64 prescaler of 48 MHz (expected value, checked by measurement)
+
+
+def _spi(port, reply, edge_pin=None, log=False):
     def action(client):
         r = client.request("SPI_SLAVE", reply, "MODE0")
         return {"ok": r.ok, "fields": r.fields, "t": time.monotonic(), **fields_of(r)}
-    return _with_client(port, 6, action)
+    if log:      # the DUT's Serial output (PD5 -> GP9) is printed right after the read: capture it across the frame
+        result, cap, _ = captured(port, "UART", 9, 115200, action, settle_s=0.4)
+        result["log_capture"] = cap
+        return result
+    if edge_pin is None:
+        return _with_client(port, 6, action)
+    result, cap, start = captured(port, "EDGE", edge_pin, None, action)
+    result["sck_summary"] = edge_record(cap, start)
+    return result
+
+
+def _check_log(result, raw_hex):
+    return judge.judge_log(result.pop("log_capture"), judge.arduino_spi_master_text(int(raw_hex, 16)), "spi_master_log")
+
+
+def _check_sck(result):
+    return judge.judge_period(result["sck_summary"], SCK_HZ, label="spi_sck")
 
 
 def _expect(result, rx, reply):
@@ -78,8 +101,11 @@ def test_arduino_spi_master(request, hil_device, hil_config, hil_dut):
                 if boot_cs[-1][0] != "1" or _cs_low_runs(boot_cs) < 20:
                     raise AssertionError(f"reset frame CS low then high not seen: {boot_cs}")
             run.phase("check_cs_reset_frame", frame_ends)
-        b = run.phase("measure_read_valid", _spi, p, VALID)
+        b = run.phase("measure_read_valid", _spi, p, VALID, SCK_GP)
         out["read_valid"] = b and run.phase("check_read_valid", _expect, b, "0000", VALID)
+        out["sck"] = b and run.phase("check_sck", _check_sck, b)
+        if b:
+            b.pop("sck_summary", None)
         c = run.phase("measure_read_after_valid", _spi, p, INVALID)
         out["read_after_valid"] = c and run.phase("check_read_after_valid", _expect, c, "0000", INVALID)
         if b and c:
@@ -94,8 +120,9 @@ def test_arduino_spi_master(request, hil_device, hil_config, hil_dut):
                     raise AssertionError(f"no ~500 ms CS low (reset_adt7310) after reply 0000: runs={runs}")
                 return longest
             out["cs_longest_low_samples"] = run.phase("check_reset_after_invalid", reset_seen)
-        d = run.phase("measure_read_after_reset", _spi, p, VALID)
+        d = run.phase("measure_read_after_reset", _spi, p, VALID, None, True)
         out["read_after_reset"] = d and run.phase("check_read_after_reset", _expect, d, "0000", VALID)
+        out["log"] = d and run.phase("check_log", _check_log, d, VALID)
         if c and d:
             out["reset_interval_s"] = round(d["t"] - c["t"], 3)
     finally:

@@ -237,7 +237,8 @@ def test_hil_verified_wch_rows_have_a_checkable_basis():
 def test_ch32v006_matrix_covers_every_ch32v002_row_without_borrowed_results():
     v002 = matrix.load(ROOT / "hil/matrix_ch32v002.json")
     v006 = matrix.load(ROOT / "hil/matrix_ch32v006.json")
-    assert [e["sample"] for e in v006] == [e["sample"] for e in v002]
+    # same order for the book-based rows; 006 alone carries the CH32V006-only additional rows (usart2, opa, tim3, tkey)
+    assert [e["sample"] for e in matrix.book_rows(v006)] == [e["sample"] for e in matrix.book_rows(v002)]
     assert len(matrix.book_rows(v006)) == 13       # the 13 book-based rows; additional-not-in-book rows are counted apart
     assert matrix.coverage_problems(matrix.load(ROOT / "hil/matrix.json"), matrix.book_rows(v006)) == []
     assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v00x_ch32fun", root=ROOT) == []
@@ -264,7 +265,8 @@ def test_ch32v006_arduino_matrix_has_ten_rows_without_borrowed_results():
 def test_ch32v006_wch_matrix_has_thirteen_rows_without_borrowed_results():
     v002 = matrix.load(ROOT / "hil/matrix_ch32v002_wch.json")
     v006 = _v006_rows("wch")
-    assert [e["sample"] for e in v006] == [e["sample"] for e in v002]
+    # same order for the book-based rows; 006 alone carries the CH32V006-only additional rows (usart2, opa, tim3, tkey)
+    assert [e["sample"] for e in matrix.book_rows(v006)] == [e["sample"] for e in matrix.book_rows(v002)]
     assert len(matrix.book_rows(v006)) == 13       # the 13 book-based rows; additional-not-in-book rows are counted apart
     assert matrix.problems(v006, samples_dir=ROOT / "samples_ch32v006_wch", root=ROOT, framework="wch") == []
     assert all("003_state" not in e and "002_state" not in e for e in v006)
@@ -296,7 +298,10 @@ def test_additional_rows_are_distinguished_from_book_rows_and_need_a_basis():
 @pytest.mark.parametrize("name", ["ch32v002_wch", "ch32v006_wch", "ch32v002", "ch32v006"])
 def test_wwdg_is_tracked_as_an_additional_row_in_every_matrix(name):
     rows = {e["sample"]: e for e in matrix.additional_rows(matrix.load(ROOT / f"hil/matrix_{name}.json"))}
-    assert set(rows) == {"wwdg"}
+    # the CH32V006-only samples (change add-ch32v006-only-feature-samples) exist in the 006 WCH matrix only
+    assert set(rows) == {"wwdg"} | ({"usart2", "opa", "tim3", "tkey"} if name == "ch32v006_wch" else set())
     # no state is claimed beyond what was observed on that device (the evidence is checked by the generic row rules)
     assert rows["wwdg"]["state"] in {"build-only", "hil-verified"}
     assert not any(e.get("book_sample") for e in rows.values())
+    if name == "ch32v006_wch":      # not exercised on hardware yet: only the states the evidence supports
+        assert {rows[k]["state"] for k in ("usart2", "opa", "tim3", "tkey")} <= {"build-only", "hil-verified"}

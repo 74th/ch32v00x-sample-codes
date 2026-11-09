@@ -23,6 +23,33 @@ class PicoCanceled(PicoError):
     pass
 
 
+class PicoEdgeTimeout(PicoError):
+    """EDGE_MEASURE saw too few edges within the timeout."""
+
+
+@dataclass
+class Capture:
+    kind: str          # "UART" (items: bytes) or "EDGE" (items: High/Low loop counts, alternating, first = High)
+    items: object
+    received: int
+    capacity: int
+    full: bool
+    overflow: bool     # data was lost (FIFO stall); `full` alone only means the buffer is full
+    frame_errors: bool = False
+
+
+def edge_widths(words, res_ps, k_period=9, k_high=4, skip_first=True):
+    """Convert raw EDGE capture words to [(period_ps, high_ps)] (Pico clock, uncalibrated).
+
+    One loop count is `res_ps` picoseconds (2 PIO cycles). The first High/Low pair starts at the first rising edge found
+    by the PIO `wait` and is dropped by default, like EDGE_MEASURE does."""
+    cycle_ps = res_ps // 2
+    pairs = [(words[i], words[i + 1]) for i in range(0, len(words) - 1, 2)]
+    if skip_first:
+        pairs = pairs[1:]
+    return [((2 * (h + l) + k_period) * cycle_ps, (2 * h + k_high) * cycle_ps) for h, l in pairs]
+
+
 def discover(comports, port=None, timeout=10.0, sleep=time.sleep, clock=time.monotonic):
     """Return the one Pico device; explicit `port` wins. 0 -> wait then timeout, >1 -> stop."""
     if port:
@@ -54,11 +81,11 @@ class PicoClient:
         self._id = 0
         self.caps: dict = {}
 
-    def request(self, cmd, *args) -> Response:
+    def request(self, cmd, *args, timeout=None) -> Response:
         self._id += 1
         rid = self._id
         self.link.write((" ".join([str(rid), cmd, *map(str, args)]) + "\n").encode())
-        deadline = self.clock() + self.timeout
+        deadline = self.clock() + (self.timeout if timeout is None else timeout)
         while self.clock() < deadline:
             raw = self.link.readline()
             if not raw:
@@ -74,7 +101,7 @@ class PicoClient:
             if status not in ("OK", "ERR"):
                 raise PicoProtocolError(f"invalid status {status!r}")
             return Response(got, status == "OK", parts[2:])
-        raise PicoTimeout(f"no response to {cmd} within {self.timeout}s")
+        raise PicoTimeout(f"no response to {cmd} within {self.timeout if timeout is None else timeout}s")
 
     def negotiate(self, required=()):
         r = self.request("CAPS")
@@ -128,6 +155,84 @@ class PicoClient:
         if len(samples) != count or set(samples) - {"0", "1"}:
             raise PicoProtocolError("invalid samples")
         return samples
+
+    # ---- edge-time measurement, background capture and I2C hold (CAPS cap_edge=1) ----
+
+    @staticmethod
+    def _fields(resp):
+        return dict(item.split("=", 1) for item in resp.fields if "=" in item)
+
+    def edge_measure(self, pin, periods=100, timeout_ms=1000):
+        """Single-shot period/High-width measurement on `pin` (picoseconds, Pico clock, uncalibrated).
+
+        Returns the response fields as ints (period_ps_min/max/avg, high_ps_*, duty_ppm, periods, res_ps).
+        Raises PicoEdgeTimeout when the edges do not arrive, PicoError for other rejections."""
+        r = self.request("EDGE_MEASURE", pin, periods, timeout_ms, timeout=timeout_ms / 1000 + self.timeout)
+        if not r.ok:
+            if r.fields[:1] == ["TIMEOUT"]:
+                raise PicoEdgeTimeout(f"no edges on GP{pin}: {r.fields}")
+            raise PicoError(f"EDGE_MEASURE failed: {r.fields}")
+        f = self._fields(r)
+        try:
+            return {k: int(v) for k, v in f.items() if k != "safe"} | {"pin": int(f["pin"])}
+        except (KeyError, ValueError) as exc:
+            raise PicoProtocolError(f"invalid EDGE_MEASURE response {r.fields}") from exc
+
+    def capture_start(self, kind, pin, baud=None):
+        """Arm a background capture ("EDGE" or "UART") and return the start fields. Other commands may follow."""
+        args = ["EDGE", pin] if kind == "EDGE" else [kind, pin, baud]
+        r = self.request("CAPTURE_START", *args)
+        if not r.ok:
+            raise PicoError(f"CAPTURE_START failed: {r.fields}")
+        return self._fields(r)
+
+    def capture_read(self, offset=0, count=256):
+        """One CAPTURE_READ. Returns (fields, items): bytes for UART, a list of loop counts for EDGE."""
+        r = self.request("CAPTURE_READ", offset, count)
+        if not r.ok:
+            raise PicoError(f"CAPTURE_READ failed: {r.fields}")
+        f = self._fields(r)
+        try:
+            n = int(f["count"])
+            data = f["data"]
+            if f["kind"] == "UART":
+                items = b"" if data == "-" else bytes.fromhex(data)
+                ok = len(items) == n
+            else:
+                items = [] if data == "-" else [int(x) for x in data.split(",")]
+                ok = len(items) == n
+        except (KeyError, ValueError) as exc:
+            raise PicoProtocolError(f"invalid CAPTURE_READ response {r.fields}") from exc
+        if not ok:
+            raise PicoProtocolError(f"CAPTURE_READ count mismatch {r.fields}")
+        return f, items
+
+    def capture_stop(self):
+        r = self.request("CAPTURE_STOP")
+        if not r.ok:
+            raise PicoError(f"CAPTURE_STOP failed: {r.fields}")
+        return self._fields(r)
+
+    def capture_collect(self):
+        """Stop the capture and read everything. Returns a Capture (overflow and frame errors are reported, not raised)."""
+        self.capture_stop()
+        items = None
+        offset = 0
+        while True:
+            f, chunk = self.capture_read(offset, 256)
+            items = chunk if items is None else items + chunk
+            offset += int(f["count"])
+            if int(f["count"]) == 0 or offset >= int(f["received"]):
+                break
+        return Capture(kind=f["kind"], items=items, received=int(f["received"]), capacity=int(f["capacity"]),
+                       full=f["full"] == "1", overflow=f["overflow"] == "1", frame_errors=f.get("frame_errors") == "1")
+
+    def i2c_hold(self, line, ms):
+        """Hold SDA/SCL/BOTH Low for `ms` (open-drain, never driven High). Returns the response fields as strings."""
+        r = self.request("I2C_HOLD", line, ms, timeout=ms / 1000 + self.timeout)
+        if not r.ok:
+            raise PicoError(f"I2C_HOLD failed: {r.fields}")
+        return self._fields(r)
 
     def cancel_sequence(self):
         """Cancel an in-flight GPIO sequence; invoke from a separate controlling thread."""

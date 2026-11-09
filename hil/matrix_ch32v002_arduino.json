@@ -28,7 +28,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_blink_and_read.py::test_arduino_blink_and_read"
       ],
-      "criteria": "same as CH32V003: boot Serial text; PC0 500/500 ms; PA1 low pauses blink",
+      "criteria": "same as CH32V003: boot Serial text; PC0 500/500 ms; PA1 low pauses blink; 追加(2026-11-09): SCL 周期を判定（期待値の−25〜+3 %、実測は−1.3〜−5.0 %）。Arduino/WCH は Serial/printf のログ値も判定（WCH i2c_master は従来どおり）。バスエラーは観測のみ（hil_tests_variants、確認済みに数えない）",
       "evidence": [
         "okf/log/2026-11-07-2125-arduino-ch32v002-survey.md",
         "okf/log/2026-11-07-2156-arduino-ch32v002-hil.md"
@@ -43,6 +43,9 @@
       "note": "same source as samples_ch32v003_arduino; borrowed CH32VM00X/CH32V006K8 definition with the overrides in samples_ch32v002_arduino/arduino.mk",
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master"
+      ],
+      "hil_tests_variants": [
+        "tests/hil/arduino/test_i2c.py::test_arduino_i2c_master_bus_error_observation"
       ],
       "criteria": "Pico I2C_SLAVE as SHT31 0x44: after reset writes 30a2 then 3041; loop writes 2400 and reads 6 bytes; 0x45 receives nothing; loop period ~5.3 s",
       "evidence": [
@@ -74,7 +77,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave"
       ],
-      "criteria": "Pico I2C_MASTER/I2C_PROBE: 0x10 ACK, 0x11 NACK; reg 0x20 reads 00102030; write 10 aabbccdd reads back aabbccdd; read at 0x12 gives ccdd",
+      "criteria": "Pico I2C_MASTER/I2C_PROBE: 0x10 ACK, 0x11 NACK; reg 0x20 reads 00102030; write 10 aabbccdd reads back aabbccdd; read at 0x12 gives ccdd; 追加(2026-11-09): 読み出し後の Serial（receive available/read :A1 B2 C3 D4）を取り込んで判定",
       "evidence": [
         "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md",
         "okf/log/2026-11-07-2310-arduino-neopixel-timing.md",
@@ -91,7 +94,7 @@
       "hil_tests": [
         "tests/hil/arduino/test_i2c.py::test_arduino_i2c_slave_test_master"
       ],
-      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s",
+      "criteria": "Pico I2C_SLAVE 0x10: receives 10 c c+1 c+2 c+3, then 20 + 4-byte read; next loop c+1 after ~1.1 s; 追加(2026-11-09): 周期を PIO 測定で判定（±3 %、duty は k/32 または固定値）。GPIO_PULSE の判定も維持",
       "evidence": [
         "okf/log/2026-11-07-2215-arduino-excluded-sketches.md"
       ]
@@ -122,7 +125,7 @@
         "tests/hil/arduino/test_pwm.py::test_arduino_pwm",
         "tests/hil/arduino/test_pwm.py::test_arduino_pwm_remap_reference"
       ],
-      "criteria": "PATTERN 2: PD2->GP14, PC4->GP15; 1 kHz (800..1200 us), duty within 15000 ppm of k/32, LED1+LED2 ~ 33/32, duty ramps. PATTERN 3 (PC6->GP7, PC5->GP6) reference xfail",
+      "criteria": "PATTERN 2: PD2->GP14, PC4->GP15; 1 kHz (800..1200 us), duty within 15000 ppm of k/32, LED1+LED2 ~ 33/32, duty ramps. PATTERN 3 (PC6->GP7, PC5->GP6) reference xfail; 追加(2026-11-09): SCK 周期を Pico の PIO 測定で判定（期待値±3 %、Pico の時計は未校正。根拠: 分周比とHSI±2 %）",
       "evidence": [
         "okf/log/2026-11-07-2200-arduino-ch32v002-port-all.md"
       ]

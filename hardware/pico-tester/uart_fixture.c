@@ -9,6 +9,7 @@
 #include "uart_fixture.h"
 
 #define UART_BYTES_MAX 32
+#define UART_BAUD_MAX 921600
 static bool parse_num(const char *s, unsigned long max, unsigned long *out) {
     if (!s || !*s) return false;
     for (const char *p = s; *p; p++) if (*p < '0' || *p > '9') return false;
@@ -32,7 +33,7 @@ void uart_fixture_xfer(unsigned long id, char *args) {
     unsigned long baud, nbits, stops, want, timeout_ms;
     uint8_t tx[UART_BYTES_MAX], rx[UART_BYTES_MAX];
     unsigned txlen = 0, rxlen = 0, errors = 0;
-    if (!mode || (strcmp(mode, "LOOPBACK") && strcmp(mode, "DUT")) || !parse_num(rate, 115200, &baud) || baud < 1200 ||
+    if (!mode || (strcmp(mode, "LOOPBACK") && strcmp(mode, "DUT")) || !parse_num(rate, UART_BAUD_MAX, &baud) || baud < 1200 ||
         !parse_num(bits, 8, &nbits) || nbits < 7 || !parity || strlen(parity) != 1 ||
         !strchr("NEO", parity[0]) || !parse_num(stop, 2, &stops) || stops < 1 || !data ||
         !parse_num(expected, UART_BYTES_MAX, &want) || !parse_num(timeout, 5000, &timeout_ms) ||
