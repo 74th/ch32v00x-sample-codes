@@ -298,10 +298,10 @@ def test_additional_rows_are_distinguished_from_book_rows_and_need_a_basis():
 @pytest.mark.parametrize("name", ["ch32v002_wch", "ch32v006_wch", "ch32v002", "ch32v006"])
 def test_wwdg_is_tracked_as_an_additional_row_in_every_matrix(name):
     rows = {e["sample"]: e for e in matrix.additional_rows(matrix.load(ROOT / f"hil/matrix_{name}.json"))}
-    # the CH32V006-only samples (change add-ch32v006-only-feature-samples) exist in the 006 WCH matrix only
-    assert set(rows) == {"wwdg"} | ({"usart2", "opa", "tim3", "tkey"} if name == "ch32v006_wch" else set())
+    # the CH32V006-only samples (changes add-ch32v006-only-feature-samples and add-ch32v006-only-ch32fun-samples) exist in the 006 matrices only
+    assert set(rows) == {"wwdg"} | ({"usart2", "opa", "tim3", "tkey"} if name in ("ch32v006_wch", "ch32v006") else set())
     # no state is claimed beyond what was observed on that device (the evidence is checked by the generic row rules)
     assert rows["wwdg"]["state"] in {"build-only", "hil-verified"}
     assert not any(e.get("book_sample") for e in rows.values())
-    if name == "ch32v006_wch":      # not exercised on hardware yet: only the states the evidence supports
+    if name in ("ch32v006_wch", "ch32v006"):      # not exercised on hardware yet: only the states the evidence supports
         assert {rows[k]["state"] for k in ("usart2", "opa", "tim3", "tkey")} <= {"build-only", "hil-verified"}

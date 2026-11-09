@@ -236,13 +236,73 @@
       "peripheral": "wwdg",
       "state": "hil-verified",
       "sample": "wwdg",
-      "note": "\u66f8\u7c4d\u306b\u306a\u3044WWDG\uff08\u30a6\u30a3\u30f3\u30c9\u30a6\u30a6\u30a9\u30c3\u30c1\u30c9\u30c3\u30b0\uff09\u306e\u8ffd\u52a0\u30b5\u30f3\u30d7\u30eb\uff08\u6a19\u6e96ch32fun\uff08002/006\u5171\u901a\u306e\u30bd\u30fc\u30b9\uff09\u3001change add-wwdg-sample\uff09\u3002\u51fa\u5178\u306f\u516c\u5f0fEVT\u306e EXAM/WWDG\u3002CH32V006\u5b9f\u6a5f\u30673\u30d3\u30eb\u30c9\u3092\u89b3\u6e2c\u6e08\u307f\uff082026-11-09\u3001\u30ed\u30b0\u53c2\u7167\uff09\u3002-DWWDG_MODE=0/1/2 \u306e3\u30d3\u30eb\u30c9\u3067\u5207\u308a\u66ff\u3048\u308b\u3002EWI\u3001\u30c7\u30d0\u30c3\u30b0\u4e2d\u306e\u52d5\u4f5c\u3001\u30ea\u30bb\u30c3\u30c8\u6642\u9593\u306e\u7d76\u5bfe\u7cbe\u5ea6\u306f\u672a\u78ba\u8a8d",
-      "criteria": "UART(PD5, 115200): \u8d77\u52d5\u6642 cause=<\u8981\u56e0> \u3068 wait\u3002MODE 0 \u306f\u70b9\u304c\u5897\u3048\u7d9a\u3051\u30ea\u30bb\u30c3\u30c8\u3055\u308c\u306a\u3044; MODE 1 \u306f\u70b91\u500b\u3067 cause=WWDG; MODE 2 \u306f\u70b99\u500b\u3067 cause=WWDG\uff08\u7d50\u679c\u306f\u5404\u30c7\u30d0\u30a4\u30b9\u3067\u5225\u306b\u89b3\u6e2c\uff09",
+      "note": "書籍にないWWDG（ウィンドウウォッチドッグ）の追加サンプル（標準ch32fun（002/006共通のソース）、change add-wwdg-sample）。出典は公式EVTの EXAM/WWDG。CH32V006実機で3ビルドを観測済み（2026-11-09、ログ参照）。-DWWDG_MODE=0/1/2 の3ビルドで切り替える。EWI、デバッグ中の動作、リセット時間の絶対精度は未確認",
+      "criteria": "UART(PD5, 115200): 起動時 cause=<要因> と wait。MODE 0 は点が増え続けリセットされない; MODE 1 は点1個で cause=WWDG; MODE 2 は点9個で cause=WWDG（結果は各デバイスで別に観測）",
       "hil_tests": [
         "tests/hil/test_wwdg.py::test_wwdg"
       ],
       "evidence": [
         "okf/log/2026-11-09-0751-ch32v006-wwdg-hil.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "usart2",
+      "state": "hil-verified",
+      "sample": "usart2",
+      "note": "書籍にないCH32V006だけのUSART2（TXをリマップ3でPD2）の標準ch32fun（レジスタ直接操作）版。出典は公式EVT EXAM/USARTと、WCH SDK版 samples_ch32v006_wch/usart2 の動作（change add-ch32v006-only-ch32fun-samples）。CH32V002では #error でbuildが止まる。CH32V006実機でPD2→GP14の固定文字列を6回受信（1.2 s、2026-11-09）",
+      "criteria": "PD2→GP14 の PIO UART 受信で、固定文字列 'usart2 0123456789' が 1.2 s で 2 回以上届く",
+      "hil_tests": [
+        "tests/hil/test_v006_only_ch32fun.py::test_usart2"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-2056-ch32v006-only-ch32fun-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "tim3",
+      "state": "hil-verified",
+      "sample": "tim3",
+      "note": "書籍にないCH32V006だけのTIM3（SLTM）の標準ch32fun版。固定ch32funに ALTM_TypeDef がないため、サンプル内にRM第13章のレジスタ構造体を定義（change add-ch32v006-only-ch32fun-samples）。CH32V002では #error でbuildが止まる。CH32V006実機でPC0 496.5 Hz（−0.7 %）、duty 50 %（2026-11-09）",
+      "criteria": "PC0→GP5 のエッジ計測で 500 Hz ±3 %、duty 50 %（TIM3のCC3 DMA要求でPC0を反転）",
+      "hil_tests": [
+        "tests/hil/test_v006_only_ch32fun.py::test_tim3"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-2056-ch32v006-only-ch32fun-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "opa",
+      "state": "hil-verified",
+      "sample": "opa",
+      "note": "書籍にないCH32V006だけのOPA（PGA、PA2→OPA→PD4）の標準ch32fun版。SDKのOPA_Init等が書くレジスタ値をOPA->…へ直接書く（change add-ch32v006-only-ch32fun-samples）。-DOPA_GAIN=4|8。CH32V002では #error でbuildが止まる。CH32V006実機で利得4はout/in 3.76〜3.97、利得8は7.57（±10 %内、2026-11-09）。高入力は飽和",
+      "criteria": "PGA 4倍・8倍で、ADC（PD4=ch7 / PA2=ch0）の出力÷入力の比の中央値が利得の ±10 %",
+      "hil_tests": [
+        "tests/hil/test_v006_only_ch32fun.py::test_opa"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-2056-ch32v006-only-ch32fun-samples.md"
+      ]
+    },
+    {
+      "book_sample": null,
+      "class": "additional-not-in-book",
+      "peripheral": "tkey",
+      "state": "build-only",
+      "sample": "tkey",
+      "note": "書籍にないCH32V006だけのTKEYの標準ch32fun版（change add-ch32v006-only-ch32fun-samples）。値の記録のみで合否なし。CH32V002では #error でbuildが止まる。実機の観測のみ（合否なし）: PD4≈4082、PA2≈52。PD4の1 kΩのリードを指で触ると約555〜3418に下がり離すと戻った（手作業1回、2026-11-09）。確認済みにはしない",
+      "criteria": "参考観測: PD4（未配線）とPA2（10 kΩ＋1 µF）のTKEY値を記録（値に合否は付けない）",
+      "hil_tests": [
+        "tests/hil/test_v006_only_ch32fun.py::test_tkey"
+      ],
+      "evidence": [
+        "okf/log/2026-11-09-2056-ch32v006-only-ch32fun-samples.md"
       ]
     }
   ]
