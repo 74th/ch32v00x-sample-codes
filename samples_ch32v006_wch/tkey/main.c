@@ -4,7 +4,11 @@
  *   ch7 = PD4 (nothing wired: a floating pin)           ch0 = PA2 (10 kOhm and 1 uF to GND on the fixture: a large load)
  * The values are a reference observation of how the TKEY value depends on the load; they do not judge a touch.
  * Changes from the EVT example: PD4 and PA2 instead of PC4 (PC4 does not pass a signal on the CH32V006 used here), two
- * channels, a fixed one-line log. Charging time IDATAR1 = 0x20 and discharging time RDATAR = 0x8 are the EVT values. */
+ * channels, a fixed one-line log. Charging time IDATAR1 = 0x20 and discharging time RDATAR = 0x8 are the EVT values.
+ * Observed on one CH32V006 (2026-11-09, okf/log/2026-11-09-0854-ch32v006-only-feature-samples.md): PD4 open reads ~4087,
+ * PA2 (1 uF) ~51. With a 1 kOhm leaded resistor on PD4 used as the electrode, touching its free lead with a finger lowered
+ * PD4 from ~4083 to 1300..2650 and releasing it brought it back to ~4083 (one manual observation, no threshold decided;
+ * the effect depends on how the person and the board are grounded). */
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>

@@ -270,7 +270,7 @@
       "peripheral": "tkey",
       "state": "build-only",
       "sample": "tkey",
-      "note": "書籍にないCH32V006だけのTKEY。PD4（未配線）とPA2（10 kΩ＋1 µF）の値を読む参考の観測。タッチの判定ではない（公式EVT EXAM/TOUCHKEY/TKEYを元にした）。実機（CH32V006）の参考値: PD4（未配線）≈4087、PA2（10 kΩ＋1 µF）≈51。値の合否は付けないので hil-verified にしない（観測の記録）",
+      "note": "書籍にないCH32V006だけのTKEY。PD4（未配線）とPA2（10 kΩ＋1 µF）の値を読む参考の観測。タッチの判定ではない（公式EVT EXAM/TOUCHKEY/TKEYを元にした）。実機（CH32V006）の参考値: PD4（未配線）≈4087、PA2（10 kΩ＋1 µF）≈51。値の合否は付けないので hil-verified にしない（観測の記録）。追加の手作業の観測（2026-11-09）: PD4 に 1 kΩ のリードをつないで指で触ると PD4 が約 4083→1300〜2650 に下がり、離すと戻った（1 回、自動化していないので hil-verified にしない）",
       "criteria": "負荷の違う2チャネルの値を記録する（値の合否は付けない）。ログが取れなければ失敗",
       "hil_tests": [
         "tests/hil/wch/test_v006_only.py::test_wch_tkey"
